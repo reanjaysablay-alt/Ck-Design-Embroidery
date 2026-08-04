@@ -182,7 +182,10 @@ insert into public.site_settings (key, value) values
   ('color_linen', '#EFE7D8'),
   ('color_linen2', '#E4D9C4'),
   ('color_ink', '#1C1811'),
-  ('color_stitchRed', '#A73B3B')
+  ('color_stitchRed', '#A73B3B'),
+  ('title_font', 'fraunces'),
+  ('tagline_font', 'fraunces'),
+  ('heading_font', 'fraunces')
 on conflict (key) do nothing;
 
 -- One-time passcodes (OTP) emailed to a signed-in user before they can

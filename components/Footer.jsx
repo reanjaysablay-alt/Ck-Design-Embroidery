@@ -11,7 +11,7 @@ export default async function Footer() {
       <StitchDivider />
       <div className="max-w-6xl mx-auto px-5 md:px-8 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div>
-          <div className="font-display italic text-2xl text-thread mb-3">{siteTitle}</div>
+          <div className="font-title italic text-2xl text-thread mb-3">{siteTitle}</div>
           <p className="text-thread/60 text-sm leading-relaxed">
             Custom embroidery for brands, teams, and events — plus a shop of
             ready-made pieces, stitched in-house.

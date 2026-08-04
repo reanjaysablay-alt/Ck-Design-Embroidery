@@ -1,11 +1,13 @@
-# Stitchhouse — TODO
+# Stitchhouse — Admin font selection
 
-## Email verification (2FA) on login
+## Steps
 
-- [x] 1. Add `login` purpose to `signup_verifications` check constraint in db/schema.sql
-- [x] 2. Add `sendLoginOtp` + `verifyLoginOtp` to lib/otp.js
-- [x] 3. Create `app/api/auth/login-send-code/route.js`
-- [x] 4. Create `app/api/auth/login-verify-code/route.js`
-- [x] 5. Update `app/login/page.js` with a 2-step login flow (password → OTP)
-- [x] 6. Verify build compiles
-- [x] 7. Skip OTP on the login right after a password reset (skipOtp flag)
+- [ ] 1. Create lib/fonts.js (font options + CSS variable mapping)
+- [ ] 2. Add `title_font`, `tagline_font`, `heading_font` defaults to lib/settings.js
+- [ ] 3. Load Google Fonts + inject font CSS variables in app/layout.js
+- [ ] 4. Add font utilities to tailwind.config.js
+- [ ] 5. Add font pickers to components/admin/SiteSettingsForm.jsx
+- [ ] 6. Read/save font settings in app/admin/actions.js
+- [ ] 7. Add font seed rows to db/schema.sql
+- [ ] 8. Apply fonts to site title (Header, AdminHeader, Footer), tagline & hero (app/page.js)
+- [ ] 9. Verify build

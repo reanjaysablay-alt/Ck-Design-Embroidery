@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FONT_OPTIONS } from '@/lib/fonts';
 
 // Color fields in the settings form — the swatch preview updates live so
 // the admin can see the new color as they pick it.
@@ -47,6 +48,31 @@ export default function SiteSettingsForm({ settings, action }) {
               className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Font settings */}
+      <div>
+        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Fonts</h2>
+        <p className="text-thread/50 text-sm mb-4">
+          Choose the font for the site title, tagline, and hero heading.
+        </p>
+        <div className="space-y-4">
+          <FontField
+            label="Site title font"
+            name="title_font"
+            defaultValue={settings?.title_font || 'fraunces'}
+          />
+          <FontField
+            label="Tagline font"
+            name="tagline_font"
+            defaultValue={settings?.tagline_font || 'fraunces'}
+          />
+          <FontField
+            label="Hero heading font"
+            name="heading_font"
+            defaultValue={settings?.heading_font || 'fraunces'}
+          />
         </div>
       </div>
 
@@ -108,5 +134,43 @@ function TextField({ label, name, defaultValue }) {
       />
     </div>
   );
+}
+
+// Font picker — a styled <select> whose options render in their own font,
+// so the admin sees a live preview of each typeface as they pick.
+function FontField({ label, name, defaultValue }) {
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          name={name}
+          defaultValue={defaultValue}
+          className="w-full appearance-none bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold cursor-pointer"
+        >
+          {FONT_OPTIONS.map((font) => (
+            <option key={font.key} value={font.key}>
+              {font.label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-thread/50">
+          ▼
+        </span>
+      </div>
+      <p className="text-thread/40 text-xs mt-1.5" style={{ fontFamily: `var(${getDefaultFontVar(defaultValue)})` }}>
+        Preview: The quick brown fox jumps over the lazy dog.
+      </p>
+    </div>
+  );
+}
+
+// Map a saved font key to its CSS variable for the preview line. Defaults
+// to the first option if the key isn't recognized.
+function getDefaultFontVar(key) {
+  const found = FONT_OPTIONS.find((f) => f.key === key);
+  return found ? found.variable : FONT_OPTIONS[0].variable;
 }
 

@@ -112,9 +112,12 @@ export async function updateSiteSettings(formData) {
     color_thread: formData.get('color_thread')?.toString().trim() || '#F4EFE3',
     color_gold: formData.get('color_gold')?.toString().trim() || '#D4A537',
     color_linen: formData.get('color_linen')?.toString().trim() || '#EFE7D8',
-    color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
+color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
     color_ink: formData.get('color_ink')?.toString().trim() || '#1C1811',
     color_stitchRed: formData.get('color_stitchRed')?.toString().trim() || '#A73B3B',
+    title_font: formData.get('title_font')?.toString().trim() || 'fraunces',
+    tagline_font: formData.get('tagline_font')?.toString().trim() || 'fraunces',
+    heading_font: formData.get('heading_font')?.toString().trim() || 'fraunces',
   };
 
   await saveSiteSettings(settings);

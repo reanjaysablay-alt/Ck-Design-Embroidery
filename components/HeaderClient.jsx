@@ -40,9 +40,9 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
             className="h-7 w-auto object-contain"
             priority
           />
-          <span className="font-display italic text-lg md:text-2xl tracking-tight text-thread">
-            {siteTitle}
-          </span>
+            <span className="font-title italic text-lg md:text-2xl tracking-tight text-thread">
+              {siteTitle}
+            </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 lg:gap-8 font-body text-sm uppercase tracking-widest">

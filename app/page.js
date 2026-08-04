@@ -15,11 +15,11 @@ export default async function Home() {
       {/* Hero */}
       <section className="relative bg-canvas bg-twill overflow-hidden">
         <div className="max-w-6xl mx-auto px-5 md:px-8 pt-20 pb-24 md:pt-28 md:pb-32">
-          <p className="font-mono text-xs uppercase tracking-[0.25em] text-gold mb-6">
+          <p className="font-tagline text-xs uppercase tracking-[0.25em] text-gold mb-6">
             {settings.site_tagline || 'Est. in a workshop, not a warehouse'}
           </p>
 
-          <h1 className="font-display text-[13vw] leading-[0.95] md:text-8xl md:leading-[0.92] text-thread max-w-4xl">
+          <h1 className="font-heading text-[13vw] leading-[0.95] md:text-8xl md:leading-[0.92] text-thread max-w-4xl">
             {settings.hero_heading || 'Every logo, stitched to hold.'}
           </h1>
 
