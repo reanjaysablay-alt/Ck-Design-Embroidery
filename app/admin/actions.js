@@ -56,13 +56,20 @@ async function resolveImage(formData, existingImage) {
 }
 
 export async function createProduct(formData) {
-  await requireAdmin();
-  const admin = createAdminClient();
-  const product = parseProductForm(formData);
-  product.image = await resolveImage(formData, null);
+  let admin;
+  try {
+    await requireAdmin();
+    admin = createAdminClient();
+    const product = parseProductForm(formData);
+    product.image = await resolveImage(formData, null);
 
-  const { error } = await admin.from('products').insert(product);
-  if (error) throw new Error(error.message);
+    const { error } = await admin.from('products').insert(product);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('createProduct error:', err.message);
+    const msg = err.message || 'Could not create product';
+    redirect(`/admin/products/new?error=${encodeURIComponent(msg)}`);
+  }
 
   revalidatePath('/admin/products');
   revalidatePath('/shop');
