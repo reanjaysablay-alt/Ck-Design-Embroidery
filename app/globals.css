@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default theme — overridden at runtime from /admin/settings via the
+   CSS variables injected on <html> in app/layout.js. */
+:root {
+  --color-canvas: #000000;
+  --color-canvas2: #111111;
+  --color-linen: #EFE7D8;
+  --color-linen2: #E4D9C4;
+  --color-ink: #1C1811;
+  --color-gold: #D4A537;
+  --color-gold-dim: #B98F2C;
+  --color-stitch-red: #A73B3B;
+  --color-thread: #F4EFE3;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-thread);
+}
+
+/* Visible keyboard focus everywhere */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #D4A537;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.stitch-draw {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: stitchDraw 2.2s ease-out forwards;
+}
+
+@keyframes stitchDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+.needle-travel {
+  offset-rotate: 0deg;
+  animation: needleTravel 2.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stitch-draw { animation: none; stroke-dashoffset: 0; }
+  .needle-travel { animation: none; }
+}
