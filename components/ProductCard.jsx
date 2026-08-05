@@ -5,7 +5,7 @@ import { productImageSrc } from '@/lib/placeholder';
 export default function ProductCard({ product }) {
   return (
     <Link href={`/shop/${product.slug}`} className="group block">
-<div className="relative aspect-[4/3] overflow-hidden bg-linen2 rounded-sm">
+<div className="relative aspect-[4/5] overflow-hidden bg-linen2 rounded-sm">
         <Image
           src={productImageSrc(product.image)}
           alt={product.name}
