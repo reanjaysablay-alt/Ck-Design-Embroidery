@@ -57,10 +57,9 @@ export default function RatingsSection() {
 
   return (
     <section className="mt-16 pt-16 border-t border-white/10">
-      <h2 className="font-display text-3xl md:text-4xl text-thread mb-2">
-        What our clients say
+      <h2 className="font-display text-3xl md:text-4xl text-thread mb-8">
+        Customer reviews
       </h2>
-      <p className="text-thread/50 text-sm mb-8">Real ratings from real orders.</p>
 
       {loading ? (
         <p className="text-thread/50 text-sm">Loading ratings…</p>
@@ -103,8 +102,10 @@ export default function RatingsSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ratings.map((r) => (
               <div key={r.id} className="bg-canvas2 border border-white/5 rounded-sm p-5">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="font-display text-thread">{r.name}</div>
+<div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="font-mono text-xs uppercase tracking-widest text-thread/50">
+                    Verified customer
+                  </div>
                   <div className="text-gold text-sm">
                     {'★'.repeat(r.rating)}
                     <span className="text-thread/20">{'★'.repeat(5 - r.rating)}</span>
