@@ -37,14 +37,10 @@ export default function ProductForm({ product, action, submitLabel }) {
     setPreviewUrl(URL.createObjectURL(file));
 
 try {
-      // Load the background-removal library at runtime from a CDN instead
-      // of bundling it. The npm package pulls in onnxruntime-web which
-      // ships large WASM files that cause webpack to fail during `next
-      // build` ("failed to parse input file"). Importing from a full URL
-      // keeps webpack away from those assets entirely.
-      const { removeBackground } = await import(
-        'https://esm.sh/@imgly/background-removal@1.7.0'
-      );
+      // Bundled background-removal library (installed as a dependency).
+      // Runs entirely in the browser via WASM — no external API key or
+      // third-party CDN needed, so it works reliably on Vercel.
+      const { removeBackground } = await import('@imgly/background-removal');
 
       const blob = await removeBackground(file, {
         progress: (key, current, total) => {
