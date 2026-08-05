@@ -131,7 +131,7 @@ export default function ContactPage() {
           <Field label="Subject" value={formData.subject} onChange={(v) => setFormData({ ...formData, subject: v })} />
         )}
 
-        {activeTab === 'rating' ? (
+{activeTab === 'rating' ? (
           <div>
             <label className="block text-xs uppercase tracking-widest text-thread/50 mb-3">Rating</label>
             <div className="flex gap-2">
@@ -149,7 +149,17 @@ export default function ContactPage() {
                 </button>
               ))}
             </div>
-</div>
+            <label className="block text-xs uppercase tracking-widest text-thread/50 mt-4 mb-2">
+              Your comment (optional)
+            </label>
+            <textarea
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              rows={3}
+              placeholder="Tell us what you think..."
+              className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            />
+          </div>
         ) : (
           <div>
             <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">Message</label>
