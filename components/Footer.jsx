@@ -1,10 +1,18 @@
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 import StitchDivider from './StitchDivider';
 import { getSiteSettings } from '@/lib/settings';
 
 export default async function Footer() {
   const settings = await getSiteSettings();
   const siteTitle = settings.site_title || 'Stitchhouse';
+
+  // Footer nav links are only shown to signed-in users. Signed-out
+  // visitors see just the brand and copyright.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <footer className="bg-canvas mt-24">
@@ -18,29 +26,33 @@ export default async function Footer() {
           </p>
         </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gold mb-4">Shop</div>
-          <ul className="space-y-2 text-sm text-thread/70">
-            <li><Link href="/shop" className="hover:text-gold">All Products</Link></li>
-            <li><Link href="/cart" className="hover:text-gold">Cart</Link></li>
-          </ul>
-        </div>
+        {user && (
+          <>
+            <div>
+              <div className="text-xs uppercase tracking-widest text-gold mb-4">Shop</div>
+              <ul className="space-y-2 text-sm text-thread/70">
+                <li><Link href="/shop" className="hover:text-gold">All Products</Link></li>
+                <li><Link href="/cart" className="hover:text-gold">Cart</Link></li>
+              </ul>
+            </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gold mb-4">Business</div>
-          <ul className="space-y-2 text-sm text-thread/70">
-            <li><Link href="/services" className="hover:text-gold">Custom Embroidery</Link></li>
-            <li><Link href="/quote" className="hover:text-gold">Request a Quote</Link></li>
-          </ul>
-        </div>
+            <div>
+              <div className="text-xs uppercase tracking-widest text-gold mb-4">Business</div>
+              <ul className="space-y-2 text-sm text-thread/70">
+                <li><Link href="/services" className="hover:text-gold">Custom Embroidery</Link></li>
+                <li><Link href="/quote" className="hover:text-gold">Request a Quote</Link></li>
+              </ul>
+            </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gold mb-4">Studio</div>
-          <ul className="space-y-2 text-sm text-thread/70">
-            <li><Link href="/about" className="hover:text-gold">About</Link></li>
-            <li><Link href="/contact" className="hover:text-gold">Contact</Link></li>
-          </ul>
-        </div>
+            <div>
+              <div className="text-xs uppercase tracking-widest text-gold mb-4">Studio</div>
+              <ul className="space-y-2 text-sm text-thread/70">
+                <li><Link href="/about" className="hover:text-gold">About</Link></li>
+                <li><Link href="/contact" className="hover:text-gold">Contact</Link></li>
+              </ul>
+            </div>
+          </>
+        )}
       </div>
       <div className="border-t border-white/10 py-6 text-center text-xs text-thread/40 font-mono">
         © {new Date().getFullYear()} CK Design Embroidery, Shabiya 10, Abu Dhabi, UAE
