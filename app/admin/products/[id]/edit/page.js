@@ -4,7 +4,8 @@ import { getProductById } from '@/lib/products';
 import { updateProduct } from '@/app/admin/actions';
 
 export default async function EditProductPage({ params }) {
-  const product = await getProductById(params.id);
+  const { id } = await params;
+  const product = await getProductById(id);
   if (!product) notFound();
 
   const boundUpdate = updateProduct.bind(null, product.id);
