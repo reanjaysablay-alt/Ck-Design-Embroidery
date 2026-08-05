@@ -21,7 +21,7 @@ export default function ProductDetail({ product }) {
 
 return (
     <div className="max-w-4xl mx-auto px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
-      <div className="relative aspect-[4/5] bg-linen2 rounded-sm overflow-hidden">
+<div className="relative aspect-[4/5] bg-canvas2 rounded-sm overflow-hidden">
         <Image src={productImageSrc(product.image)} alt={product.name} fill sizes="(max-width: 768px) 90vw, 38vw" className="object-cover" />
       </div>
 
