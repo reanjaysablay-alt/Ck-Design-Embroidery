@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import StitchDivider from '@/components/StitchDivider';
 import ProductCard from '@/components/ProductCard';
+import RatingsSection from '@/components/RatingsSection';
 import { getProducts } from '@/lib/products';
 import { getSiteSettings } from '@/lib/settings';
 
@@ -128,6 +129,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Public ratings — live star score + full list. Works for signed-out
+          visitors too (the ratings table has a public read policy). */}
+      <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <RatingsSection />
+      </div>
     </>
   );
 }
