@@ -3,17 +3,24 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-// Public ratings feed — submitted through the Contact page's "Rate Us" tab.
-// Shows the aggregate star score, the breakdown by star count, and every
-// rating as a list. Updates in realtime via Supabase Realtime (the ratings
-// table is in the realtime publication, so a new rating appears instantly).
+// Public ratings feed — shown on the website only for signed-OUT visitors.
+// Displays the aggregate star score, the breakdown by star count, and every
+// rating as a list (no names, no comments). Updates in realtime via Supabase
+// Realtime (the ratings table is in the realtime publication, so a new
+// rating appears instantly).
 export default function RatingsSection() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [signedIn, setSignedIn] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
+
+    // Only render this feed for signed-out visitors.
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setSignedIn(!!data.user);
+    });
 
     async function load() {
       const { data } = await supabase
@@ -44,6 +51,9 @@ export default function RatingsSection() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Don't show the ratings feed to signed-in users.
+  if (signedIn) return null;
 
   const total = ratings.length;
   const average = total
@@ -98,11 +108,11 @@ export default function RatingsSection() {
             </div>
           </div>
 
-          {/* Full ratings list */}
+          {/* Full ratings list — stars only (no names, no comments) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ratings.map((r) => (
               <div key={r.id} className="bg-canvas2 border border-white/5 rounded-sm p-5">
-<div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center justify-between gap-3">
                   <div className="font-mono text-xs uppercase tracking-widest text-thread/50">
                     Verified customer
                   </div>
@@ -111,9 +121,6 @@ export default function RatingsSection() {
                     <span className="text-thread/20">{'★'.repeat(5 - r.rating)}</span>
                   </div>
                 </div>
-                {r.comment && (
-                  <p className="text-thread/70 text-sm leading-relaxed">{r.comment}</p>
-                )}
                 <div className="text-thread/40 text-xs font-mono mt-3">
                   {new Date(r.created_at).toLocaleDateString()}
                 </div>
@@ -125,4 +132,3 @@ export default function RatingsSection() {
     </section>
   );
 }
-
