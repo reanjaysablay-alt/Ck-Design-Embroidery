@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import RatingsSection from '@/components/RatingsSection';
 
 export default function ContactPage() {
   const [activeTab, setActiveTab] = useState('message'); // message | feedback | rating
@@ -198,13 +199,17 @@ export default function ContactPage() {
         )}
       </form>
 
-      <p className="text-thread/50 text-sm mt-10">
+<p className="text-thread/50 text-sm mt-10">
         Have a business order in mind?{' '}
         <Link href="/quote" className="text-gold hover:underline">
           Use the quote form
         </Link>{' '}
         instead — it gets you a faster response.
       </p>
+
+      {/* Public ratings feed — live star scores + full list, updated in
+          realtime as clients rate us. */}
+      <RatingsSection />
     </div>
   );
 }

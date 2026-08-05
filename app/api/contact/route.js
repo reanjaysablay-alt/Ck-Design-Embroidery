@@ -8,7 +8,12 @@ import { sendMail, newInquiryAdminEmail } from '@/lib/email';
 export async function POST(request) {
   const { name, email, phone, type, subject, message, rating } = await request.json();
 
-  if (!name || !email || !message) {
+  if (!name || !email) {
+    return NextResponse.json({ error: 'Name and email are required.' }, { status: 400 });
+  }
+
+  // The comment is optional for ratings — everything else needs a message.
+  if (type !== 'rating' && !message) {
     return NextResponse.json({ error: 'Name, email, and message are required.' }, { status: 400 });
   }
 
@@ -31,13 +36,29 @@ export async function POST(request) {
         phone: phone || null,
         type,
         subject: subject || null,
-        message,
+        message: message || '',
         rating: rating || null,
       })
       .select('*')
       .single();
 
     if (error) throw error;
+
+    // Mirror ratings into the public ratings table so they show up on the
+    // site in realtime. Public-safe fields only — no email/phone.
+    if (type === 'rating' && rating) {
+      const { error: ratingError } = await admin
+        .from('ratings')
+        .insert({
+          name,
+          rating,
+          comment: message || null,
+          source_id: inquiry.id,
+        });
+      if (ratingError) {
+        console.error('Public ratings insert failed:', ratingError.message);
+      }
+    }
 
     // Notify the admin by email.
     if (process.env.ADMIN_EMAILS) {

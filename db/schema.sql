@@ -244,3 +244,51 @@ create table if not exists public.contact_inquiries (
 -- go through the admin server action using the service role key, same
 -- reasoning as the products and orders tables above.
 
+-- Public ratings shown on the website (Contact page → "Rate Us" tab).
+-- Kept separate from contact_inquiries so only public-safe fields (name,
+-- stars, comment) are ever exposed. Updates are pushed to visitors in
+-- realtime via the Supabase Realtime publication below.
+create table if not exists public.ratings (
+  id bigint generated always as identity primary key,
+  name text not null,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text,
+  -- Ties a rating back to its contact_inquiries row so a re-run of this
+  -- schema can backfill cleanly without duplicating (and so deleting the
+  -- inquiry removes the public rating too).
+  source_id bigint unique references public.contact_inquiries(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ratings enable row level security;
+
+-- Anyone (including signed-out visitors) can read the public ratings feed.
+-- The website's anon client reads this to render the star summary + list.
+drop policy if exists "Public can view ratings" on public.ratings;
+create policy "Public can view ratings"
+  on public.ratings for select
+  using (true);
+
+-- No insert/update/delete policy for regular users — ratings are created
+-- by the contact API route using the service role key (bypasses RLS),
+-- same reasoning as the orders/inquiries tables above.
+
+create index if not exists ratings_created_at_idx on public.ratings(created_at desc);
+
+-- Turn on realtime for ratings so new ones appear live on the site
+-- without a refresh. Idempotent — safe to re-run.
+do $$
+begin
+  alter publication supabase_realtime add table public.ratings;
+exception
+  when duplicate_object then null;
+end $$;
+
+-- Backfill ratings that already exist in contact_inquiries so the public
+-- feed picks them up. Idempotent thanks to the unique source_id column.
+insert into public.ratings (name, rating, comment, source_id)
+select name, rating, message, id
+from public.contact_inquiries
+where type = 'rating' and rating is not null and rating between 1 and 5
+on conflict (source_id) do nothing;
+
