@@ -19,10 +19,10 @@ export default function ProductDetail({ product }) {
     setTimeout(() => setAdded(false), 1800);
   }
 
-  return (
-    <div className="max-w-6xl mx-auto px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-12">
+return (
+    <div className="max-w-4xl mx-auto px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
       <div className="relative aspect-[4/5] bg-linen2 rounded-sm overflow-hidden">
-        <Image src={productImageSrc(product.image)} alt={product.name} fill sizes="50vw" className="object-cover" />
+        <Image src={productImageSrc(product.image)} alt={product.name} fill sizes="(max-width: 768px) 90vw, 38vw" className="object-cover" />
       </div>
 
       <div>
