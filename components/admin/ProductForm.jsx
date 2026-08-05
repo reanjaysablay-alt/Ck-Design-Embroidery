@@ -1,6 +1,85 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
+
+// Automatic background removal for product images. Runs entirely in the
+// browser via @imgly/background-removal (WASM), so no external API key or
+// paid service is needed. When the admin picks an image, it is processed
+// to a transparent-background PNG before being submitted to the server
+// action, which then uploads the cleaned image to Supabase Storage.
 export default function ProductForm({ product, action, submitLabel }) {
+  const [processing, setProcessing] = useState(false);
+  const [processingError, setProcessingError] = useState('');
+  const [previewUrl, setPreviewUrl] = useState(product?.image || null);
+  const [processedFile, setProcessedFile] = useState(null);
+  const [originalName, setOriginalName] = useState('');
+
+  // File input that holds the processed (background-removed) image.
+  const processedInputRef = useRef(null);
+
+  // Keep an object URL for the live preview so the admin sees the result.
+  useEffect(() => {
+    if (!processedFile) return;
+    const url = URL.createObjectURL(processedFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [processedFile]);
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProcessing(true);
+    setProcessingError('');
+    setOriginalName(file.name);
+
+    // Show the original immediately while processing runs.
+    setPreviewUrl(URL.createObjectURL(file));
+
+    try {
+      // Load the background-removal library at runtime from a CDN instead
+      // of bundling it. The npm package pulls in onnxruntime-web which
+      // ships large WASM files that cause webpack to fail during `next
+      // build` ("failed to parse input file"). Importing from a full URL
+      // keeps webpack away from those assets entirely.
+      const { removeBackground } = await import(
+        'https://esm.sh/@imgly/background-removal@1.7.0'
+      );
+
+      const blob = await removeBackground(file, {
+        progress: (key, current, total) => {
+          // Optional: log progress for debugging.
+          // console.log(`Processing ${key}: ${current}/${total}`);
+        },
+      });
+
+      // Convert the resulting Blob into a File with a .png name so the
+      // server action can upload it.
+      const pngFile = new File([blob], `${file.name.replace(/\.[^/.]+$/, '')}-nobg.png`, {
+        type: 'image/png',
+      });
+      setProcessedFile(pngFile);
+
+      // Store the processed file in the hidden input so the form
+      // submission (server action) picks it up.
+      const dt = new DataTransfer();
+      dt.items.add(pngFile);
+      processedInputRef.current.files = dt.files;
+    } catch (err) {
+      console.error('Background removal failed:', err);
+      setProcessingError(
+        'Background removal could not run in this browser. The original image will be used instead.'
+      );
+      // Fall back to the original file so the admin can still add the product.
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      processedInputRef.current.files = dt.files;
+      setProcessedFile(file);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
   return (
     <form action={action} className="space-y-6 max-w-xl">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -22,10 +101,10 @@ export default function ProductForm({ product, action, submitLabel }) {
         <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
           Product Image
         </label>
-        {product?.image && (
+        {previewUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={product.image}
+            src={previewUrl}
             alt=""
             className="w-32 h-32 object-cover rounded-sm mb-3 border border-white/10 bg-white"
           />
@@ -33,17 +112,36 @@ export default function ProductForm({ product, action, submitLabel }) {
 
         <input
           type="file"
-          name="imageFile"
+          name="imageFileOriginal"
           accept="image/*"
           required={!product?.image}
+          onChange={handleFileChange}
           className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:bg-gold file:text-ink file:text-xs file:uppercase file:tracking-widest focus-visible:outline-gold"
         />
+
+        {/* Hidden input carrying the background-removed file to the server action */}
+        <input type="file" name="imageFile" ref={processedInputRef} className="hidden" />
 
         {product?.image && (
           <>
             <input type="hidden" name="existingImage" value={product.image} />
             <p className="text-thread/40 text-xs mt-2">Leave blank to keep the current image.</p>
           </>
+        )}
+
+        {processing && (
+          <p className="text-gold text-sm mt-3 flex items-center gap-2">
+            <span className="inline-block w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+            Removing background… (this may take a few seconds)
+          </p>
+        )}
+        {processingError && (
+          <p className="text-stitchRed text-sm mt-3">{processingError}</p>
+        )}
+        {!processing && processedFile && !processingError && (
+          <p className="text-green-400 text-sm mt-3">
+            ✓ Background removed — the image above will be uploaded.
+          </p>
         )}
       </div>
 
@@ -71,9 +169,10 @@ export default function ProductForm({ product, action, submitLabel }) {
 
       <button
         type="submit"
-        className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors"
+        disabled={processing}
+        className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
       >
-        {submitLabel}
+        {processing ? 'Processing image…' : submitLabel}
       </button>
     </form>
   );
@@ -94,4 +193,3 @@ function Field({ label, name, defaultValue, type = 'text', step, required }) {
     </div>
   );
 }
-</content>
