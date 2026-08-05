@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // Public ratings feed — shown on the website only for signed-OUT visitors.
-// Displays the aggregate star score, the breakdown by star count, and every
-// rating as a list (no names, no comments). Updates in realtime via Supabase
-// Realtime (the ratings table is in the realtime publication, so a new
-// rating appears instantly).
+// Displays ONLY the aggregate star score and the breakdown by star count.
+// Individual rating cards (names, comments, and dates) are never shown.
+// Updates in realtime via Supabase Realtime (the ratings table is in the
+// realtime publication, so a new rating instantly updates the totals).
 export default function RatingsSection() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +91,7 @@ export default function RatingsSection() {
                 {total} review{total === 1 ? '' : 's'}
               </div>
             </div>
-            <div className="flex-1 w-full max-w-sm">
+<div className="flex-1 w-full max-w-sm">
               {distribution.map(({ star, count }) => (
                 <div key={star} className="flex items-center gap-3 text-sm py-0.5">
                   <span className="text-thread/60 w-4 text-right">{star}</span>
@@ -106,26 +106,6 @@ export default function RatingsSection() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Full ratings list — stars only (no names, no comments) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ratings.map((r) => (
-              <div key={r.id} className="bg-canvas2 border border-white/5 rounded-sm p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="font-mono text-xs uppercase tracking-widest text-thread/50">
-                    Verified customer
-                  </div>
-                  <div className="text-gold text-sm">
-                    {'★'.repeat(r.rating)}
-                    <span className="text-thread/20">{'★'.repeat(5 - r.rating)}</span>
-                  </div>
-                </div>
-                <div className="text-thread/40 text-xs font-mono mt-3">
-                  {new Date(r.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
           </div>
         </>
       )}

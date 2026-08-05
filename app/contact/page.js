@@ -5,7 +5,7 @@ import Link from 'next/link';
 import RatingsSection from '@/components/RatingsSection';
 
 export default function ContactPage() {
-  const [activeTab, setActiveTab] = useState('message'); // message | feedback | rating
+const [activeTab, setActiveTab] = useState('feedback'); // feedback | rating
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [formData, setFormData] = useState({
     name: '',
@@ -51,8 +51,8 @@ export default function ContactPage() {
               ? 'We appreciate your rating — it helps us keep improving.'
               : "We'll get back to you as soon as possible."}
           </p>
-          <button
-            onClick={() => { setStatus('idle'); setActiveTab('message'); }}
+<button
+            onClick={() => { setStatus('idle'); setActiveTab('feedback'); }}
             className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-7 py-3.5 rounded-sm hover:bg-thread transition-colors"
           >
             Send another message
@@ -99,10 +99,9 @@ export default function ContactPage() {
         <p className="text-thread/50 text-sm">🕐 Studio hours: Sat–Thu, 9am–6pm</p>
       </div>
 
-      {/* Tabs: Message / Feedback / Rating */}
+      {/* Tabs: Feedback / Rating */}
       <div className="flex gap-3 mb-8 border-b border-white/10 pb-4">
         {[
-          { key: 'message', label: 'Send a Message' },
           { key: 'feedback', label: 'Feedback' },
           { key: 'rating', label: 'Rate Us ⭐' },
         ].map((tab) => (
@@ -161,18 +160,14 @@ export default function ContactPage() {
             />
           </div>
         ) : (
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">Message</label>
-            <textarea
+<div>
+            <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">Your feedback</label>
+<textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               rows={5}
               required
-              placeholder={
-                activeTab === 'feedback'
-                  ? 'Share your feedback, suggestions, or ideas with us...'
-                  : 'How can we help you?'
-              }
+              placeholder="Share your feedback, suggestions, or ideas with us..."
               className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
             />
           </div>
@@ -183,13 +178,11 @@ export default function ContactPage() {
           disabled={status === 'sending'}
           className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
         >
-          {status === 'sending'
+{status === 'sending'
             ? 'Sending…'
             : activeTab === 'rating'
               ? 'Submit Rating'
-              : activeTab === 'feedback'
-                ? 'Send Feedback'
-                : 'Send Message'}
+              : 'Send Feedback'}
         </button>
 
         {status === 'error' && (
