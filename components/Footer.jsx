@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import StitchDivider from './StitchDivider';
 import { getSiteSettings } from '@/lib/settings';
+import { isAdminEmail } from '@/lib/admin';
 
 export default async function Footer() {
   const settings = await getSiteSettings();
@@ -13,6 +14,12 @@ export default async function Footer() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Admins live in the dashboard — no storefront footer (brand block,
+  // shop/business/studio nav links) for them.
+  if (user && isAdminEmail(user.email)) {
+    return null;
+  }
 
   return (
     <footer className="bg-canvas mt-24">
