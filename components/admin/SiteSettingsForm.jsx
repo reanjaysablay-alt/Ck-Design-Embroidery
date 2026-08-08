@@ -32,20 +32,20 @@ export default function SiteSettingsForm({ settings, action }) {
     <form action={action} className="space-y-10 max-w-2xl">
       {/* Text settings */}
       <div>
-        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Site text</h2>
+        <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4">Site text</h2>
         <div className="space-y-4">
           <TextField label="Site title" name="site_title" defaultValue={settings?.site_title} />
           <TextField label="Tagline" name="site_tagline" defaultValue={settings?.site_tagline} />
           <TextField label="Hero heading" name="hero_heading" defaultValue={settings?.hero_heading} />
           <div>
-            <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+            <label className="block text-xs uppercase tracking-widest text-gray-600 mb-2">
               Hero subheading
             </label>
             <textarea
               name="hero_subheading"
               rows={3}
               defaultValue={settings?.hero_subheading}
-              className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold"
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-black focus-visible:outline-black"
             />
           </div>
         </div>
@@ -53,8 +53,8 @@ export default function SiteSettingsForm({ settings, action }) {
 
       {/* Font settings */}
       <div>
-        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Fonts</h2>
-        <p className="text-thread/50 text-sm mb-4">
+        <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4">Fonts</h2>
+        <p className="text-gray-600 text-sm mb-4">
           Choose the font for the site title, tagline, and hero heading.
         </p>
         <div className="space-y-4">
@@ -78,14 +78,14 @@ export default function SiteSettingsForm({ settings, action }) {
 
       {/* Color settings */}
       <div>
-        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Theme colors</h2>
-        <p className="text-thread/50 text-sm mb-4">
+        <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4">Theme colors</h2>
+        <p className="text-gray-600 text-sm mb-4">
           These apply across the whole site — background, text, accents.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {COLOR_FIELDS.map((f) => (
             <div key={f.key}>
-              <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+              <label className="block text-xs uppercase tracking-widest text-gray-600 mb-2">
                 {f.label}
               </label>
               <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function SiteSettingsForm({ settings, action }) {
                   type="color"
                   value={colorValues[f.key]}
                   onChange={(e) => setColor(f.key, e.target.value)}
-                  className="w-10 h-10 border border-white/15 rounded-sm bg-canvas2 cursor-pointer"
+                  className="w-10 h-10 border border-gray-300 rounded-md bg-white cursor-pointer"
                   aria-label={f.label}
                 />
                 <input
@@ -101,7 +101,7 @@ export default function SiteSettingsForm({ settings, action }) {
                   name={f.key}
                   value={colorValues[f.key]}
                   onChange={(e) => setColor(f.key, e.target.value)}
-                  className="flex-1 bg-canvas2 border border-white/15 rounded-sm px-4 py-2 text-thread font-mono text-sm focus-visible:outline-gold"
+                  className="flex-1 bg-white border border-gray-300 rounded-md px-4 py-2 text-black font-mono text-sm focus-visible:outline-black"
                 />
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function SiteSettingsForm({ settings, action }) {
       <div>
         <button
           type="submit"
-          className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors"
+          className="bg-black text-white font-medium uppercase tracking-widest text-sm px-8 py-3.5 rounded-md hover:bg-gray-800 transition-colors"
         >
           Save Settings
         </button>
@@ -124,13 +124,13 @@ export default function SiteSettingsForm({ settings, action }) {
 function TextField({ label, name, defaultValue }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+      <label className="block text-xs uppercase tracking-widest text-gray-600 mb-2">
         {label}
       </label>
       <input
         name={name}
         defaultValue={defaultValue}
-        className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold"
+        className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-black focus-visible:outline-black"
       />
     </div>
   );
@@ -141,14 +141,14 @@ function TextField({ label, name, defaultValue }) {
 function FontField({ label, name, defaultValue }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+      <label className="block text-xs uppercase tracking-widest text-gray-600 mb-2">
         {label}
       </label>
       <div className="relative">
         <select
           name={name}
           defaultValue={defaultValue}
-          className="w-full appearance-none bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold cursor-pointer"
+          className="w-full appearance-none bg-white border border-gray-300 rounded-md px-4 py-3 text-black focus-visible:outline-black cursor-pointer"
         >
           {FONT_OPTIONS.map((font) => (
             <option key={font.key} value={font.key}>
@@ -156,11 +156,11 @@ function FontField({ label, name, defaultValue }) {
             </option>
           ))}
         </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-thread/50">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
           ▼
         </span>
       </div>
-      <p className="text-thread/40 text-xs mt-1.5" style={{ fontFamily: `var(${getDefaultFontVar(defaultValue)})` }}>
+      <p className="text-gray-500 text-xs mt-1.5" style={{ fontFamily: `var(${getDefaultFontVar(defaultValue)})` }}>
         Preview: The quick brown fox jumps over the lazy dog.
       </p>
     </div>

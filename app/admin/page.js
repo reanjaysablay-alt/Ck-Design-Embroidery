@@ -20,28 +20,28 @@ export default async function AdminHome() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-thread mb-8">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <h1 className="text-2xl font-semibold text-black mb-6">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/admin/orders"
-          className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
+          className="bg-gray-50 border border-gray-200 rounded-md p-6 hover:border-black transition-colors"
         >
-          <div className="font-mono text-4xl text-gold mb-2">{pendingCount ?? 0}</div>
-          <div className="text-thread/70">Orders awaiting review</div>
+          <div className="text-3xl font-bold text-black mb-1">{pendingCount ?? 0}</div>
+          <div className="text-sm text-gray-600">Orders awaiting review</div>
         </Link>
         <Link
           href="/admin/inquiries"
-          className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
+          className="bg-gray-50 border border-gray-200 rounded-md p-6 hover:border-black transition-colors"
         >
-          <div className="font-mono text-4xl text-gold mb-2">{unreadInquiries ?? 0}</div>
-          <div className="text-thread/70">Unread inquiries</div>
+          <div className="text-3xl font-bold text-black mb-1">{unreadInquiries ?? 0}</div>
+          <div className="text-sm text-gray-600">Unread inquiries</div>
         </Link>
         <Link
           href="/admin/products"
-          className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
+          className="bg-gray-50 border border-gray-200 rounded-md p-6 hover:border-black transition-colors"
         >
-          <div className="font-mono text-4xl text-gold mb-2">{productCount ?? 0}</div>
-          <div className="text-thread/70">Products in the shop</div>
+          <div className="text-3xl font-bold text-black mb-1">{productCount ?? 0}</div>
+          <div className="text-sm text-gray-600">Products in the shop</div>
         </Link>
       </div>
     </div>

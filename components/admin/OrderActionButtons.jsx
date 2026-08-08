@@ -6,7 +6,7 @@ export function AcceptButton({ id, action }) {
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
-        className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
+        className="bg-black text-white font-medium uppercase tracking-widest text-xs px-5 py-2.5 rounded-md hover:bg-gray-800 transition-colors"
       >
         Accept
       </button>
@@ -27,7 +27,7 @@ export function DeclineButton({ id, action }) {
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
-        className="border border-stitchRed text-stitchRed font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-stitchRed hover:text-thread transition-colors"
+        className="border border-red-600 text-red-600 font-medium uppercase tracking-widest text-xs px-5 py-2.5 rounded-md hover:bg-red-600 hover:text-white transition-colors"
       >
         Decline
       </button>
