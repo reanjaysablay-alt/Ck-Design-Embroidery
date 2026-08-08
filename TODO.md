@@ -1,13 +1,9 @@
-# Stitchhouse — Admin font selection
+# Stitchhouse — Remove OTP from Login
 
 ## Steps
+- [x] 1. Rewrite `handleLogin` in `app/login/page.js` to sign in directly (no OTP)
+- [x] 2. Remove login 2FA state (loginStep, loginCode, skipOtp) and OTP UI
+- [x] 3. Remove unused login-send-code / login-verify-code API routes
+- [x] 4. Remove dead sendLoginOtp / verifyLoginOtp from lib/otp.js
+- [x] 5. Verify no remaining references (clean)
 
-- [ ] 1. Create lib/fonts.js (font options + CSS variable mapping)
-- [ ] 2. Add `title_font`, `tagline_font`, `heading_font` defaults to lib/settings.js
-- [ ] 3. Load Google Fonts + inject font CSS variables in app/layout.js
-- [ ] 4. Add font utilities to tailwind.config.js
-- [ ] 5. Add font pickers to components/admin/SiteSettingsForm.jsx
-- [ ] 6. Read/save font settings in app/admin/actions.js
-- [ ] 7. Add font seed rows to db/schema.sql
-- [ ] 8. Apply fonts to site title (Header, AdminHeader, Footer), tagline & hero (app/page.js)
-- [ ] 9. Verify build

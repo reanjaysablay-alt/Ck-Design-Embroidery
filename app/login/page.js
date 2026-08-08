@@ -30,103 +30,33 @@ function LoginForm() {
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
 
-  // Login state — 2-step: password, then email code.
-  const [loginStep, setLoginStep] = useState('password'); // 'password' | 'otp'
+  // Login state — simple email + password. If the account was just
+  // created (right after a password reset), the user already proved
+  // ownership of the email, so no extra step.
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginCode, setLoginCode] = useState('');
-  // When true (set right after a password reset), the next login skips the
-  // email-code step — the user already proved ownership of the email by
-  // entering the reset code, so we log them straight in.
-  const [skipOtp, setSkipOtp] = useState(false);
 
   // Forgot-password state
   const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [resetPassword, setResetPassword] = useState('');
 
-  // Step 1 of login: verify the password, then send a code to the email.
-  // Unless skipOtp is set (right after a password reset), in which case we
-  // log straight in — the user already proved ownership of the email.
+  // Sign in directly with email + password.
   async function handleLogin(e) {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      if (skipOtp) {
-        const supabase = createClient();
-        const { error } = await supabase.auth.signInWithPassword({
-          email: loginEmail.trim().toLowerCase(),
-          password: loginPassword,
-        });
-        if (error) throw new Error(error.message || 'Could not log in. Please try again.');
-        setSkipOtp(false);
-        router.push(next);
-        router.refresh();
-        return;
-      }
-
-      const res = await fetch('/api/auth/login-send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginEmail.trim().toLowerCase(),
-          password: loginPassword,
-        }),
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim().toLowerCase(),
+        password: loginPassword,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not verify your credentials.');
-      setLoginStep('otp');
-    } catch (err) {
-      setError(err.message || 'Could not log in. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Resend the login code (e.g. after it expires or arrives late).
-  async function handleSendLoginCode() {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/auth/login-send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginEmail.trim().toLowerCase(),
-          password: loginPassword,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not send a new code.');
-      setSuccess('A new code has been sent to your email.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Step 2 of login: enter the emailed code to complete sign-in.
-  async function handleVerifyLoginCode() {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/auth/login-verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginEmail.trim().toLowerCase(),
-          code: loginCode,
-          password: loginPassword,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not verify the code.');
+      if (error) throw new Error(error.message || 'Could not log in. Please try again.');
       router.push(next);
       router.refresh();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Could not log in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -247,16 +177,11 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not reset password.');
-      // Back to log in with a success message. The user already proved
-      // ownership of the email via the reset code, so the next login skips
-      // the email-code step.
+      // Back to log in with a success message.
       setMode('login');
       setStep('email');
-      setLoginStep('password');
-      setSkipOtp(true);
       setLoginEmail(resetEmail);
       setLoginPassword('');
-      setLoginCode('');
       setResetEmail('');
       setResetCode('');
       setResetPassword('');
@@ -268,132 +193,100 @@ function LoginForm() {
     }
   }
 
-return (
+  return (
     <div className="max-w-sm mx-auto px-5 py-24">
       <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">Account</p>
 
-        {/* Tabs: Log in / Create account */}
-        {mode !== 'reset' && (
-          <div className="flex gap-3 mb-8 border-b border-white/10 pb-4">
-            <button
-              onClick={() => { setMode('login'); setStep('email'); setLoginStep('password'); setSkipOtp(false); setError(''); setSuccess(''); }}
-              className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
-                mode === 'login' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
-              }`}
-            >
-              Log in
-            </button>
-            <button
-              onClick={() => { setMode('signup'); setStep('email'); setSkipOtp(false); setError(''); setSuccess(''); }}
-              className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
-                mode === 'signup' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
-              }`}
-            >
-              Create account
-            </button>
-          </div>
-        )}
+      {/* Tabs: Log in / Create account */}
+      {mode !== 'reset' && (
+        <div className="flex gap-3 mb-8 border-b border-white/10 pb-4">
+          <button
+            onClick={() => { setMode('login'); setStep('email'); setError(''); setSuccess(''); }}
+            className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
+              mode === 'login' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
+            }`}
+          >
+            Log in
+          </button>
+          <button
+            onClick={() => { setMode('signup'); setStep('email'); setError(''); setSuccess(''); }}
+            className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
+              mode === 'signup' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
+            }`}
+          >
+            Create account
+          </button>
+        </div>
+      )}
 
-        {authError && (
-          <p className="text-stitchRed text-sm mb-6">
-            Something went wrong — please try again.
-          </p>
-        )}
+      {authError && (
+        <p className="text-stitchRed text-sm mb-6">
+          Something went wrong — please try again.
+        </p>
+      )}
 
-        {error && <p className="text-stitchRed text-sm mb-6">{error}</p>}
+      {error && <p className="text-stitchRed text-sm mb-6">{error}</p>}
 
-        {success && <p className="text-green-400 text-sm mb-6">{success}</p>}
+      {success && <p className="text-green-400 text-sm mb-6">{success}</p>}
 
-        {mode === 'login' && loginStep === 'password' && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Field label="Email" type="email" value={loginEmail} onChange={setLoginEmail} required />
-            <Field label="Password" type="password" value={loginPassword} onChange={setLoginPassword} required />
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={() => { setMode('reset'); setStep('email'); setSkipOtp(false); setError(''); setSuccess(''); }}
-                className="text-gold text-xs uppercase tracking-widest hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
+      {mode === 'login' && (
+        <form onSubmit={handleLogin} className="space-y-4">
+          <Field label="Email" type="email" value={loginEmail} onChange={setLoginEmail} required />
+          <Field label="Password" type="password" value={loginPassword} onChange={setLoginPassword} required />
+          <div className="text-right">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-6 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
+              type="button"
+              onClick={() => { setMode('reset'); setStep('email'); setError(''); setSuccess(''); }}
+              className="text-gold text-xs uppercase tracking-widest hover:underline"
             >
-              {loading ? 'Sending code…' : 'Log in'}
-            </button>
-          </form>
-        )}
-
-        {mode === 'login' && loginStep === 'otp' && (
-          <div className="space-y-5">
-            <div>
-              <h1 className="font-display text-3xl text-thread mb-2">Check your email</h1>
-              <p className="text-thread/60 text-sm leading-relaxed">
-                We sent a 6-digit code to <span className="text-gold">{loginEmail}</span>. Enter it below to confirm it&apos;s you.
-              </p>
-            </div>
-            <Field label="Verification code" value={loginCode} onChange={setLoginCode} placeholder="000000" />
-            <button
-              onClick={handleVerifyLoginCode}
-              disabled={loading}
-              className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-6 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
-            >
-              {loading ? 'Verifying…' : 'Verify & log in'}
-            </button>
-            <button
-              onClick={handleSendLoginCode}
-              disabled={loading}
-              className="w-full text-thread/60 text-xs uppercase tracking-widest hover:text-thread"
-            >
-              Resend code
-            </button>
-            <button
-              onClick={() => { setLoginStep('password'); setError(''); setSuccess(''); }}
-              className="text-thread/40 text-xs uppercase tracking-widest hover:text-thread"
-            >
-              ← Back to log in
+              Forgot password?
             </button>
           </div>
-        )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-6 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
+          >
+            {loading ? 'Logging in…' : 'Log in'}
+          </button>
+        </form>
+      )}
 
-        {mode === 'signup' && (
-          <SignupForm
-            step={step}
-            email={email}
-            setEmail={setEmail}
-            nickname={nickname}
-            setNickname={setNickname}
-            code={code}
-            setCode={setCode}
-            password={password}
-            setPassword={setPassword}
-            loading={loading}
-            onSendCode={handleSendCode}
-            onVerifyCode={handleVerifyCode}
-            onCreateAccount={handleCreateAccount}
-            onBack={() => { setStep('email'); setError(''); }}
-          />
-        )}
+      {mode === 'signup' && (
+        <SignupForm
+          step={step}
+          email={email}
+          setEmail={setEmail}
+          nickname={nickname}
+          setNickname={setNickname}
+          code={code}
+          setCode={setCode}
+          password={password}
+          setPassword={setPassword}
+          loading={loading}
+          onSendCode={handleSendCode}
+          onVerifyCode={handleVerifyCode}
+          onCreateAccount={handleCreateAccount}
+          onBack={() => { setStep('email'); setError(''); }}
+        />
+      )}
 
-        {mode === 'reset' && (
-          <ResetForm
-            step={step}
-            email={resetEmail}
-            setEmail={setResetEmail}
-            code={resetCode}
-            setCode={setResetCode}
-            password={resetPassword}
-            setPassword={setResetPassword}
-            loading={loading}
-            onSendCode={handleSendResetCode}
-            onVerifyCode={handleVerifyResetCode}
-            onResetPassword={handleResetPassword}
-            onBack={() => { setMode('login'); setStep('email'); setLoginStep('password'); setSkipOtp(false); setError(''); setSuccess(''); }}
-          />
-        )}
+      {mode === 'reset' && (
+        <ResetForm
+          step={step}
+          email={resetEmail}
+          setEmail={setResetEmail}
+          code={resetCode}
+          setCode={setResetCode}
+          password={resetPassword}
+          setPassword={setResetPassword}
+          loading={loading}
+          onSendCode={handleSendResetCode}
+          onVerifyCode={handleVerifyResetCode}
+          onResetPassword={handleResetPassword}
+          onBack={() => { setMode('login'); setStep('email'); setError(''); setSuccess(''); }}
+        />
+      )}
     </div>
   );
 }
