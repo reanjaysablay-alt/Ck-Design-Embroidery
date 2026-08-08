@@ -2,16 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
-import AdminSignOutButton from '@/components/admin/AdminSignOutButton';
 
-export const metadata = { title: 'Admin' };
-
-const NAV = [
-  { href: '/admin/products', label: 'Products' },
-  { href: '/admin/orders', label: 'Orders' },
-  { href: '/admin/inquiries', label: 'Inquiries' },
-  { href: '/admin/settings', label: 'Settings' },
-];
+export const metadata = { title: 'Admin — Stitchhouse' };
 
 export default async function AdminLayout({ children }) {
   const supabase = await createClient();
@@ -23,30 +15,24 @@ export default async function AdminLayout({ children }) {
   if (!isAdminEmail(user.email)) redirect('/');
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 h-14 flex items-center gap-6">
-          <Link href="/admin" className="font-semibold text-black">
+    <div className="min-h-screen bg-canvas">
+      <div className="border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 h-14 flex items-center gap-8">
+          <Link href="/admin" className="font-display italic text-lg text-thread">
             Admin
           </Link>
-          <nav className="flex items-center gap-5">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-black/60 hover:text-black transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+<nav className="flex gap-6 text-sm uppercase tracking-widest">
+            <Link href="/admin/products" className="text-thread/70 hover:text-gold">Products</Link>
+            <Link href="/admin/orders" className="text-thread/70 hover:text-gold">Orders</Link>
+            <Link href="/admin/inquiries" className="text-thread/70 hover:text-gold">Inquiries</Link>
+            <Link href="/admin/settings" className="text-thread/70 hover:text-gold">Settings</Link>
           </nav>
-          <div className="ml-auto">
-            <AdminSignOutButton />
-          </div>
+          <Link href="/" className="ml-auto text-thread/40 text-xs hover:text-thread">
+            ← Back to site
+          </Link>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">{children}</div>
+      <div className="max-w-6xl mx-auto px-5 md:px-8 py-10">{children}</div>
     </div>
   );
 }
-

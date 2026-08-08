@@ -17,7 +17,7 @@ export function MarkInquiryReadButton({ id }) {
   return (
     <button
       onClick={handleMarkRead}
-      className="text-black text-xs uppercase tracking-widest hover:underline"
+      className="text-gold text-xs uppercase tracking-widest hover:underline"
     >
       Mark as read
     </button>
@@ -40,7 +40,7 @@ export function DeleteInquiryButton({ id }) {
   return (
     <button
       onClick={handleDelete}
-      className="text-red-600 text-xs uppercase tracking-widest hover:underline"
+      className="text-stitchRed text-xs uppercase tracking-widest hover:underline"
     >
       Delete
     </button>
