@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { isAdminEmail } from '@/lib/admin';
+import { canAccessAdmin } from '@/lib/admin';
 
-async function requireAdmin() {
+// Staff can triage inquiries too (mark read / delete) — this is
+// routine day-to-day work, not a full-admin-only action.
+async function requireStaffOrAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminEmail(user.email)) {
+  if (!user || !canAccessAdmin(user.email)) {
     throw new Error('Not authorized');
   }
   return user;
@@ -17,7 +19,7 @@ async function requireAdmin() {
 // Mark an inquiry as read.
 export async function PATCH(request) {
   try {
-    await requireAdmin();
+    await requireStaffOrAdmin();
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
@@ -41,7 +43,7 @@ export async function PATCH(request) {
 // Delete an inquiry.
 export async function DELETE(request) {
   try {
-    await requireAdmin();
+    await requireStaffOrAdmin();
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 

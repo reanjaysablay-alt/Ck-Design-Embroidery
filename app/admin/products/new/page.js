@@ -1,7 +1,16 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 import ProductForm from '@/components/admin/ProductForm';
 import { createProduct } from '@/app/admin/actions';
 
 export default async function NewProductPage({ searchParams }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminEmail(user?.email)) redirect('/admin/orders');
+
   const params = await searchParams;
   const error = params?.error;
 

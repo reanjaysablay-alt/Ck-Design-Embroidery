@@ -1,9 +1,20 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 import { getProducts } from '@/lib/products';
 import { deleteProduct } from '@/app/admin/actions';
 import DeleteProductButton from '@/components/admin/DeleteProductButton';
 
 export default async function AdminProductsPage() {
+  // Product management is admin-only — staff can't reach this even by
+  // typing the URL directly (the nav link is already hidden for them).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminEmail(user?.email)) redirect('/admin/orders');
+
   const products = await getProducts();
 
   return (

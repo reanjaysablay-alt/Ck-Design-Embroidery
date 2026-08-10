@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 
 export default async function AdminHome() {
   const admin = createAdminClient();
@@ -14,9 +15,14 @@ export default async function AdminHome() {
     .eq('read', false);
 
   const supabase = await createClient();
-  const { count: productCount } = await supabase
-    .from('products')
-    .select('*', { count: 'exact', head: true });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAdmin = isAdminEmail(user?.email);
+
+  const { count: productCount } = isAdmin
+    ? await supabase.from('products').select('*', { count: 'exact', head: true })
+    : { count: null };
 
   return (
     <div>
@@ -36,13 +42,15 @@ export default async function AdminHome() {
           <div className="font-mono text-4xl text-gold mb-2">{unreadInquiries ?? 0}</div>
           <div className="text-thread/70">Unread inquiries</div>
         </Link>
-        <Link
-          href="/admin/products"
-          className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
-        >
-          <div className="font-mono text-4xl text-gold mb-2">{productCount ?? 0}</div>
-          <div className="text-thread/70">Products in the shop</div>
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/admin/products"
+            className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
+          >
+            <div className="font-mono text-4xl text-gold mb-2">{productCount ?? 0}</div>
+            <div className="text-thread/70">Products in the shop</div>
+          </Link>
+        )}
       </div>
     </div>
   );

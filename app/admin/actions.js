@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdminEmail, canAccessAdmin } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
@@ -15,7 +15,8 @@ import {
 
 // Every action re-checks admin status server-side against the current
 // session — never trust that only admins can reach this file just
-// because the UI hides the buttons from everyone else.
+// because the UI hides the buttons from everyone else. Product and
+// site-settings changes are admin-only (full access required).
 async function requireAdmin() {
   const supabase = await createClient();
   const {
@@ -23,6 +24,20 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
 
   if (!user || !isAdminEmail(user.email)) {
+    throw new Error('Not authorized');
+  }
+  return user;
+}
+
+// Day-to-day order/inquiry actions — allowed for staff as well as full
+// admins, since processing orders is routine operational work.
+async function requireStaffOrAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !canAccessAdmin(user.email)) {
     throw new Error('Not authorized');
   }
   return user;
@@ -137,7 +152,7 @@ color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
 }
 
 export async function acceptOrder(formData) {
-  await requireAdmin();
+  await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -177,7 +192,7 @@ export async function acceptOrder(formData) {
 }
 
 export async function declineOrder(formData) {
-  await requireAdmin();
+  await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
