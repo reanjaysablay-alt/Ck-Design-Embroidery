@@ -28,8 +28,14 @@ export function CartProvider({ children }) {
     const qty = options.qty || 1;
     const type = options.type === 'custom' ? 'custom' : 'plain';
     const note = (options.note || '').trim();
+    // The uploaded artwork's storage path + original filename (see
+    // /api/upload/design). Only ever set for custom items. Kept as a
+    // path, not a File, since the cart is persisted to localStorage.
+    const design = options.design?.path
+      ? { path: options.design.path, name: options.design.name || options.design.path }
+      : null;
     setItems((prev) => {
-      const key = `${product.slug}-${options.size || 'onesize'}-${type}-${note}`;
+      const key = `${product.slug}-${options.size || 'onesize'}-${type}-${note}-${design?.path || ''}`;
       const existing = prev.find((i) => i.key === key);
       if (existing) {
         return prev.map((i) =>
@@ -47,6 +53,7 @@ export function CartProvider({ children }) {
           size: options.size || null,
           type,
           note,
+          design,
           qty,
         },
       ];

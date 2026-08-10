@@ -48,4 +48,3 @@ export default function AdminHeader({ user, siteTitle = 'Stitchhouse' }) {
     </header>
   );
 }
-

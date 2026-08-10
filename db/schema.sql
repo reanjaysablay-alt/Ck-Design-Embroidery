@@ -224,6 +224,19 @@ create policy "Public can view product images"
   on storage.objects for select
   using (bucket_id = 'product-images');
 
+-- Storage bucket for customer-uploaded design/artwork files, attached
+-- to custom orders from the product page's "Custom" flow. Private,
+-- unlike product-images — these are customer files, not public product
+-- photos. No select/insert/update/delete policy is defined on purpose:
+-- uploads go through /api/upload/design (which checks the request is
+-- from a signed-in user, then writes with the service role key), and
+-- admin reads go through signed URLs generated with the service role
+-- key (see lib/upload.js getDesignDownloadUrl). Regular users can never
+-- read this bucket directly, no matter what the client sends.
+insert into storage.buckets (id, name, public)
+values ('design-uploads', 'design-uploads', false)
+on conflict (id) do nothing;
+
 -- Contact inquiries, feedback, and ratings from customers.
 -- Admin reads these via the service role key; no RLS policies needed
 -- for reads since admin server actions bypass RLS entirely.

@@ -65,8 +65,13 @@ export async function POST(request) {
     if (dbError) throw dbError;
 
     if (process.env.ADMIN_EMAILS) {
-      const { subject, html } = newOrderAdminEmail(order);
-      await sendMail({ to: process.env.ADMIN_EMAILS.split(',')[0].trim(), subject, html });
+      const { subject, html, attachments } = await newOrderAdminEmail(order);
+      await sendMail({
+        to: process.env.ADMIN_EMAILS.split(',')[0].trim(),
+        subject,
+        html,
+        attachments,
+      });
     }
 
     return NextResponse.json({ orderId: order.id });

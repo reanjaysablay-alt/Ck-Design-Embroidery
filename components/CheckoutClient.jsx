@@ -239,6 +239,14 @@ export default function CheckoutClient({ user }) {
                     {item.note}
                   </div>
                 )}
+                {item.type === 'custom' && item.design && (
+                  <div className="text-thread/50 text-xs mt-1 leading-relaxed">
+                    <span className="font-mono uppercase tracking-widest text-thread/40">
+                      Design file:
+                    </span>{' '}
+                    {item.design.name}
+                  </div>
+                )}
               </div>
               <span className="font-mono text-thread flex-shrink-0">
                 ${(item.price * item.qty).toFixed(2)}

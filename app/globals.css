@@ -64,3 +64,125 @@ select:focus-visible {
   .stitch-draw { animation: none; stroke-dashoffset: 0; }
   .needle-travel { animation: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Auth page animations — professional entrance, focus, and loading effects
+   --------------------------------------------------------------------------- */
+
+/* Fade in + slide up (staggered card entrance) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Simple fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+/* Slide in from the right (step transitions) */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Slide in from the left */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slideInLeft 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Gold shimmer sweep across buttons */
+@keyframes shimmer {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%) skewX(-20deg); }
+}
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: shimmer 2.8s ease-in-out infinite;
+}
+
+/* Pulsing gold glow around the auth card */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(212, 165, 55, 0.15), 0 0 40px rgba(212, 165, 55, 0.06); }
+  50%      { box-shadow: 0 0 0 1px rgba(212, 165, 55, 0.35), 0 0 70px rgba(212, 165, 55, 0.14); }
+}
+.animate-pulse-glow {
+  animation: pulseGlow 3.5s ease-in-out infinite;
+}
+
+/* Floating background particles / threads */
+@keyframes floatUp {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+}
+.animate-float-up {
+  animation: floatUp linear infinite;
+}
+
+/* Slow rotating conic gradient for the login backdrop */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* Soft breathing scale for the logo mark */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Step indicator pop-in */
+@keyframes stepPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-step-pop {
+  animation: stepPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Input focus underline grow */
+.auth-input {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.auth-input:focus {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(212, 165, 55, 0.12);
+  background-color: rgba(212, 165, 55, 0.03);
+}
+
+

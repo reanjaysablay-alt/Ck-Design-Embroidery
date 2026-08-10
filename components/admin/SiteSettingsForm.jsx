@@ -173,4 +173,3 @@ function getDefaultFontVar(key) {
   const found = FONT_OPTIONS.find((f) => f.key === key);
   return found ? found.variable : FONT_OPTIONS[0].variable;
 }
-

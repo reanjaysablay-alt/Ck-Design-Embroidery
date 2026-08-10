@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }) {
           <Link href="/admin" className="font-display italic text-lg text-thread">
             Admin
           </Link>
-<nav className="flex gap-6 text-sm uppercase tracking-widest">
+          <nav className="flex gap-6 text-sm uppercase tracking-widest">
             <Link href="/admin/products" className="text-thread/70 hover:text-gold">Products</Link>
             <Link href="/admin/orders" className="text-thread/70 hover:text-gold">Orders</Link>
             <Link href="/admin/inquiries" className="text-thread/70 hover:text-gold">Inquiries</Link>
@@ -36,3 +36,4 @@ export default async function AdminLayout({ children }) {
     </div>
   );
 }
+

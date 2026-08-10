@@ -91,3 +91,4 @@ function InquiryTypeBadge({ type }) {
     </span>
   );
 }
+

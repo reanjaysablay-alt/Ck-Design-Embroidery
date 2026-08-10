@@ -85,6 +85,14 @@ export default async function AccountPage() {
                       {item.note}
                     </div>
                   )}
+                  {item.type === 'custom' && item.design?.name && (
+                    <div className="text-thread/40 mt-1">
+                      <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
+                        Design file:
+                      </span>{' '}
+                      {item.design.name} ✓ received
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

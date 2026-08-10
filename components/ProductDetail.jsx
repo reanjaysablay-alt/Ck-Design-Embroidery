@@ -10,12 +10,40 @@ export default function ProductDetail({ product }) {
   const [size, setSize] = useState(product.sizes ? product.sizes[0] : null);
   const [type, setType] = useState('plain'); // 'plain' | 'custom'
   const [note, setNote] = useState('');
+  const [design, setDesign] = useState(null); // { path, name } once uploaded
+  const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | done | error
+  const [uploadError, setUploadError] = useState('');
   const [added, setAdded] = useState(false);
 
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadStatus('uploading');
+    setUploadError('');
+    setDesign(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload/design', { method: 'POST', body: formData });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Upload failed');
+      setDesign({ path: result.path, name: result.name });
+      setUploadStatus('done');
+    } catch (err) {
+      setUploadStatus('error');
+      setUploadError(err.message || 'Upload failed — please try again.');
+    }
+  }
+
   function handleAdd() {
-    addItem(product, { size, type, note: note.trim(), qty: 1 });
+    addItem(product, { size, type, note: note.trim(), design, qty: 1 });
     setAdded(true);
     setNote('');
+    setDesign(null);
+    setUploadStatus('idle');
+    setUploadError('');
     setTimeout(() => setAdded(false), 1800);
   }
 
@@ -101,17 +129,40 @@ return (
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={4}
-              placeholder="Tell us about your design — logo, text, colors, placement, or anything else we should know. Or upload your artwork after you order."
+              placeholder="Tell us about your design — logo, text, colors, placement, or anything else we should know."
               className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
             />
+
+            <label className="block text-thread/40 uppercase tracking-widest text-xs mb-2 mt-5">
+              Upload your artwork (optional)
+            </label>
+            <input
+              type="file"
+              accept="image/*,.pdf,.ai,.eps,.svg,.psd"
+              onChange={handleFileChange}
+              className="w-full text-sm text-thread/70 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border file:border-white/15 file:bg-canvas2 file:text-thread file:text-xs file:uppercase file:tracking-widest file:cursor-pointer file:hover:border-white/40"
+            />
+            {uploadStatus === 'uploading' && (
+              <p className="text-thread/40 text-xs mt-2">Uploading…</p>
+            )}
+            {uploadStatus === 'done' && design && (
+              <p className="text-gold text-xs mt-2">✓ {design.name} attached</p>
+            )}
+            {uploadStatus === 'error' && (
+              <p className="text-stitchRed text-xs mt-2">{uploadError}</p>
+            )}
+            <p className="text-thread/30 text-xs mt-2">
+              Or skip this and email your artwork later — we'll follow up.
+            </p>
           </div>
         )}
 
         <button
           onClick={handleAdd}
-          className="w-full md:w-auto bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors"
+          disabled={uploadStatus === 'uploading'}
+          className="w-full md:w-auto bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
         >
-          {added ? 'Added to Cart ✓' : 'Add to Cart'}
+          {added ? 'Added to Cart ✓' : uploadStatus === 'uploading' ? 'Uploading…' : 'Add to Cart'}
         </button>
       </div>
     </div>

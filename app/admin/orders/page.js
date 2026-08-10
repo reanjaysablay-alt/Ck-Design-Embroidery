@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import { getDesignDownloadUrl } from '@/lib/upload';
 import { acceptOrder, declineOrder } from '@/app/admin/actions';
 import { AcceptButton, DeclineButton } from '@/components/admin/OrderActionButtons';
 
@@ -8,6 +9,26 @@ export default async function AdminOrdersPage() {
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false });
+
+  // Pre-generate signed download URLs for any customer-uploaded design
+  // files so they render as ready-to-click links below, rather than
+  // signing one on every render.
+  const designUrls = {};
+  if (orders?.length) {
+    await Promise.all(
+      orders.flatMap((order) =>
+        (order.items || [])
+          .filter((item) => item.type === 'custom' && item.design?.path)
+          .map(async (item) => {
+            try {
+              designUrls[item.design.path] = await getDesignDownloadUrl(item.design.path);
+            } catch (err) {
+              console.error('Could not sign design URL:', err.message);
+            }
+          })
+      )
+    );
+  }
 
   return (
     <div>
@@ -65,6 +86,25 @@ export default async function AdminOrdersPage() {
                       {item.note}
                     </div>
                   )}
+                  {item.type === 'custom' && item.design?.path && (
+                    <div className="mt-1">
+                      <span className="font-mono text-xs uppercase tracking-widest text-thread/40 mr-1">
+                        Design file:
+                      </span>
+                      {designUrls[item.design.path] ? (
+                        <a
+                          href={designUrls[item.design.path]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gold text-xs underline hover:text-thread"
+                        >
+                          Download {item.design.name}
+                        </a>
+                      ) : (
+                        <span className="text-thread/40 text-xs">unavailable</span>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -97,3 +137,4 @@ function StatusBadge({ status }) {
     </span>
   );
 }
+
