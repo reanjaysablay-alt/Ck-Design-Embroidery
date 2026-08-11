@@ -55,6 +55,23 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
             size, rather than a separate desktop row, to avoid the nav
             crowding and wrapping that happened at in-between widths. */}
         <div className="flex items-center gap-4">
+          {user && <NotificationsBell userId={user.id} />}
+
+          {user && (
+            <Link href="/cart" className="relative flex items-center justify-center text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
+                <circle cx="17.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
+              </svg>
+              {count > 0 && (
+                <span className="absolute -top-2 -right-2 bg-stitchRed text-thread text-[11px] font-mono rounded-full w-5 h-5 flex items-center justify-center">
+                  {count}
+                </span>
+              )}
+            </Link>
+          )}
+
           {user ? (
             <div className="relative">
               <button
@@ -117,23 +134,6 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           ) : (
             <Link href="/login" className="text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
               Log in
-            </Link>
-          )}
-
-          {user && <NotificationsBell userId={user.id} />}
-
-          {user && (
-            <Link href="/cart" className="relative flex items-center justify-center text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
-                <circle cx="17.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
-              </svg>
-              {count > 0 && (
-                <span className="absolute -top-2 -right-2 bg-stitchRed text-thread text-[11px] font-mono rounded-full w-5 h-5 flex items-center justify-center">
-                  {count}
-                </span>
-              )}
             </Link>
           )}
 
