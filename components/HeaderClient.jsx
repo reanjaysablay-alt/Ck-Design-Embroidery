@@ -80,12 +80,12 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
             <div className="hidden md:block relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center text-thread hover:text-gold transition-colors"
+                className="flex items-center justify-center text-thread hover:text-gold transition-colors"
                 aria-label="My profile"
                 aria-expanded={profileOpen}
                 title={displayName}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                   <circle cx="12" cy="8" r="3.4" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
