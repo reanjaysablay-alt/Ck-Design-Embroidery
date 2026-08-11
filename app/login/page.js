@@ -15,8 +15,24 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const hasExplicitNext = params.has('next');
   const next = params.get('next') || '/';
   const authError = params.get('error');
+
+  // Where to go after a successful login/signup. If the caller asked for
+  // a specific page (e.g. `?next=/checkout`), honor that. Otherwise, ask
+  // the server whether this account is admin/staff and land them
+  // straight on the dashboard instead of the customer homepage.
+  async function resolveDestination() {
+    if (hasExplicitNext) return next;
+    try {
+      const res = await fetch('/api/auth/post-login-redirect');
+      const data = await res.json();
+      return data.target || '/';
+    } catch {
+      return '/';
+    }
+  }
 
   // If the browser's back button lands here while a session is still
   // active (e.g. right after logging in, hitting Back returns to this
@@ -28,10 +44,12 @@ function LoginForm() {
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!mounted) return;
       if (user) {
-        router.replace(next);
+        const dest = await resolveDestination();
+        if (!mounted) return;
+        router.replace(dest);
         router.refresh();
       } else {
         setCheckingSession(false);
@@ -40,6 +58,7 @@ function LoginForm() {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [next, router]);
 
   const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'reset'
@@ -77,7 +96,8 @@ function LoginForm() {
         password: loginPassword,
       });
       if (error) throw new Error(error.message || 'Could not log in. Please try again.');
-      router.push(next);
+      const dest = await resolveDestination();
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(err.message || 'Could not log in. Please try again.');
@@ -139,7 +159,8 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not create account.');
-      router.push(next);
+      const dest = await resolveDestination();
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(err.message);

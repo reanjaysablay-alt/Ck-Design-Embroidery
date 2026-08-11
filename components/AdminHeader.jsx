@@ -28,15 +28,6 @@ export default function AdminHeader({ user, siteTitle = 'Stitchhouse' }) {
         </Link>
 
         <div className="flex items-center gap-4">
-          <span className="hidden md:inline text-thread/50 text-xs font-mono">
-            {user.email}
-          </span>
-          <Link
-            href="/"
-            className="text-thread/70 hover:text-gold text-xs uppercase tracking-widest"
-          >
-            View site
-          </Link>
           <button
             onClick={handleSignOut}
             className="text-thread/50 hover:text-stitchRed text-xs uppercase tracking-widest"

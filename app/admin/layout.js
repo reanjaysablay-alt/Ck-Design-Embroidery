@@ -41,12 +41,6 @@ export default async function AdminLayout({ children }) {
               <Link href="/admin/settings" className="text-thread/70 hover:text-gold">Settings</Link>
             )}
           </nav>
-          <span className="ml-auto text-thread/40 text-xs font-mono hidden md:inline">
-            {user.email}
-          </span>
-          <Link href="/" className="text-thread/40 text-xs hover:text-thread">
-            ← Back to site
-          </Link>
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-5 md:px-8 py-10">{children}</div>
