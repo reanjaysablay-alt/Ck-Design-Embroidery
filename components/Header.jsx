@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { isAdminEmail } from '@/lib/admin';
+import { canAccessAdmin } from '@/lib/admin';
 import { getSiteSettings } from '@/lib/settings';
 import HeaderClient from './HeaderClient';
 import AdminHeader from './AdminHeader';
@@ -11,9 +11,10 @@ export default async function Header() {
   } = await supabase.auth.getUser();
   const settings = await getSiteSettings();
 
-  // Admin accounts get the admin-only header — no storefront nav, no
-  // cart, no customer account links. They live in the admin dashboard.
-  if (user && isAdminEmail(user?.email)) {
+  // Admin AND staff accounts get the minimal admin-only header — no
+  // storefront nav, no cart, no customer account links, just Sign out.
+  // They live in the admin dashboard, not the customer-facing site.
+  if (user && canAccessAdmin(user?.email)) {
     return <AdminHeader user={user} siteTitle={settings.site_title} />;
   }
 
