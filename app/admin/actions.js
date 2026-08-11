@@ -56,6 +56,9 @@ function parseProductForm(formData) {
     stitch_count: formData.get('stitchCount')?.toString().trim() || null,
     threads: threadsRaw ? threadsRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
     sizes: sizesRaw ? sizesRaw.split(',').map((s) => s.trim()).filter(Boolean) : null,
+    // Checkbox convention: present + "on" when checked, absent when
+    // unchecked — so no value at all means the product is in stock.
+    in_stock: formData.get('outOfStock') === 'on' ? false : true,
   };
 }
 

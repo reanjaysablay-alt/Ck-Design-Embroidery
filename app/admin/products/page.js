@@ -33,7 +33,14 @@ export default async function AdminProductsPage() {
         {products.map((p) => (
           <div key={p.id} className="flex items-center gap-4 py-4">
             <div className="flex-1 min-w-0">
-              <div className="font-display text-lg text-thread truncate">{p.name}</div>
+              <div className="font-display text-lg text-thread truncate flex items-center gap-2">
+                {p.name}
+                {p.inStock === false && (
+                  <span className="bg-stitchRed text-thread text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
               <div className="text-thread/40 text-xs font-mono">{p.slug} · {p.category}</div>
             </div>
             <div className="font-mono text-thread w-20 text-right">${p.price}</div>

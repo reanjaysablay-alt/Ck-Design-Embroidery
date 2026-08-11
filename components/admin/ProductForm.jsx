@@ -167,6 +167,21 @@ export default function ProductForm({ product, action, submitLabel }) {
         defaultValue={product?.sizes?.join(', ')}
       />
 
+      <label className="flex items-center gap-3 bg-canvas2 border border-white/15 rounded-sm px-4 py-3 cursor-pointer w-fit">
+        <input
+          type="checkbox"
+          name="outOfStock"
+          defaultChecked={product ? !product.inStock : false}
+          className="w-4 h-4 accent-stitchRed"
+        />
+        <span className="text-sm text-thread">
+          Mark as <span className="text-stitchRed">Out of Stock</span>
+        </span>
+      </label>
+      <p className="text-thread/40 text-xs -mt-4">
+        Out-of-stock products stay visible in the shop with an "Out of Stock" label, but customers can't add them to their cart.
+      </p>
+
       <button
         type="submit"
         disabled={processing}

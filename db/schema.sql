@@ -12,6 +12,7 @@ create table if not exists public.products (
   stitch_count text,
   threads text[],
   sizes text[],
+  in_stock boolean not null default true,
   created_at timestamptz not null default now()
 );
 
@@ -322,3 +323,11 @@ alter table public.orders alter column user_id drop not null;
 alter table public.orders
   add constraint orders_user_id_fkey
   foreign key (user_id) references auth.users(id) on delete set null;
+
+-- ---------------------------------------------------------------------------
+-- Migration: add in_stock to products for the admin's "Out of Stock"
+-- toggle. Safe to re-run — only needed once on a database created
+-- before this change (a brand-new database already gets in_stock from
+-- the products table definition above).
+-- ---------------------------------------------------------------------------
+alter table public.products add column if not exists in_stock boolean not null default true;

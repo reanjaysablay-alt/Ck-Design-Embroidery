@@ -14,6 +14,7 @@ export default function ProductDetail({ product }) {
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | done | error
   const [uploadError, setUploadError] = useState('');
   const [added, setAdded] = useState(false);
+  const outOfStock = product.inStock === false;
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
@@ -57,6 +58,11 @@ return (
         <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">{product.category}</p>
         <h1 className="font-display text-4xl text-thread mb-4">{product.name}</h1>
         <p className="font-mono text-2xl text-thread mb-6">${product.price}</p>
+        {outOfStock && (
+          <p className="inline-block bg-stitchRed text-thread text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm mb-6">
+            Out of Stock
+          </p>
+        )}
         <p className="text-thread/70 leading-relaxed mb-8">{product.description}</p>
 
         <dl className="grid grid-cols-2 gap-4 mb-8 text-sm">
@@ -92,6 +98,7 @@ return (
         )}
 
         {/* Plain / Custom selection — required before adding to cart */}
+        {!outOfStock && (
         <div className="mb-8">
           <div className="text-thread/40 uppercase tracking-widest text-xs mb-2">
             Make it custom?
@@ -119,8 +126,9 @@ return (
             </button>
           </div>
         </div>
+        )}
 
-        {type === 'custom' && (
+        {!outOfStock && type === 'custom' && (
           <div className="mb-8">
             <label className="block text-thread/40 uppercase tracking-widest text-xs mb-2">
               Describe your design
@@ -159,10 +167,16 @@ return (
 
         <button
           onClick={handleAdd}
-          disabled={uploadStatus === 'uploading'}
-          className="w-full md:w-auto bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
+          disabled={uploadStatus === 'uploading' || outOfStock}
+          className="w-full md:w-auto bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {added ? 'Added to Cart ✓' : uploadStatus === 'uploading' ? 'Uploading…' : 'Add to Cart'}
+          {outOfStock
+            ? 'Out of Stock'
+            : added
+            ? 'Added to Cart ✓'
+            : uploadStatus === 'uploading'
+            ? 'Uploading…'
+            : 'Add to Cart'}
         </button>
       </div>
     </div>
