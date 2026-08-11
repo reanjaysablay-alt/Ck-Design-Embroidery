@@ -54,7 +54,10 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
             and Get a Quote live inside the hamburger menu at every screen
             size, rather than a separate desktop row, to avoid the nav
             crowding and wrapping that happened at in-between widths. */}
-        <div className="flex items-center gap-4">
+        {/* Icon row: visible on desktop as separate icons; on mobile only
+            the hamburger shows — bell/cart/profile move inside its panel
+            (see below) to keep the mobile bar to just logo + menu. */}
+        <div className="hidden md:flex items-center gap-4">
           {user && <NotificationsBell userId={user.id} />}
 
           {user && (
@@ -136,23 +139,29 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
               Log in
             </Link>
           )}
-
-          {user && (
-            <button
-              className="flex items-center justify-center text-thread hover:text-gold transition-colors"
-              onClick={() => {
-                setOpen(!open);
-                setProfileOpen(false);
-              }}
-              aria-label="Toggle menu"
-              aria-expanded={open}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
         </div>
+
+        {!user && (
+          <Link href="/login" className="md:hidden text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
+            Log in
+          </Link>
+        )}
+
+        {user && (
+          <button
+            className="flex items-center justify-center text-thread hover:text-gold transition-colors"
+            onClick={() => {
+              setOpen(!open);
+              setProfileOpen(false);
+            }}
+            aria-label="Toggle menu"
+            aria-expanded={open}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {open && user && (
@@ -165,6 +174,33 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           <Link href="/quote" className="text-gold" onClick={() => setOpen(false)}>
             Get a Quote
           </Link>
+
+          {/* Mobile only: bell/cart/profile live here instead of the top
+              bar, since they're hidden < md above. */}
+          <div className="md:hidden border-t border-white/10 pt-4 flex flex-col gap-4">
+            <Link href="/cart" className="text-thread/80" onClick={() => setOpen(false)}>
+              Cart{count > 0 ? ` (${count})` : ''}
+            </Link>
+            <Link href="/account#notifications" className="text-thread/80" onClick={() => setOpen(false)}>
+              Notifications
+            </Link>
+            <div className="border-t border-white/10 pt-4">
+              <p className="text-thread/40 text-xs normal-case tracking-normal truncate mb-3">
+                {displayName}
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link href="/account" className="text-thread/70 normal-case tracking-normal" onClick={() => setOpen(false)}>
+                  My Account
+                </Link>
+                <Link href="/account/settings" className="text-thread/70 normal-case tracking-normal" onClick={() => setOpen(false)}>
+                  Settings
+                </Link>
+                <button onClick={handleSignOut} className="text-left text-stitchRed/90 normal-case tracking-normal">
+                  Log out
+                </button>
+              </div>
+            </div>
+          </div>
         </nav>
       )}
     </header>
