@@ -20,6 +20,8 @@ const NAV = [
 export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const router = useRouter();
 
   async function handleSignOut() {
@@ -28,6 +30,8 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
     router.push('/');
     router.refresh();
   }
+
+  const displayName = user?.user_metadata?.nickname || user?.email;
 
   return (
     <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur border-b border-white/10">
@@ -73,16 +77,60 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           )}
 
           {user ? (
-            <div className="hidden md:flex items-center gap-3">
-              <Link href="/account" className="text-thread/80 hover:text-gold text-sm" title={user.email}>
-                {user.user_metadata?.nickname || user.email}
-              </Link>
+            <div className="hidden md:block relative">
               <button
-                onClick={handleSignOut}
-                className="text-thread/50 hover:text-stitchRed text-xs uppercase tracking-widest"
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center text-thread hover:text-gold transition-colors"
+                aria-label="My profile"
+                aria-expanded={profileOpen}
+                title={displayName}
               >
-                Sign out
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <circle cx="12" cy="8" r="3.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
+
+              {profileOpen && (
+                <>
+                  {/* Click-outside backdrop */}
+                  <button
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setProfileOpen(false)}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                  <div className="absolute right-0 top-full mt-3 w-56 bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-white/10">
+                      <p className="text-thread text-sm truncate">{displayName}</p>
+                      <p className="text-thread/40 text-xs truncate">{user.email}</p>
+                    </div>
+                    <Link
+                      href="/account"
+                      onClick={() => setProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-thread/80 hover:text-gold hover:bg-white/5 transition-colors"
+                    >
+                      My Account
+                    </Link>
+                    <Link
+                      href="/account/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-thread/80 hover:text-gold hover:bg-white/5 transition-colors"
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        handleSignOut();
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-stitchRed/90 hover:bg-white/5 transition-colors border-t border-white/10"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <Link href="/login" className="text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
@@ -127,7 +175,10 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           {user && (
             <button
               className="md:hidden text-thread"
-              onClick={() => setOpen(!open)}
+              onClick={() => {
+                setOpen(!open);
+                setMobileProfileOpen(false);
+              }}
               aria-label="Toggle menu"
               aria-expanded={open}
             >
@@ -152,9 +203,39 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           <Link href="/account/settings" className="text-thread/60" onClick={() => setOpen(false)}>
             Settings
           </Link>
-          <button onClick={handleSignOut} className="text-left text-thread/60">
-            Sign out ({user.user_metadata?.nickname || user.email})
-          </button>
+
+          <div className="border-t border-white/10 pt-4">
+            <button
+              onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
+              className="w-full flex items-center gap-2 text-thread/80"
+              aria-expanded={mobileProfileOpen}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <circle cx="12" cy="8" r="3.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              My Profile
+            </button>
+
+            {mobileProfileOpen && (
+              <div className="mt-3 pl-7 flex flex-col gap-3">
+                <p className="text-thread/40 text-xs normal-case tracking-normal truncate">{displayName}</p>
+                <Link
+                  href="/account"
+                  className="text-thread/70 normal-case tracking-normal"
+                  onClick={() => setOpen(false)}
+                >
+                  My Account
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="text-left text-stitchRed/90 normal-case tracking-normal"
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
       )}
     </header>
