@@ -34,7 +34,11 @@ create policy "Public can view products"
 
 create table if not exists public.orders (
   id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  -- on delete set null (not cascade): if a customer deletes their
+  -- account, we keep the order as a business record — it already has
+  -- its own copy of customer_email/shipping_address — we just detach
+  -- it from the now-deleted login. Only the account login is gone.
+  user_id uuid references auth.users(id) on delete set null,
   customer_email text,
   items jsonb not null,
   total numeric(10, 2) not null,
@@ -305,3 +309,16 @@ from public.contact_inquiries
 where type = 'rating' and rating is not null and rating between 1 and 5
 on conflict (source_id) do nothing;
 
+
+-- ---------------------------------------------------------------------------
+-- Migration: let customers delete their own account (see
+-- /api/account/delete) without wiping their order/revenue history.
+-- Safe to re-run — only needed once on a database created before this
+-- change (a brand-new database already gets "on delete set null" from
+-- the orders table definition above).
+-- ---------------------------------------------------------------------------
+alter table public.orders drop constraint if exists orders_user_id_fkey;
+alter table public.orders alter column user_id drop not null;
+alter table public.orders
+  add constraint orders_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete set null;

@@ -11,6 +11,7 @@ import logo from '@/logo/ck-logo-transparent.png';
 
 const NAV = [
   { href: '/shop', label: 'Shop' },
+  { href: '/account#orders', label: 'Track Order' },
   { href: '/services', label: 'For Your Business' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
@@ -92,6 +93,24 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           {user && <NotificationsBell userId={user.id} />}
 
           {user && (
+            <Link
+              href="/account/settings"
+              className="text-thread hover:text-gold transition-colors"
+              aria-label="Account settings"
+              title="Settings"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+          )}
+
+          {user && (
             <Link href="/cart" className="relative text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -129,6 +148,21 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           ))}
           <Link href="/quote" className="text-gold" onClick={() => setOpen(false)}>
             Get a Quote
+          </Link>
+          <Link
+            href="/account/settings"
+            className="text-thread/60 flex items-center gap-2"
+            onClick={() => setOpen(false)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Settings
           </Link>
           <button onClick={handleSignOut} className="text-left text-thread/60">
             Sign out ({user.user_metadata?.nickname || user.email})
