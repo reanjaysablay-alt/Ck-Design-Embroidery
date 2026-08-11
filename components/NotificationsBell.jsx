@@ -72,7 +72,7 @@ export default function NotificationsBell({ userId }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative text-thread hover:text-gold transition-colors"
+        className="relative flex items-center justify-center text-thread hover:text-gold transition-colors"
         aria-label={`Notifications, ${unread} unread`}
         aria-expanded={open}
       >

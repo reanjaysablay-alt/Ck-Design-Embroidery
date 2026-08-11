@@ -49,19 +49,25 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           </span>
         </Link>
 
-        {/* Everything else — nav links, Get a Quote, profile, bell, cart, and
-            the menu toggle — lives in one aligned icon/button row. Nav links
-            and Get a Quote live inside the hamburger menu at every screen
-            size, rather than a separate desktop row, to avoid the nav
-            crowding and wrapping that happened at in-between widths. */}
-        {/* Icon row: visible on desktop as separate icons; on mobile only
-            the hamburger shows — bell/cart/profile move inside its panel
-            (see below) to keep the mobile bar to just logo + menu. */}
-        <div className="hidden md:flex items-center gap-4">
-          {user && <NotificationsBell userId={user.id} />}
+        {/* Everything else — bell, cart, profile, and the hamburger — lives
+            in ONE flex row with a single consistent gap-4, so spacing
+            between every icon (including the hamburger) matches exactly.
+            Bell/cart/profile hide individually below md rather than via a
+            wrapping container, so the hamburger stays in the same gapped
+            row instead of being pushed apart by justify-between. */}
+        <div className="flex items-center gap-4">
+          {user && (
+            <span className="hidden md:flex">
+              <NotificationsBell userId={user.id} />
+            </span>
+          )}
 
           {user && (
-            <Link href="/cart" className="relative flex items-center justify-center text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
+            <Link
+              href="/cart"
+              className="hidden md:flex relative items-center justify-center text-thread hover:text-gold transition-colors"
+              aria-label={`Cart, ${count} items`}
+            >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round"/>
                 <circle cx="9.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
@@ -76,7 +82,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           )}
 
           {user ? (
-            <div className="relative">
+            <div className="hidden md:block relative">
               <button
                 onClick={() => {
                   setProfileOpen(!profileOpen);
@@ -135,33 +141,33 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
               )}
             </div>
           ) : (
-            <Link href="/login" className="text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
+            <Link href="/login" className="hidden md:inline-block text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
               Log in
             </Link>
           )}
+
+          {!user && (
+            <Link href="/login" className="md:hidden text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
+              Log in
+            </Link>
+          )}
+
+          {user && (
+            <button
+              className="flex items-center justify-center text-thread hover:text-gold transition-colors"
+              onClick={() => {
+                setOpen(!open);
+                setProfileOpen(false);
+              }}
+              aria-label="Toggle menu"
+              aria-expanded={open}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
         </div>
-
-        {!user && (
-          <Link href="/login" className="md:hidden text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
-            Log in
-          </Link>
-        )}
-
-        {user && (
-          <button
-            className="flex items-center justify-center text-thread hover:text-gold transition-colors"
-            onClick={() => {
-              setOpen(!open);
-              setProfileOpen(false);
-            }}
-            aria-label="Toggle menu"
-            aria-expanded={open}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-            </svg>
-          </button>
-        )}
       </div>
 
       {open && user && (
