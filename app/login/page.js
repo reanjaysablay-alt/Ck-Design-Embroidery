@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -17,6 +17,30 @@ function LoginForm() {
   const params = useSearchParams();
   const next = params.get('next') || '/';
   const authError = params.get('error');
+
+  // If the browser's back button lands here while a session is still
+  // active (e.g. right after logging in, hitting Back returns to this
+  // page from the browser's cache instead of the server), bounce away
+  // immediately instead of showing the login form under a logged-in
+  // header — that mismatch is exactly what was happening.
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!mounted) return;
+      if (user) {
+        router.replace(next);
+        router.refresh();
+      } else {
+        setCheckingSession(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [next, router]);
 
   const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'reset'
   const [step, setStep] = useState('email'); // 'email' | 'otp' | 'password'
@@ -191,6 +215,10 @@ function LoginForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return <div className="max-w-sm mx-auto px-5 py-24" />;
   }
 
   return (
