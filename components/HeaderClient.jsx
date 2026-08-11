@@ -21,7 +21,6 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const router = useRouter();
 
   async function handleSignOut() {
@@ -45,41 +44,24 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
             className="h-7 w-auto object-contain"
             priority
           />
-            <span className="font-title italic text-lg md:text-2xl tracking-tight text-thread">
-              {siteTitle}
-            </span>
+          <span className="font-title italic text-lg md:text-2xl tracking-tight text-thread">
+            {siteTitle}
+          </span>
         </Link>
 
-{/* Desktop nav + right controls only shown to signed-in users.
-            Signed-out visitors see just the logo and a Log in button. */}
-        {user && (
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 font-body text-sm uppercase tracking-widest">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-thread/80 hover:text-gold transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        )}
-
+        {/* Everything else — nav links, Get a Quote, profile, bell, cart, and
+            the menu toggle — lives in one aligned icon/button row. Nav links
+            and Get a Quote live inside the hamburger menu at every screen
+            size, rather than a separate desktop row, to avoid the nav
+            crowding and wrapping that happened at in-between widths. */}
         <div className="flex items-center gap-4">
-          {user && (
-            <Link
-              href="/quote"
-              className="hidden md:inline-block text-sm font-body uppercase tracking-widest border border-gold text-gold px-4 py-2 rounded-sm hover:bg-gold hover:text-ink transition-colors"
-            >
-              Get a Quote
-            </Link>
-          )}
-
           {user ? (
-            <div className="hidden md:block relative">
+            <div className="relative">
               <button
-                onClick={() => setProfileOpen(!profileOpen)}
+                onClick={() => {
+                  setProfileOpen(!profileOpen);
+                  setOpen(false);
+                }}
                 className="flex items-center justify-center text-thread hover:text-gold transition-colors"
                 aria-label="My profile"
                 aria-expanded={profileOpen}
@@ -141,7 +123,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           {user && <NotificationsBell userId={user.id} />}
 
           {user && (
-            <Link href="/cart" className="relative text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
+            <Link href="/cart" className="relative flex items-center justify-center text-thread hover:text-gold transition-colors" aria-label={`Cart, ${count} items`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round"/>
                 <circle cx="9.5" cy="21" r="1.3" fill="currentColor" stroke="none"/>
@@ -154,12 +136,13 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
               )}
             </Link>
           )}
+
           {user && (
             <button
-              className="md:hidden text-thread"
+              className="flex items-center justify-center text-thread hover:text-gold transition-colors"
               onClick={() => {
                 setOpen(!open);
-                setMobileProfileOpen(false);
+                setProfileOpen(false);
               }}
               aria-label="Toggle menu"
               aria-expanded={open}
@@ -172,52 +155,16 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
         </div>
       </div>
 
-{open && user && (
-        <nav className="md:hidden border-t border-white/10 px-5 py-4 flex flex-col gap-4 font-body text-sm uppercase tracking-widest">
+      {open && user && (
+        <nav className="border-t border-white/10 px-5 py-4 flex flex-col gap-4 font-body text-sm uppercase tracking-widest">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className="text-thread/80" onClick={() => setOpen(false)}>
+            <Link key={item.href} href={item.href} className="text-thread/80 hover:text-gold" onClick={() => setOpen(false)}>
               {item.label}
             </Link>
           ))}
           <Link href="/quote" className="text-gold" onClick={() => setOpen(false)}>
             Get a Quote
           </Link>
-          <Link href="/account/settings" className="text-thread/60" onClick={() => setOpen(false)}>
-            Settings
-          </Link>
-
-          <div className="border-t border-white/10 pt-4">
-            <button
-              onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
-              className="w-full flex items-center gap-2 text-thread/80"
-              aria-expanded={mobileProfileOpen}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <circle cx="12" cy="8" r="3.4" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              My Profile
-            </button>
-
-            {mobileProfileOpen && (
-              <div className="mt-3 pl-7 flex flex-col gap-3">
-                <p className="text-thread/40 text-xs normal-case tracking-normal truncate">{displayName}</p>
-                <Link
-                  href="/account"
-                  className="text-thread/70 normal-case tracking-normal"
-                  onClick={() => setOpen(false)}
-                >
-                  My Account
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="text-left text-stitchRed/90 normal-case tracking-normal"
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
         </nav>
       )}
     </header>
