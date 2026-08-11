@@ -95,7 +95,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           {user && (
             <Link
               href="/account/settings"
-              className="text-thread hover:text-gold transition-colors"
+              className="hidden md:inline-flex text-thread hover:text-gold transition-colors"
               aria-label="Account settings"
               title="Settings"
             >
