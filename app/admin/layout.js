@@ -36,6 +36,7 @@ export default async function AdminLayout({ children }) {
               <Link href="/admin/products" className="text-thread/70 hover:text-gold">Products</Link>
             )}
             <Link href="/admin/orders" className="text-thread/70 hover:text-gold">Orders</Link>
+            <Link href="/admin/orders/history" className="text-thread/70 hover:text-gold">History</Link>
             <Link href="/admin/inquiries" className="text-thread/70 hover:text-gold">Inquiries</Link>
             {isAdmin && (
               <Link href="/admin/settings" className="text-thread/70 hover:text-gold">Settings</Link>
