@@ -36,6 +36,15 @@ select:focus-visible {
   border-radius: 2px;
 }
 
+/* Site-wide font override: every element renders in Arial regardless
+   of the display/body/mono font utilities elsewhere in the CSS, and
+   regardless of whatever font is picked in Admin → Settings for the
+   site title/tagline/hero heading. Remove this block (or make it more
+   targeted) if you want those font choices to matter again. */
+* {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
