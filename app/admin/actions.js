@@ -15,6 +15,9 @@ import {
   orderCompletedCustomerEmail,
   orderCanceledCustomerEmail,
   orderTotalUpdatedCustomerEmail,
+  orderPreparingCustomerEmail,
+  orderReadyForPickupCustomerEmail,
+  orderPickedUpCustomerEmail,
 } from '@/lib/email';
 
 // Every action re-checks admin status server-side against the current
@@ -181,16 +184,27 @@ async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn })
   }
 }
 
-// pending -> to_ship. Order is confirmed and moves straight into
-// production/fulfillment.
+// pending -> to_ship (PayPal/COD) or pending -> preparing (Walk-in).
+// Order is confirmed and moves straight into production/fulfillment,
+// on whichever pipeline matches how the customer chose to pay.
 export async function acceptOrder(formData) {
   const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('payment_method')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const isWalkin = existing.payment_method === 'walkin';
+  const nextStatus = isWalkin ? 'preparing' : 'to_ship';
+
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'to_ship' })
+    .update({ order_status: nextStatus })
     .eq('id', id)
     .select('*')
     .single();
@@ -200,8 +214,10 @@ export async function acceptOrder(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Order accepted 🎉',
-    body: `Great news — order #${order.id} ($${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
-    emailTemplateFn: orderToShipCustomerEmail,
+    body: isWalkin
+      ? `Great news — order #${order.id} ($${total}) has been accepted and is being prepared. We'll let you know when it's ready for pickup.`
+      : `Great news — order #${order.id} ($${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
+    emailTemplateFn: isWalkin ? orderPreparingCustomerEmail : orderToShipCustomerEmail,
   });
 
   await logActivity({
@@ -210,7 +226,9 @@ export async function acceptOrder(formData) {
     action: 'order.accept',
     targetType: 'order',
     targetId: order.id,
-    details: `Accepted order #${order.id} ($${total}) — moved to To Ship`,
+    details: isWalkin
+      ? `Accepted order #${order.id} ($${total}) — moved to Preparing`
+      : `Accepted order #${order.id} ($${total}) — moved to To Ship`,
   });
 
   revalidatePath('/admin/orders');
@@ -281,6 +299,74 @@ export async function markCompleted(formData) {
     targetType: 'order',
     targetId: order.id,
     details: `Marked order #${order.id} as completed`,
+  });
+
+  revalidatePath('/admin/orders');
+}
+
+// preparing -> ready_for_pickup. Walk-in equivalent of markShipped.
+export async function markReadyForPickup(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ order_status: 'ready_for_pickup' })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Ready for pickup 📍',
+    body: `Order #${order.id} ($${total}) is ready for pickup at our shop. Please bring your payment.`,
+    emailTemplateFn: orderReadyForPickupCustomerEmail,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.ready_for_pickup',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Marked order #${order.id} as ready for pickup`,
+  });
+
+  revalidatePath('/admin/orders');
+}
+
+// ready_for_pickup -> picked_up. Walk-in equivalent of markCompleted.
+export async function markPickedUp(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ order_status: 'picked_up' })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Order picked up ✅',
+    body: `Order #${order.id} ($${total}) has been marked as picked up. Thanks for your order!`,
+    emailTemplateFn: orderPickedUpCustomerEmail,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.picked_up',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Marked order #${order.id} as picked up`,
   });
 
   revalidatePath('/admin/orders');
@@ -370,10 +456,11 @@ export async function setCustomizationFee(formData) {
     .single();
   if (fetchError) throw new Error(fetchError.message);
 
-  // Once an order has shipped (or moved beyond that), the charge is
-  // locked — never trust that the UI hides the field, re-check here.
-  if (!['pending', 'to_ship'].includes(existing.order_status)) {
-    throw new Error('Customization fee can no longer be changed — this order has already shipped.');
+  // Once an order has shipped/is ready for pickup (or moved beyond
+  // that), the charge is locked — never trust that the UI hides the
+  // field, re-check here.
+  if (!['pending', 'to_ship', 'preparing'].includes(existing.order_status)) {
+    throw new Error('Customization fee can no longer be changed — this order is already being fulfilled.');
   }
 
   const items = (existing.items || []).map((item, i) => {

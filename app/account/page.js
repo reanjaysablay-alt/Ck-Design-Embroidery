@@ -21,8 +21,8 @@ export default async function AccountPage() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  const activeOrders = orders?.filter((o) => ['pending', 'to_ship', 'to_receive'].includes(o.order_status)) || [];
-  const historyOrders = orders?.filter((o) => ['completed', 'canceled'].includes(o.order_status)) || [];
+  const activeOrders = orders?.filter((o) => ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'].includes(o.order_status)) || [];
+  const historyOrders = orders?.filter((o) => ['completed', 'canceled', 'picked_up'].includes(o.order_status)) || [];
 
   return (
     <div className="max-w-3xl mx-auto px-5 md:px-8 py-16">
@@ -80,7 +80,11 @@ function AccountOrderCard({ order }) {
         </div>
       </div>
       <div className="text-sm text-thread/70 mb-1">
-        {order.payment_method === 'paypal' ? 'Paid via PayPal' : 'Cash on Delivery'}
+        {order.payment_method === 'paypal'
+          ? 'Paid via PayPal'
+          : order.payment_method === 'walkin'
+          ? 'Walk-in — pay at pickup'
+          : 'Cash on Delivery'}
         {' — '}
         <span className="capitalize">{order.payment_status.replace('_', ' ')}</span>
       </div>
@@ -136,6 +140,9 @@ function OrderStatusBadge({ status }) {
     to_receive: 'text-blue-400 border-blue-400',
     completed: 'text-green-400 border-green-400',
     canceled: 'text-stitchRed border-stitchRed',
+    preparing: 'text-blue-400 border-blue-400',
+    ready_for_pickup: 'text-blue-400 border-blue-400',
+    picked_up: 'text-green-400 border-green-400',
   };
   const labels = {
     pending: 'Pending approval',
@@ -143,6 +150,9 @@ function OrderStatusBadge({ status }) {
     to_receive: 'To receive',
     completed: 'Completed',
     canceled: 'Canceled',
+    preparing: 'Preparing',
+    ready_for_pickup: 'Ready for pickup',
+    picked_up: 'Picked up',
   };
   return (
     <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${styles[status]}`}>

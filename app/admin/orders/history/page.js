@@ -3,15 +3,15 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 
-// Completed and canceled orders land here once they leave the active
-// Orders page — read-only, no action buttons, since there's nothing
-// left to do on them.
+// Completed, picked up, and canceled orders land here once they leave
+// the active Orders page — read-only, no action buttons, since there's
+// nothing left to do on them.
 export default async function AdminOrderHistoryPage() {
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')
     .select('*')
-    .in('order_status', ['completed', 'canceled'])
+    .in('order_status', ['completed', 'canceled', 'picked_up'])
     .order('created_at', { ascending: false });
 
   const designUrls = await buildDesignUrls(orders, getDesignDownloadUrl);

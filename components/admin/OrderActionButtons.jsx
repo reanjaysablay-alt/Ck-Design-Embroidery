@@ -1,6 +1,6 @@
 'use client';
 
-export function AcceptButton({ id, action }) {
+export function AcceptButton({ id, action, label = 'Accept — To Ship' }) {
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />
@@ -8,7 +8,7 @@ export function AcceptButton({ id, action }) {
         type="submit"
         className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
       >
-        Accept — To Ship
+        {label}
       </button>
     </form>
   );
@@ -37,6 +37,34 @@ export function ReceivedButton({ id, action }) {
         className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
       >
         Mark Completed
+      </button>
+    </form>
+  );
+}
+
+export function ReadyForPickupButton({ id, action }) {
+  return (
+    <form action={action}>
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
+      >
+        Mark Ready for Pickup
+      </button>
+    </form>
+  );
+}
+
+export function PickedUpButton({ id, action }) {
+  return (
+    <form action={action}>
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
+      >
+        Mark Picked Up
       </button>
     </form>
   );

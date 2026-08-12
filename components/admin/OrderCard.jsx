@@ -5,6 +5,9 @@ export function StatusBadge({ status }) {
     to_receive: 'text-blue-400 border-blue-400',
     completed: 'text-green-400 border-green-400',
     canceled: 'text-stitchRed border-stitchRed',
+    preparing: 'text-blue-400 border-blue-400',
+    ready_for_pickup: 'text-blue-400 border-blue-400',
+    picked_up: 'text-green-400 border-green-400',
   };
   const labels = {
     pending: 'pending',
@@ -12,6 +15,9 @@ export function StatusBadge({ status }) {
     to_receive: 'to receive',
     completed: 'completed',
     canceled: 'canceled',
+    preparing: 'preparing',
+    ready_for_pickup: 'ready for pickup',
+    picked_up: 'picked up',
   };
   return (
     <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${styles[status]}`}>
@@ -44,12 +50,22 @@ export default function OrderCard({ order, designUrls, actions, feeAction }) {
       </div>
 
       <div className="text-sm text-thread/60 mb-2">
-        {order.payment_method === 'paypal' ? 'Paid via PayPal' : 'Cash on Delivery'}
+        {order.payment_method === 'paypal'
+          ? 'Paid via PayPal'
+          : order.payment_method === 'walkin'
+          ? 'Walk-in — pay in person'
+          : 'Cash on Delivery'}
         {' — '}
         <span className="capitalize">{order.payment_status.replace('_', ' ')}</span>
       </div>
 
-      {order.shipping_address && (
+      {order.shipping_address && order.payment_method === 'walkin' && (
+        <div className="text-sm text-thread/50 mb-3">
+          {order.shipping_address.fullName} · {order.shipping_address.phone}
+          <span className="text-thread/30"> — pickup contact, no delivery address</span>
+        </div>
+      )}
+      {order.shipping_address && order.payment_method !== 'walkin' && (
         <div className="text-sm text-thread/50 mb-3">
           {order.shipping_address.fullName} · {order.shipping_address.phone}
           <br />

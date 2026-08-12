@@ -1,20 +1,35 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
-import { acceptOrder, markShipped, markCompleted, cancelOrder, setCustomizationFee } from '@/app/admin/actions';
-import { AcceptButton, ShipButton, ReceivedButton, CancelButton } from '@/components/admin/OrderActionButtons';
+import {
+  acceptOrder,
+  markShipped,
+  markCompleted,
+  markReadyForPickup,
+  markPickedUp,
+  cancelOrder,
+  setCustomizationFee,
+} from '@/app/admin/actions';
+import {
+  AcceptButton,
+  ShipButton,
+  ReceivedButton,
+  ReadyForPickupButton,
+  PickedUpButton,
+  CancelButton,
+} from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 
 // Only active, in-progress orders live here. The moment an order is
-// marked Completed or Canceled it drops off this list automatically
-// (it's simply no longer in this query) and shows up on the History
-// page instead.
+// marked Completed, Picked Up, or Canceled it drops off this list
+// automatically (it's simply no longer in this query) and shows up on
+// the History page instead.
 export default async function AdminOrdersPage() {
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')
     .select('*')
-    .in('order_status', ['pending', 'to_ship', 'to_receive'])
+    .in('order_status', ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'])
     .order('created_at', { ascending: false });
 
   const designUrls = await buildDesignUrls(orders, getDesignDownloadUrl);
@@ -32,36 +47,55 @@ export default async function AdminOrdersPage() {
       </div>
 
       <div className="space-y-4">
-        {orders?.map((order) => (
-          <OrderCard
-            key={order.id}
-            order={order}
-            designUrls={designUrls}
-            feeAction={order.order_status === 'to_receive' ? undefined : setCustomizationFee}
-            actions={
-              <>
-                {order.order_status === 'pending' && (
-                  <div className="flex gap-3">
-                    <AcceptButton id={order.id} action={acceptOrder} />
-                    <CancelButton id={order.id} action={cancelOrder} />
-                  </div>
-                )}
-                {order.order_status === 'to_ship' && (
-                  <div className="flex gap-3">
-                    <ShipButton id={order.id} action={markShipped} />
-                    <CancelButton id={order.id} action={cancelOrder} />
-                  </div>
-                )}
-                {order.order_status === 'to_receive' && (
-                  <div className="flex gap-3">
-                    <ReceivedButton id={order.id} action={markCompleted} />
-                    <CancelButton id={order.id} action={cancelOrder} />
-                  </div>
-                )}
-              </>
-            }
-          />
-        ))}
+        {orders?.map((order) => {
+          const feeLocked = ['to_receive', 'ready_for_pickup', 'picked_up'].includes(order.order_status);
+          return (
+            <OrderCard
+              key={order.id}
+              order={order}
+              designUrls={designUrls}
+              feeAction={feeLocked ? undefined : setCustomizationFee}
+              actions={
+                <>
+                  {order.order_status === 'pending' && (
+                    <div className="flex gap-3">
+                      <AcceptButton
+                        id={order.id}
+                        action={acceptOrder}
+                        label={order.payment_method === 'walkin' ? 'Accept — Prepare Order' : 'Accept — To Ship'}
+                      />
+                      <CancelButton id={order.id} action={cancelOrder} />
+                    </div>
+                  )}
+                  {order.order_status === 'to_ship' && (
+                    <div className="flex gap-3">
+                      <ShipButton id={order.id} action={markShipped} />
+                      <CancelButton id={order.id} action={cancelOrder} />
+                    </div>
+                  )}
+                  {order.order_status === 'to_receive' && (
+                    <div className="flex gap-3">
+                      <ReceivedButton id={order.id} action={markCompleted} />
+                      <CancelButton id={order.id} action={cancelOrder} />
+                    </div>
+                  )}
+                  {order.order_status === 'preparing' && (
+                    <div className="flex gap-3">
+                      <ReadyForPickupButton id={order.id} action={markReadyForPickup} />
+                      <CancelButton id={order.id} action={cancelOrder} />
+                    </div>
+                  )}
+                  {order.order_status === 'ready_for_pickup' && (
+                    <div className="flex gap-3">
+                      <PickedUpButton id={order.id} action={markPickedUp} />
+                      <CancelButton id={order.id} action={cancelOrder} />
+                    </div>
+                  )}
+                </>
+              }
+            />
+          );
+        })}
         {(!orders || orders.length === 0) && (
           <p className="text-thread/50">No active orders.</p>
         )}

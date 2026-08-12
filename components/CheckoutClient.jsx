@@ -34,7 +34,7 @@ async function getAccessToken() {
 export default function CheckoutClient({ user }) {
   const { items, subtotal } = useCart();
   const router = useRouter();
-  const [method, setMethod] = useState('paypal'); // 'paypal' | 'cod'
+  const [method, setMethod] = useState('paypal'); // 'paypal' | 'cod' | 'walkin'
   const [address, setAddress] = useState({
     fullName: user.user_metadata?.full_name || '',
     phone: '',
@@ -45,14 +45,16 @@ export default function CheckoutClient({ user }) {
   });
   const [addressValid, setAddressValid] = useState(false);
   const [codSubmitting, setCodSubmitting] = useState(false);
+  const [walkinSubmitting, setWalkinSubmitting] = useState(false);
   const [error, setError] = useState('');
   const paypalRef = useRef(null);
   const buttonsRendered = useRef(false);
 
   useEffect(() => {
-    const required = ['fullName', 'phone', 'line1', 'city', 'emirate'];
+    const required =
+      method === 'walkin' ? ['fullName', 'phone'] : ['fullName', 'phone', 'line1', 'city', 'emirate'];
     setAddressValid(required.every((k) => address[k].trim().length > 0));
-  }, [address]);
+  }, [address, method]);
 
   // Render PayPal buttons once the shipping address is valid.
   useEffect(() => {
@@ -143,6 +145,28 @@ export default function CheckoutClient({ user }) {
     }
   }
 
+  async function handleWalkinSubmit() {
+    setWalkinSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/orders/walkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          contact: { fullName: address.fullName, phone: address.phone },
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Could not place order');
+      router.push(`/order/success?order=${result.orderId}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setWalkinSubmitting(false);
+    }
+  }
+
   if (items.length === 0) {
     return (
       <div className="max-w-xl mx-auto px-5 py-24 text-center">
@@ -157,15 +181,26 @@ export default function CheckoutClient({ user }) {
       <div>
         <h1 className="font-display text-3xl text-thread mb-8">Checkout</h1>
 
-        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Shipping address</h2>
+        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">
+          {method === 'walkin' ? 'Pickup details' : 'Shipping address'}
+        </h2>
         <div className="space-y-4 mb-10">
           <Field label="Full name" value={address.fullName} onChange={(v) => setAddress({ ...address, fullName: v })} />
           <Field label="Phone" value={address.phone} onChange={(v) => setAddress({ ...address, phone: v })} />
-          <Field label="Address" value={address.line1} onChange={(v) => setAddress({ ...address, line1: v })} />
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="City" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} />
-            <Field label="Emirate" value={address.emirate} onChange={(v) => setAddress({ ...address, emirate: v })} />
-          </div>
+          {method !== 'walkin' && (
+            <>
+              <Field label="Address" value={address.line1} onChange={(v) => setAddress({ ...address, line1: v })} />
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="City" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} />
+                <Field label="Emirate" value={address.emirate} onChange={(v) => setAddress({ ...address, emirate: v })} />
+              </div>
+            </>
+          )}
+          {method === 'walkin' && (
+            <p className="text-thread/40 text-xs leading-relaxed">
+              No delivery address needed — you'll pick up and pay for this order in person at our shop.
+            </p>
+          )}
         </div>
 
         <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Payment method</h2>
@@ -189,10 +224,22 @@ export default function CheckoutClient({ user }) {
           >
             Cash on Delivery
           </button>
+          <button
+            onClick={() => setMethod('walkin')}
+            className={`flex-1 border rounded-sm py-3 text-sm uppercase tracking-widest transition-colors ${
+              method === 'walkin' ? 'border-gold text-gold' : 'border-white/20 text-thread/60'
+            }`}
+          >
+            Walk-in
+          </button>
         </div>
 
         {!addressValid && (
-          <p className="text-thread/40 text-sm mb-4">Fill in the shipping address above to continue.</p>
+          <p className="text-thread/40 text-sm mb-4">
+            {method === 'walkin'
+              ? 'Fill in your name and phone number above to continue.'
+              : 'Fill in the shipping address above to continue.'}
+          </p>
         )}
 
         {addressValid && method === 'paypal' && (
@@ -206,6 +253,16 @@ export default function CheckoutClient({ user }) {
             className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
           >
             {codSubmitting ? 'Placing order…' : 'Place Order — Pay on Delivery'}
+          </button>
+        )}
+
+        {addressValid && method === 'walkin' && (
+          <button
+            onClick={handleWalkinSubmit}
+            disabled={walkinSubmitting}
+            className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
+          >
+            {walkinSubmitting ? 'Placing order…' : 'Place Order — Pay at Pickup'}
           </button>
         )}
 

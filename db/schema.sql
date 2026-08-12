@@ -44,9 +44,12 @@ create table if not exists public.orders (
   items jsonb not null,
   total numeric(10, 2) not null,
   currency text not null default 'USD',
-  payment_method text not null check (payment_method in ('paypal', 'cod')),
+  payment_method text not null check (payment_method in ('paypal', 'cod', 'walkin')),
   payment_status text not null default 'pending',
-  order_status text not null default 'pending' check (order_status in ('pending', 'to_ship', 'to_receive', 'completed', 'canceled')),
+  order_status text not null default 'pending' check (order_status in (
+    'pending', 'to_ship', 'to_receive', 'completed', 'canceled',
+    'preparing', 'ready_for_pickup', 'picked_up'
+  )),
   paypal_order_id text,
   paypal_capture_id text,
   shipping_address jsonb,
@@ -390,3 +393,21 @@ alter table public.admin_activity_log enable row level security;
 
 create index if not exists admin_activity_log_created_at_idx on public.admin_activity_log(created_at desc);
 create index if not exists admin_activity_log_actor_idx on public.admin_activity_log(actor_email);
+
+-- ---------------------------------------------------------------------------
+-- Migration: add Walk-in as a payment method, with its own pickup
+-- fulfillment pipeline (Preparing -> Ready for Pickup -> Picked Up)
+-- separate from the shipping pipeline (To Ship -> To Receive ->
+-- Completed) used by PayPal/COD orders. Safe to re-run — only needed
+-- once on a database created before this change.
+-- ---------------------------------------------------------------------------
+alter table public.orders drop constraint if exists orders_payment_method_check;
+alter table public.orders add constraint orders_payment_method_check
+  check (payment_method in ('paypal', 'cod', 'walkin'));
+
+alter table public.orders drop constraint if exists orders_order_status_check;
+alter table public.orders add constraint orders_order_status_check
+  check (order_status in (
+    'pending', 'to_ship', 'to_receive', 'completed', 'canceled',
+    'preparing', 'ready_for_pickup', 'picked_up'
+  ));
