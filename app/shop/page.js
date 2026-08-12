@@ -15,7 +15,7 @@ export default async function ShopPage() {
         Stitched in small batches between business orders. If you don't see
         what you want, we can likely make it — get a custom quote instead.
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
         {products.map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}

@@ -22,7 +22,7 @@ export default function ProductCard({ product }) {
         src={productImageSrc(product.image)}
         alt={product.name}
         fill
-        sizes="(max-width: 768px) 40vw, 20vw"
+        sizes="(max-width: 768px) 40vw, (max-width: 1024px) 28vw, 22vw"
         className={`object-cover transition-transform duration-500 group-hover:scale-105 ${
           outOfStock ? 'opacity-50 grayscale' : ''
         }`}
