@@ -49,11 +49,12 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           </span>
         </Link>
 
-        {/* Bell, cart, profile, and the hamburger all live in ONE flex row
-            with a single consistent gap-4, visible at every screen size.
-            The hamburger panel below holds page navigation only — account
-            actions (My Account/Settings/Log out) live in the profile
-            dropdown instead, not duplicated here. */}
+        {/* Everything else — bell, cart, profile, and the hamburger — lives
+            in ONE flex row with a single consistent gap-4, so spacing
+            between every icon (including the hamburger) matches exactly.
+            Bell/cart/profile hide individually below md rather than via a
+            wrapping container, so the hamburger stays in the same gapped
+            row instead of being pushed apart by justify-between. */}
         <div className="flex items-center gap-4">
           {user && (
             <span className="flex">
@@ -81,7 +82,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           )}
 
           {user ? (
-            <div className="relative">
+            <div className="hidden md:block relative">
               <button
                 onClick={() => {
                   setProfileOpen(!profileOpen);
@@ -179,6 +180,26 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           <Link href="/quote" className="text-gold" onClick={() => setOpen(false)}>
             Get a Quote
           </Link>
+
+          {/* Mobile only: profile/account section still lives here since
+              the profile icon itself stays desktop-only (hidden md:block
+              above). Bell and cart are back in the top bar at all sizes. */}
+          <div className="md:hidden border-t border-white/10 pt-4 flex flex-col gap-4">
+            <p className="text-thread/40 text-xs normal-case tracking-normal truncate">
+              {displayName}
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link href="/account" className="text-thread/70 normal-case tracking-normal" onClick={() => setOpen(false)}>
+                My Account
+              </Link>
+              <Link href="/account/settings" className="text-thread/70 normal-case tracking-normal" onClick={() => setOpen(false)}>
+                Settings
+              </Link>
+              <button onClick={handleSignOut} className="text-left text-stitchRed/90 normal-case tracking-normal">
+                Log out
+              </button>
+            </div>
+          </div>
         </nav>
       )}
     </header>

@@ -96,7 +96,7 @@ export default function NotificationsBell({ userId }) {
             aria-hidden="true"
             tabIndex={-1}
           />
-          <div className="fixed inset-x-4 top-20 md:absolute md:inset-x-auto md:top-full md:right-0 md:mt-3 w-auto md:w-80 max-w-full md:max-w-[90vw] bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-3 w-80 max-w-[90vw] bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <span className="text-thread text-sm uppercase tracking-widest">Notifications</span>
               {unread > 0 && (
@@ -109,7 +109,7 @@ export default function NotificationsBell({ userId }) {
               )}
             </div>
 
-            <div className="max-h-[60vh] md:max-h-80 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {loading && (
                 <p className="text-thread/50 text-sm px-4 py-6 text-center">Loading…</p>
               )}
@@ -139,11 +139,11 @@ export default function NotificationsBell({ userId }) {
             </div>
 
             <Link
-              href="/account#orders"
+              href="/account#notifications"
               onClick={() => setOpen(false)}
               className="block text-center px-4 py-2.5 text-xs uppercase tracking-widest text-gold hover:bg-white/5 transition-colors border-t border-white/10"
             >
-              View orders
+              View all
             </Link>
           </div>
         </>
