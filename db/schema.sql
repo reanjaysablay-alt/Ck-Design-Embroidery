@@ -362,27 +362,3 @@ alter table public.orders
 -- ---------------------------------------------------------------------------
 alter table public.contact_inquiries add column if not exists reply text;
 alter table public.contact_inquiries add column if not exists replied_at timestamptz;
-
--- ---------------------------------------------------------------------------
--- Staff activity log — powers the admin-only "Staff Activity" page so an
--- admin can monitor what staff (and other admins) are doing: order
--- transitions, customization fees, inquiry replies. Written only via the
--- service role key from server actions/routes, same as notifications —
--- no RLS policies, so it's never readable through the anon/authenticated
--- client even by the staff member who generated the entry.
--- ---------------------------------------------------------------------------
-create table if not exists public.staff_activity_log (
-  id bigint generated always as identity primary key,
-  actor_email text not null,
-  actor_role text not null check (actor_role in ('admin', 'staff')),
-  action text not null,
-  target_type text not null check (target_type in ('order', 'inquiry')),
-  target_id bigint not null,
-  detail text,
-  created_at timestamptz not null default now()
-);
-
-alter table public.staff_activity_log enable row level security;
-
-create index if not exists staff_activity_log_created_at_idx on public.staff_activity_log(created_at desc);
-create index if not exists staff_activity_log_actor_email_idx on public.staff_activity_log(actor_email);

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { canAccessAdmin } from '@/lib/admin';
 import { sendMail, inquiryReplyCustomerEmail } from '@/lib/email';
-import { logActivity } from '@/lib/activityLog';
 
 // Staff can triage inquiries too (mark read / delete / reply) — this
 // is routine day-to-day work, not a full-admin-only action.
@@ -22,7 +21,7 @@ async function requireStaffOrAdmin() {
 // Emails the customer and stores the reply text + timestamp.
 export async function POST(request) {
   try {
-    const actor = await requireStaffOrAdmin();
+    await requireStaffOrAdmin();
     const { id, reply } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const replyText = (reply || '').trim();
@@ -44,13 +43,6 @@ export async function POST(request) {
       .update({ reply: replyText, replied_at: new Date().toISOString(), read: true })
       .eq('id', id);
     if (error) throw error;
-
-    await logActivity(admin, actor, {
-      action: 'replied_to_inquiry',
-      targetType: 'inquiry',
-      targetId: id,
-      detail: `Replied to "${inquiry.subject || inquiry.name}"`,
-    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

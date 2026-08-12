@@ -139,11 +139,11 @@ export default function NotificationsBell({ userId }) {
             </div>
 
             <Link
-              href="/account#notifications"
+              href="/account#orders"
               onClick={() => setOpen(false)}
               className="block text-center px-4 py-2.5 text-xs uppercase tracking-widest text-gold hover:bg-white/5 transition-colors border-t border-white/10"
             >
-              View all
+              View orders
             </Link>
           </div>
         </>
