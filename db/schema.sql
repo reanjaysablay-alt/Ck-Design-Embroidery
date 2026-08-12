@@ -362,3 +362,31 @@ alter table public.orders
 -- ---------------------------------------------------------------------------
 alter table public.contact_inquiries add column if not exists reply text;
 alter table public.contact_inquiries add column if not exists replied_at timestamptz;
+
+-- ---------------------------------------------------------------------------
+-- Activity log: records every order/inquiry action taken by staff and
+-- admin accounts, so the admin dashboard can show what staff have been
+-- doing (see /admin/staff). Written via lib/activityLog.js using the
+-- service role key — never by the client directly.
+-- ---------------------------------------------------------------------------
+create table if not exists public.admin_activity_log (
+  id bigint generated always as identity primary key,
+  actor_email text not null,
+  actor_role text not null check (actor_role in ('admin', 'staff')),
+  action text not null,
+  target_type text,
+  target_id text,
+  details text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_activity_log enable row level security;
+
+-- No select/insert/update/delete policy is defined on purpose — this is
+-- an internal audit trail. Writes go through server actions using the
+-- service role key, and the /admin/staff page (admin-only) reads it the
+-- same way. Regular users, and even staff accounts, can never read this
+-- table directly through the client.
+
+create index if not exists admin_activity_log_created_at_idx on public.admin_activity_log(created_at desc);
+create index if not exists admin_activity_log_actor_idx on public.admin_activity_log(actor_email);

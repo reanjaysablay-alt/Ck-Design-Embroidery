@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { canAccessAdmin } from '@/lib/admin';
+import { canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { sendMail, inquiryReplyCustomerEmail } from '@/lib/email';
+import { logActivity } from '@/lib/activityLog';
 
 // Staff can triage inquiries too (mark read / delete / reply) — this
 // is routine day-to-day work, not a full-admin-only action.
@@ -21,7 +22,7 @@ async function requireStaffOrAdmin() {
 // Emails the customer and stores the reply text + timestamp.
 export async function POST(request) {
   try {
-    await requireStaffOrAdmin();
+    const actor = await requireStaffOrAdmin();
     const { id, reply } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const replyText = (reply || '').trim();
@@ -44,6 +45,15 @@ export async function POST(request) {
       .eq('id', id);
     if (error) throw error;
 
+    await logActivity({
+      actorEmail: actor.email,
+      actorRole: getAdminRole(actor.email),
+      action: 'inquiry.reply',
+      targetType: 'inquiry',
+      targetId: id,
+      details: `Replied to inquiry #${id} from ${inquiry.name}`,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err.message === 'Not authorized') {
@@ -57,7 +67,7 @@ export async function POST(request) {
 // Mark an inquiry as read.
 export async function PATCH(request) {
   try {
-    await requireStaffOrAdmin();
+    const actor = await requireStaffOrAdmin();
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
@@ -68,6 +78,16 @@ export async function PATCH(request) {
       .eq('id', id);
 
     if (error) throw error;
+
+    await logActivity({
+      actorEmail: actor.email,
+      actorRole: getAdminRole(actor.email),
+      action: 'inquiry.read',
+      targetType: 'inquiry',
+      targetId: id,
+      details: `Marked inquiry #${id} as read`,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err.message === 'Not authorized') {
@@ -81,7 +101,7 @@ export async function PATCH(request) {
 // Delete an inquiry.
 export async function DELETE(request) {
   try {
-    await requireStaffOrAdmin();
+    const actor = await requireStaffOrAdmin();
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
@@ -92,6 +112,16 @@ export async function DELETE(request) {
       .eq('id', id);
 
     if (error) throw error;
+
+    await logActivity({
+      actorEmail: actor.email,
+      actorRole: getAdminRole(actor.email),
+      action: 'inquiry.delete',
+      targetType: 'inquiry',
+      targetId: id,
+      details: `Deleted inquiry #${id}`,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err.message === 'Not authorized') {

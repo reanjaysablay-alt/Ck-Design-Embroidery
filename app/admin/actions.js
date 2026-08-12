@@ -3,10 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { isAdminEmail, canAccessAdmin } from '@/lib/admin';
+import { isAdminEmail, canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
+import { logActivity } from '@/lib/activityLog';
 import {
   sendMail,
   orderToShipCustomerEmail,
@@ -183,7 +184,7 @@ async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn })
 // pending -> to_ship. Order is confirmed and moves straight into
 // production/fulfillment.
 export async function acceptOrder(formData) {
-  await requireStaffOrAdmin();
+  const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -203,13 +204,22 @@ export async function acceptOrder(formData) {
     emailTemplateFn: orderToShipCustomerEmail,
   });
 
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.accept',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Accepted order #${order.id} ($${total}) — moved to To Ship`,
+  });
+
   revalidatePath('/admin/orders');
 }
 
 // to_ship -> to_receive. Staff marks the order as shipped/out for
 // delivery.
 export async function markShipped(formData) {
-  await requireStaffOrAdmin();
+  const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -229,13 +239,22 @@ export async function markShipped(formData) {
     emailTemplateFn: orderToReceiveCustomerEmail,
   });
 
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.ship',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Marked order #${order.id} as shipped — moved to To Receive`,
+  });
+
   revalidatePath('/admin/orders');
 }
 
 // to_receive -> completed. Staff confirms the customer has received
 // the order.
 export async function markCompleted(formData) {
-  await requireStaffOrAdmin();
+  const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -255,13 +274,22 @@ export async function markCompleted(formData) {
     emailTemplateFn: orderCompletedCustomerEmail,
   });
 
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.complete',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Marked order #${order.id} as completed`,
+  });
+
   revalidatePath('/admin/orders');
 }
 
 // pending / to_ship / to_receive -> canceled. Refunds automatically if
 // it was a paid PayPal order.
 export async function cancelOrder(formData) {
-  await requireStaffOrAdmin();
+  const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -275,11 +303,13 @@ export async function cancelOrder(formData) {
   if (error) throw new Error(error.message);
 
   // Refund automatically if it was a paid PayPal order.
+  let refunded = false;
   if (order.payment_method === 'paypal' && order.paypal_capture_id) {
     try {
       await refundCapture(order.paypal_capture_id);
       await admin.from('orders').update({ payment_status: 'refunded' }).eq('id', id);
       order.payment_status = 'refunded';
+      refunded = true;
     } catch (err) {
       console.error('Refund failed for order', id, err.message);
       // Order is still marked canceled — refund needs manual follow-up
@@ -294,6 +324,15 @@ export async function cancelOrder(formData) {
       order.payment_method === 'paypal' ? ' Your PayPal payment has been refunded.' : ''
     }`,
     emailTemplateFn: orderCanceledCustomerEmail,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.cancel',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Canceled order #${order.id} ($${total})${refunded ? ' — PayPal payment refunded' : ''}`,
   });
 
   revalidatePath('/admin/orders');
@@ -317,7 +356,7 @@ function computeOrderTotalWithFees(items) {
 // actions — this is routine operational work, not a catalog/settings
 // change.
 export async function setCustomizationFee(formData) {
-  await requireStaffOrAdmin();
+  const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
   const itemIndex = Number(formData.get('itemIndex'));
@@ -362,6 +401,15 @@ export async function setCustomizationFee(formData) {
     title: 'Order total updated 💲',
     body: `A customization charge was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
     emailTemplateFn: orderTotalUpdatedCustomerEmail,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.set_fee',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Set customization fee on order #${order.id}, item ${itemIndex + 1} — new total $${Number(order.total).toFixed(2)}`,
   });
 
   revalidatePath('/admin/orders');

@@ -42,6 +42,9 @@ export default async function AdminLayout({ children }) {
             {isAdmin && (
               <Link href="/admin/settings" className="text-thread/70 hover:text-gold">Settings</Link>
             )}
+            {isAdmin && (
+              <Link href="/admin/staff" className="text-thread/70 hover:text-gold">Staff</Link>
+            )}
           </nav>
         </div>
       </div>
