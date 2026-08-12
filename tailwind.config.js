@@ -6,6 +6,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // Every "transition-*" utility used across the site (buttons, icons,
+      // links — transition-colors, transition-all, transition-transform,
+      // etc.) shares this one default duration. Bumping it here makes
+      // every clickable element in the app animate over 1 second, without
+      // having to touch each component individually.
+      transitionDuration: {
+        DEFAULT: '1000ms',
+      },
       colors: {
         canvas: 'var(--color-canvas)',   // raw denim / indigo twill
         canvas2: 'var(--color-canvas2)', // lighter panel on canvas

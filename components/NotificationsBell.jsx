@@ -16,6 +16,16 @@ export default function NotificationsBell({ userId }) {
 
   const unread = notifications.filter((n) => !n.read).length;
 
+  // Same pattern as the header's hamburger/profile toggles: opening
+  // waits 1 second then fades in, closing is instant.
+  function toggleOpen() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setTimeout(() => setOpen(true), 1000);
+  }
+
   useEffect(() => {
     if (!userId) return;
     const supabase = createClient();
@@ -71,7 +81,7 @@ export default function NotificationsBell({ userId }) {
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={toggleOpen}
         className="relative flex items-center justify-center text-thread hover:text-gold transition-colors"
         aria-label={`Notifications, ${unread} unread`}
         aria-expanded={open}
@@ -96,7 +106,7 @@ export default function NotificationsBell({ userId }) {
             aria-hidden="true"
             tabIndex={-1}
           />
-          <div className="fixed inset-x-4 top-20 md:absolute md:inset-x-auto md:top-full md:right-0 md:mt-3 w-auto md:w-80 max-w-full md:max-w-[90vw] bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden">
+          <div className="fixed inset-x-4 top-20 md:absolute md:inset-x-auto md:top-full md:right-0 md:mt-3 w-auto md:w-80 max-w-full md:max-w-[90vw] bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden animate-dropdown-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <span className="text-thread text-sm uppercase tracking-widest">Notifications</span>
               {unread > 0 && (

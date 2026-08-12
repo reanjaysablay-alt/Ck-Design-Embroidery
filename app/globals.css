@@ -185,4 +185,16 @@ select:focus-visible {
   background-color: rgba(212, 165, 55, 0.03);
 }
 
+/* Fade-in used by header dropdowns/panels (hamburger nav, profile menu,
+   notifications) — they mount 1 second after the click that opens them
+   (see HeaderClient.jsx / NotificationsBell.jsx), then fade in over 1s
+   via this animation rather than popping in instantly. */
+@keyframes dropdownFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-dropdown-fade-in {
+  animation: dropdownFadeIn 1s ease both;
+}
+
 
