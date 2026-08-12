@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
-import NotificationsPanel from '@/components/NotificationsPanel';
 
-export const metadata = { title: 'Your Account — Stitchhouse' };
+export const metadata = { title: 'Track Order — Stitchhouse' };
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -28,34 +26,7 @@ export default async function AccountPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-5 md:px-8 py-16">
-<p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">Account</p>
-      <div className="flex items-start justify-between gap-4 mb-2">
-        <h1 className="font-display text-4xl text-thread">
-          {user.user_metadata?.nickname || user.email}
-        </h1>
-        <Link
-          href="/account/settings"
-          className="text-thread/50 hover:text-gold mt-2"
-          aria-label="Account settings"
-          title="Settings"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
-            <path
-              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
-      </div>
-      <p className="text-thread/50 text-sm mb-6">{user.email}</p>
-
-      {/* Notifications — updated live when an admin accepts/declines an order */}
-      <div id="notifications" className="mb-14">
-        <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Notifications</h2>
-        <NotificationsPanel userId={user.id} />
-      </div>
+      <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">Track Order</p>
 
       <h2 id="orders" className="text-xs uppercase tracking-widest text-gold mb-4 scroll-mt-24">
         Active Orders
