@@ -113,6 +113,14 @@ export default async function AccountPage() {
                       {item.design.name} ✓ received
                     </div>
                   )}
+                  {item.type === 'custom' && item.customizationFee > 0 && (
+                    <div className="text-gold mt-1">
+                      <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
+                        Customization fee:
+                      </span>{' '}
+                      ${Number(item.customizationFee).toFixed(2)}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
-import { acceptOrder, markShipped, markCompleted, cancelOrder } from '@/app/admin/actions';
+import { acceptOrder, markShipped, markCompleted, cancelOrder, setCustomizationFee } from '@/app/admin/actions';
 import { AcceptButton, ShipButton, ReceivedButton, CancelButton } from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 
@@ -37,6 +37,7 @@ export default async function AdminOrdersPage() {
             key={order.id}
             order={order}
             designUrls={designUrls}
+            feeAction={setCustomizationFee}
             actions={
               <>
                 {order.order_status === 'pending' && (

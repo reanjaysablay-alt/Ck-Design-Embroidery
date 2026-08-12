@@ -13,6 +13,7 @@ import {
   orderToReceiveCustomerEmail,
   orderCompletedCustomerEmail,
   orderCanceledCustomerEmail,
+  orderTotalUpdatedCustomerEmail,
 } from '@/lib/email';
 
 // Every action re-checks admin status server-side against the current
@@ -296,4 +297,67 @@ export async function cancelOrder(formData) {
   });
 
   revalidatePath('/admin/orders');
+}
+
+// Recomputes an order's total from its items: base price × qty for
+// every item, plus each custom item's own customizationFee (if set).
+function computeOrderTotalWithFees(items) {
+  return items
+    .reduce((sum, item) => {
+      const base = Number(item.price) * Number(item.qty);
+      const fee = item.type === 'custom' ? Number(item.customizationFee || 0) : 0;
+      return sum + base + fee;
+    }, 0)
+    .toFixed(2);
+}
+
+// Adds, changes, or clears the customization charge on a single custom
+// item within an order, recalculates the order total, and notifies the
+// customer of the new total. Staff/admin, same as the other order
+// actions — this is routine operational work, not a catalog/settings
+// change.
+export async function setCustomizationFee(formData) {
+  await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+  const itemIndex = Number(formData.get('itemIndex'));
+  const feeRaw = formData.get('fee')?.toString().trim();
+  const fee = feeRaw ? Number(feeRaw) : 0;
+
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const items = (existing.items || []).map((item, i) => {
+    if (i !== itemIndex) return item;
+    const updated = { ...item };
+    if (fee > 0) {
+      updated.customizationFee = fee;
+    } else {
+      delete updated.customizationFee;
+    }
+    return updated;
+  });
+
+  const total = computeOrderTotalWithFees(items);
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ items, total })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  await notifyOrderStatus(admin, order, {
+    title: 'Order total updated 💲',
+    body: `A customization charge was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
+    emailTemplateFn: orderTotalUpdatedCustomerEmail,
+  });
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/admin/orders/history');
 }

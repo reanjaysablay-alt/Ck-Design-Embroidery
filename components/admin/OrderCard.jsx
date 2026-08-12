@@ -24,8 +24,10 @@ export function StatusBadge({ status }) {
 // downloads, payment). `actions`, if passed, renders below the items
 // list — the active orders page passes Accept/Ship/Cancel etc; the
 // history page passes nothing since completed/canceled orders are
-// read-only.
-export default function OrderCard({ order, designUrls, actions }) {
+// read-only. `feeAction`, if passed, adds an inline "customization
+// fee" field to each custom item — only the active orders page wires
+// this up, so completed/canceled orders in history stay read-only.
+export default function OrderCard({ order, designUrls, actions, feeAction }) {
   return (
     <div className="bg-canvas2 border border-white/5 rounded-sm p-6">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -95,6 +97,39 @@ export default function OrderCard({ order, designUrls, actions }) {
                   <span className="text-thread/40 text-xs">unavailable</span>
                 )}
               </div>
+            )}
+            {item.type === 'custom' && !feeAction && item.customizationFee > 0 && (
+              <div className="text-gold mt-1">
+                <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
+                  Customization fee:
+                </span>{' '}
+                ${Number(item.customizationFee).toFixed(2)}
+              </div>
+            )}
+            {item.type === 'custom' && feeAction && (
+              <form action={feeAction} className="mt-2 flex items-center gap-2">
+                <input type="hidden" name="id" value={order.id} />
+                <input type="hidden" name="itemIndex" value={i} />
+                <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
+                  Customization fee
+                </span>
+                <span className="text-thread/40 text-xs">$</span>
+                <input
+                  type="number"
+                  name="fee"
+                  step="0.01"
+                  min="0"
+                  defaultValue={item.customizationFee || ''}
+                  placeholder="0.00"
+                  className="w-20 bg-canvas border border-white/10 rounded-sm px-2 py-1 text-xs text-thread"
+                />
+                <button
+                  type="submit"
+                  className="text-[10px] uppercase tracking-widest text-gold hover:text-thread border border-gold/40 rounded-sm px-2 py-1"
+                >
+                  {item.customizationFee > 0 ? 'Update' : 'Add charge'}
+                </button>
+              </form>
             )}
           </li>
         ))}
