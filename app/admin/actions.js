@@ -331,6 +331,12 @@ export async function setCustomizationFee(formData) {
     .single();
   if (fetchError) throw new Error(fetchError.message);
 
+  // Once an order has shipped (or moved beyond that), the charge is
+  // locked — never trust that the UI hides the field, re-check here.
+  if (!['pending', 'to_ship'].includes(existing.order_status)) {
+    throw new Error('Customization fee can no longer be changed — this order has already shipped.');
+  }
+
   const items = (existing.items || []).map((item, i) => {
     if (i !== itemIndex) return item;
     const updated = { ...item };

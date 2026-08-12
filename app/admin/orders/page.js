@@ -37,7 +37,7 @@ export default async function AdminOrdersPage() {
             key={order.id}
             order={order}
             designUrls={designUrls}
-            feeAction={setCustomizationFee}
+            feeAction={order.order_status === 'to_receive' ? undefined : setCustomizationFee}
             actions={
               <>
                 {order.order_status === 'pending' && (
