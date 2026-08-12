@@ -33,11 +33,5 @@ values
     'https://images.unsplash.com/photo-1521369909029-2afed882baee?w=800',
     'Structured five-panel cap with a small anchor motif on the front panel and adjustable brass buckle at the back.',
     '4,100', array['Navy', 'Gold'], array['One Size']
-  ),
-  (
-    'linen-throw-pillow', 'Botanical Linen Pillow', 42, 'Home',
-    'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800',
-    'Natural linen cover with a fern-frond border, hidden zip closure. Insert included.',
-    '22,500', array['Sage', 'Cream'], null
   )
 on conflict (slug) do nothing;

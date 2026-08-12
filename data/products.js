@@ -57,17 +57,6 @@ export const products = [
     threads: ['Navy', 'Gold'],
     sizes: ['One Size'],
   },
-  {
-    slug: 'linen-throw-pillow',
-    name: 'Botanical Linen Pillow',
-    price: 42,
-    category: 'Home',
-    image: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800',
-    description:
-      'Natural linen cover with a fern-frond border, hidden zip closure. Insert included.',
-    stitchCount: '22,500',
-    threads: ['Sage', 'Cream'],
-  },
 ];
 
 export function getProduct(slug) {
