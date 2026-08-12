@@ -61,7 +61,7 @@ export function ReplyForm({ id, existingReply }) {
     setSending(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/inquiries/reply', {
+      const res = await fetch('/api/admin/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, reply: text }),
