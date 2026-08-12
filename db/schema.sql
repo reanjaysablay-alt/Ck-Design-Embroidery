@@ -255,6 +255,11 @@ create table if not exists public.contact_inquiries (
   message text not null,
   rating integer check (rating >= 1 and rating <= 5),
   read boolean not null default false,
+  -- Staff's reply to this inquiry (message/feedback/quote types — not
+  -- used for ratings). Emailed to the customer when set; overwriting it
+  -- sends a fresh reply email.
+  reply text,
+  replied_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -347,3 +352,13 @@ update public.orders set order_status = 'canceled' where order_status = 'decline
 alter table public.orders
   add constraint orders_order_status_check
   check (order_status in ('pending', 'to_ship', 'to_receive', 'completed', 'canceled'));
+
+-- ---------------------------------------------------------------------------
+-- Migration: add staff reply fields to contact_inquiries (message/
+-- feedback/quote types — the dashboard's Inquiries view). Safe to
+-- re-run — only needed once on a database created before this change
+-- (a brand-new database already gets these from the table definition
+-- above).
+-- ---------------------------------------------------------------------------
+alter table public.contact_inquiries add column if not exists reply text;
+alter table public.contact_inquiries add column if not exists replied_at timestamptz;

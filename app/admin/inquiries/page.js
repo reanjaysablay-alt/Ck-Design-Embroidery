@@ -1,15 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import { MarkInquiryReadButton, DeleteInquiryButton } from './client';
+import { MarkInquiryReadButton, DeleteInquiryButton, ReplyForm } from './client';
 
 export const metadata = { title: 'Inquiries — Admin — Stitchhouse' };
 
 export const dynamic = 'force-dynamic';
 
+// Messages, feedback, and quote requests only — ratings have their own
+// page at /admin/ratings.
 export default async function AdminInquiriesPage() {
   const admin = createAdminClient();
   const { data: inquiries } = await admin
     .from('contact_inquiries')
     .select('*')
+    .neq('type', 'rating')
     .order('created_at', { ascending: false });
 
   return (
@@ -29,7 +32,6 @@ export default async function AdminInquiriesPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-thread/40">#{inquiry.id}</span>
                   <InquiryTypeBadge type={inquiry.type} />
-                  {inquiry.rating && <span className="text-gold text-sm">{'★'.repeat(inquiry.rating)}</span>}
                   {!inquiry.read && <span className="w-2 h-2 rounded-full bg-gold" />}
                 </div>
                 <div className="font-display text-lg text-thread mt-1">{inquiry.name}</div>
@@ -53,17 +55,30 @@ export default async function AdminInquiriesPage() {
               {inquiry.message}
             </div>
 
-            <div className="flex gap-3">
+            {inquiry.reply && (
+              <div className="border-l-2 border-gold/60 pl-4 mb-3">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-gold mb-1">
+                  Your reply · {new Date(inquiry.replied_at).toLocaleString()}
+                </div>
+                <div className="text-thread/70 text-sm leading-relaxed whitespace-pre-wrap">
+                  {inquiry.reply}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mb-1">
               {!inquiry.read && <MarkInquiryReadButton id={inquiry.id} />}
               <DeleteInquiryButton id={inquiry.id} />
             </div>
+
+            <ReplyForm id={inquiry.id} existingReply={inquiry.reply} />
           </div>
         ))}
         {(!inquiries || inquiries.length === 0) && (
           <div className="bg-canvas2 border border-white/5 rounded-sm p-10 text-center">
             <p className="text-thread/60">No inquiries yet.</p>
             <p className="text-thread/40 text-sm mt-2">
-              Messages, feedback, ratings, and quote requests from customers will appear here.
+              Messages, feedback, and quote requests from customers will appear here.
             </p>
           </div>
         )}
@@ -76,13 +91,11 @@ function InquiryTypeBadge({ type }) {
   const styles = {
     message: 'border-blue-400 text-blue-400',
     feedback: 'border-purple-400 text-purple-400',
-    rating: 'border-gold text-gold',
     quote: 'border-green-400 text-green-400',
   };
   const labels = {
     message: 'Message',
     feedback: 'Feedback',
-    rating: 'Rating',
     quote: 'Quote Request',
   };
   return (
@@ -91,4 +104,3 @@ function InquiryTypeBadge({ type }) {
     </span>
   );
 }
-

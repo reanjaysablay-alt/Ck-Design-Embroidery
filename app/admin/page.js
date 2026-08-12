@@ -12,7 +12,14 @@ export default async function AdminHome() {
   const { count: unreadInquiries } = await admin
     .from('contact_inquiries')
     .select('*', { count: 'exact', head: true })
-    .eq('read', false);
+    .eq('read', false)
+    .neq('type', 'rating');
+
+  const { count: unreadRatings } = await admin
+    .from('contact_inquiries')
+    .select('*', { count: 'exact', head: true })
+    .eq('read', false)
+    .eq('type', 'rating');
 
   const supabase = await createClient();
   const {
@@ -27,7 +34,7 @@ export default async function AdminHome() {
   return (
     <div>
       <h1 className="font-display text-3xl text-thread mb-8">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Link
           href="/admin/orders"
           className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
@@ -41,6 +48,13 @@ export default async function AdminHome() {
         >
           <div className="font-mono text-4xl text-gold mb-2">{unreadInquiries ?? 0}</div>
           <div className="text-thread/70">Unread inquiries</div>
+        </Link>
+        <Link
+          href="/admin/ratings"
+          className="bg-canvas2 border border-white/5 rounded-sm p-8 hover:border-gold/40 transition-colors"
+        >
+          <div className="font-mono text-4xl text-gold mb-2">{unreadRatings ?? 0}</div>
+          <div className="text-thread/70">Unread ratings</div>
         </Link>
         {isAdmin && (
           <Link
