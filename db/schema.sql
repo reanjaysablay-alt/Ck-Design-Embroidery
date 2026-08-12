@@ -46,7 +46,7 @@ create table if not exists public.orders (
   currency text not null default 'USD',
   payment_method text not null check (payment_method in ('paypal', 'cod')),
   payment_status text not null default 'pending',
-  order_status text not null default 'pending' check (order_status in ('pending', 'accepted', 'declined')),
+  order_status text not null default 'pending' check (order_status in ('pending', 'to_ship', 'to_receive', 'completed', 'canceled')),
   paypal_order_id text,
   paypal_capture_id text,
   shipping_address jsonb,
@@ -331,3 +331,19 @@ alter table public.orders
 -- the products table definition above).
 -- ---------------------------------------------------------------------------
 alter table public.products add column if not exists in_stock boolean not null default true;
+
+-- ---------------------------------------------------------------------------
+-- Migration: expand order_status from pending/accepted/declined to the
+-- full fulfillment lifecycle (pending, to_ship, to_receive, completed,
+-- canceled). Safe to re-run — only needed once on a database created
+-- before this change (a brand-new database already gets the new set
+-- from the orders table definition above). Existing rows are remapped
+-- so no order is left with a status value the new check no longer
+-- allows: accepted -> to_ship, declined -> canceled.
+-- ---------------------------------------------------------------------------
+alter table public.orders drop constraint if exists orders_order_status_check;
+update public.orders set order_status = 'to_ship' where order_status = 'accepted';
+update public.orders set order_status = 'canceled' where order_status = 'declined';
+alter table public.orders
+  add constraint orders_order_status_check
+  check (order_status in ('pending', 'to_ship', 'to_receive', 'completed', 'canceled'));

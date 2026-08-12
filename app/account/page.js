@@ -126,13 +126,17 @@ export default async function AccountPage() {
 function OrderStatusBadge({ status }) {
   const styles = {
     pending: 'text-gold border-gold',
-    accepted: 'text-green-400 border-green-400',
-    declined: 'text-stitchRed border-stitchRed',
+    to_ship: 'text-blue-400 border-blue-400',
+    to_receive: 'text-blue-400 border-blue-400',
+    completed: 'text-green-400 border-green-400',
+    canceled: 'text-stitchRed border-stitchRed',
   };
   const labels = {
     pending: 'Pending approval',
-    accepted: 'Accepted',
-    declined: 'Declined',
+    to_ship: 'To ship',
+    to_receive: 'To receive',
+    completed: 'Completed',
+    canceled: 'Canceled',
   };
   return (
     <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${styles[status]}`}>

@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
-import { acceptOrder, declineOrder } from '@/app/admin/actions';
-import { AcceptButton, DeclineButton } from '@/components/admin/OrderActionButtons';
+import { acceptOrder, markShipped, markCompleted, cancelOrder } from '@/app/admin/actions';
+import { AcceptButton, ShipButton, ReceivedButton, CancelButton } from '@/components/admin/OrderActionButtons';
 
 export default async function AdminOrdersPage() {
   const admin = createAdminClient();
@@ -112,7 +112,19 @@ export default async function AdminOrdersPage() {
             {order.order_status === 'pending' && (
               <div className="flex gap-3">
                 <AcceptButton id={order.id} action={acceptOrder} />
-                <DeclineButton id={order.id} action={declineOrder} />
+                <CancelButton id={order.id} action={cancelOrder} />
+              </div>
+            )}
+            {order.order_status === 'to_ship' && (
+              <div className="flex gap-3">
+                <ShipButton id={order.id} action={markShipped} />
+                <CancelButton id={order.id} action={cancelOrder} />
+              </div>
+            )}
+            {order.order_status === 'to_receive' && (
+              <div className="flex gap-3">
+                <ReceivedButton id={order.id} action={markCompleted} />
+                <CancelButton id={order.id} action={cancelOrder} />
               </div>
             )}
           </div>
@@ -128,12 +140,21 @@ export default async function AdminOrdersPage() {
 function StatusBadge({ status }) {
   const styles = {
     pending: 'text-gold border-gold',
-    accepted: 'text-green-400 border-green-400',
-    declined: 'text-stitchRed border-stitchRed',
+    to_ship: 'text-blue-400 border-blue-400',
+    to_receive: 'text-blue-400 border-blue-400',
+    completed: 'text-green-400 border-green-400',
+    canceled: 'text-stitchRed border-stitchRed',
+  };
+  const labels = {
+    pending: 'pending',
+    to_ship: 'to ship',
+    to_receive: 'to receive',
+    completed: 'completed',
+    canceled: 'canceled',
   };
   return (
     <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${styles[status]}`}>
-      {status}
+      {labels[status] || status}
     </span>
   );
 }

@@ -9,8 +9,10 @@ import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import {
   sendMail,
-  orderAcceptedCustomerEmail,
-  orderDeclinedCustomerEmail,
+  orderToShipCustomerEmail,
+  orderToReceiveCustomerEmail,
+  orderCompletedCustomerEmail,
+  orderCanceledCustomerEmail,
 } from '@/lib/email';
 
 // Every action re-checks admin status server-side against the current
@@ -154,6 +156,31 @@ color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
   revalidatePath('/');
 }
 
+// Shared by every order-status transition below: sends the customer's
+// Gmail notification FIRST (so it can never be blocked by anything
+// after it), then writes the in-app notification (wrapped in its own
+// try/catch so a problem there never blocks the email or the status
+// update that already happened).
+async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn }) {
+  if (order.customer_email) {
+    const { subject, html } = emailTemplateFn(order);
+    await sendMail({ to: order.customer_email, subject, html });
+  }
+
+  try {
+    await admin.from('notifications').insert({
+      user_id: order.user_id,
+      order_id: order.id,
+      title,
+      body,
+    });
+  } catch (err) {
+    console.error('Notification insert failed for order', order.id, err.message);
+  }
+}
+
+// pending -> to_ship. Order is confirmed and moves straight into
+// production/fulfillment.
 export async function acceptOrder(formData) {
   await requireStaffOrAdmin();
   const admin = createAdminClient();
@@ -161,47 +188,85 @@ export async function acceptOrder(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'accepted' })
+    .update({ order_status: 'to_ship' })
     .eq('id', id)
     .select('*')
     .single();
 
   if (error) throw new Error(error.message);
 
-  // 1) Realtime Gmail notification — sent FIRST so it can never be
-  //    blocked by anything below. Fires the moment the admin clicks
-  //    Accept and lands in the customer's Gmail app immediately.
-  if (order.customer_email) {
-    const { subject, html } = orderAcceptedCustomerEmail(order);
-    await sendMail({ to: order.customer_email, subject, html });
-  }
-
-  // 2) In-app notification (live on /account via Realtime). Wrapped in
-  //    try/catch so a problem here never blocks the order action or
-  //    the email above.
-  try {
-    const total = Number(order.total).toFixed(2);
-    await admin.from('notifications').insert({
-      user_id: order.user_id,
-      order_id: order.id,
-      title: 'Order accepted 🎉',
-      body: `Great news — order #${order.id} ($${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
-    });
-  } catch (err) {
-    console.error('Notification insert failed for order', id, err.message);
-  }
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Order accepted 🎉',
+    body: `Great news — order #${order.id} ($${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
+    emailTemplateFn: orderToShipCustomerEmail,
+  });
 
   revalidatePath('/admin/orders');
 }
 
-export async function declineOrder(formData) {
+// to_ship -> to_receive. Staff marks the order as shipped/out for
+// delivery.
+export async function markShipped(formData) {
   await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'declined' })
+    .update({ order_status: 'to_receive' })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Order shipped 📦',
+    body: `Order #${order.id} ($${total}) is on its way to you.`,
+    emailTemplateFn: orderToReceiveCustomerEmail,
+  });
+
+  revalidatePath('/admin/orders');
+}
+
+// to_receive -> completed. Staff confirms the customer has received
+// the order.
+export async function markCompleted(formData) {
+  await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ order_status: 'completed' })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Order completed ✅',
+    body: `Order #${order.id} ($${total}) has been marked as received. Thanks for your order!`,
+    emailTemplateFn: orderCompletedCustomerEmail,
+  });
+
+  revalidatePath('/admin/orders');
+}
+
+// pending / to_ship / to_receive -> canceled. Refunds automatically if
+// it was a paid PayPal order.
+export async function cancelOrder(formData) {
+  await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ order_status: 'canceled' })
     .eq('id', id)
     .select('*')
     .single();
@@ -213,37 +278,22 @@ export async function declineOrder(formData) {
     try {
       await refundCapture(order.paypal_capture_id);
       await admin.from('orders').update({ payment_status: 'refunded' }).eq('id', id);
+      order.payment_status = 'refunded';
     } catch (err) {
       console.error('Refund failed for order', id, err.message);
-      // Order is still marked declined — refund needs manual follow-up
+      // Order is still marked canceled — refund needs manual follow-up
       // in the PayPal dashboard if this happens.
     }
   }
 
-  // 1) Realtime Gmail notification — sent FIRST so it can never be
-  //    blocked by anything below. Fires the moment the admin clicks
-  //    Decline and lands in the customer's Gmail app immediately.
-  if (order.customer_email) {
-    const { subject, html } = orderDeclinedCustomerEmail(order);
-    await sendMail({ to: order.customer_email, subject, html });
-  }
-
-  // 2) In-app notification (live on /account via Realtime). Wrapped in
-  //    try/catch so a problem here never blocks the order action or
-  //    the email above.
-  try {
-    const total = Number(order.total).toFixed(2);
-    await admin.from('notifications').insert({
-      user_id: order.user_id,
-      order_id: order.id,
-      title: 'Order declined',
-      body: `We're sorry — order #${order.id} ($${total}) couldn't be fulfilled.${
-        order.payment_method === 'paypal' ? ' Your PayPal payment has been refunded.' : ''
-      }`,
-    });
-  } catch (err) {
-    console.error('Notification insert failed for order', id, err.message);
-  }
+  const total = Number(order.total).toFixed(2);
+  await notifyOrderStatus(admin, order, {
+    title: 'Order canceled',
+    body: `We're sorry — order #${order.id} ($${total}) couldn't be fulfilled.${
+      order.payment_method === 'paypal' ? ' Your PayPal payment has been refunded.' : ''
+    }`,
+    emailTemplateFn: orderCanceledCustomerEmail,
+  });
 
   revalidatePath('/admin/orders');
 }
