@@ -19,7 +19,7 @@ export default async function AdminProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <h1 className="font-display text-3xl text-thread">Products</h1>
         <Link
           href="/admin/products/new"
@@ -31,8 +31,8 @@ export default async function AdminProductsPage() {
 
       <div className="divide-y divide-white/10 border-t border-b border-white/10">
         {products.map((p) => (
-          <div key={p.id} className="flex items-center gap-4 py-4">
-            <div className="flex-1 min-w-0">
+          <div key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-4">
+            <div className="flex-1 min-w-[140px]">
               <div className="font-display text-lg text-thread truncate flex items-center gap-2">
                 {p.name}
                 {p.inStock === false && (
@@ -43,10 +43,10 @@ export default async function AdminProductsPage() {
               </div>
               <div className="text-thread/40 text-xs font-mono">{p.slug} · {p.category}</div>
             </div>
-            <div className="font-mono text-thread w-20 text-right">${p.price}</div>
+            <div className="font-mono text-thread flex-shrink-0">${p.price}</div>
             <Link
               href={`/admin/products/${p.id}/edit`}
-              className="text-gold text-xs uppercase tracking-widest hover:underline"
+              className="text-gold text-xs uppercase tracking-widest hover:underline flex-shrink-0"
             >
               Edit
             </Link>

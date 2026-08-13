@@ -123,7 +123,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction }) {
               </div>
             )}
             {item.type === 'custom' && feeAction && (
-              <form action={feeAction} className="mt-2 flex items-center gap-2">
+              <form action={feeAction} className="mt-2 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={order.id} />
                 <input type="hidden" name="itemIndex" value={i} />
                 <span className="font-mono text-xs uppercase tracking-widest text-thread/40">

@@ -98,7 +98,7 @@ export function ReplyForm({ id, existingReply }) {
         className="w-full bg-canvas border border-white/10 rounded-sm px-3 py-2 text-sm text-thread placeholder:text-thread/30"
       />
       {error && <p className="text-stitchRed text-xs">{error}</p>}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button
           type="submit"
           disabled={sending || !text.trim()}

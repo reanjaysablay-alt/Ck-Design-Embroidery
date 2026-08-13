@@ -28,7 +28,7 @@ export default async function AdminRatingsPage() {
               rating.read ? 'bg-canvas2 border-white/5' : 'bg-canvas2 border-gold/40'
             }`}
           >
-            <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-thread/40">#{rating.id}</span>
@@ -53,7 +53,7 @@ export default async function AdminRatingsPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {!rating.read && <MarkInquiryReadButton id={rating.id} />}
               <DeleteInquiryButton id={rating.id} />
             </div>

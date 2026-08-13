@@ -18,7 +18,7 @@ export default async function AdminOrderHistoryPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <h1 className="font-display text-3xl text-thread">Order History</h1>
         <Link
           href="/admin/orders"

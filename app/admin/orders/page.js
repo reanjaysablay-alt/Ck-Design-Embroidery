@@ -36,7 +36,7 @@ export default async function AdminOrdersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <h1 className="font-display text-3xl text-thread">Orders</h1>
         <Link
           href="/admin/orders/history"
@@ -58,7 +58,7 @@ export default async function AdminOrdersPage() {
               actions={
                 <>
                   {order.order_status === 'pending' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <AcceptButton
                         id={order.id}
                         action={acceptOrder}
@@ -68,25 +68,25 @@ export default async function AdminOrdersPage() {
                     </div>
                   )}
                   {order.order_status === 'to_ship' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <ShipButton id={order.id} action={markShipped} />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>
                   )}
                   {order.order_status === 'to_receive' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <ReceivedButton id={order.id} action={markCompleted} />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>
                   )}
                   {order.order_status === 'preparing' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <ReadyForPickupButton id={order.id} action={markReadyForPickup} />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>
                   )}
                   {order.order_status === 'ready_for_pickup' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <PickedUpButton id={order.id} action={markPickedUp} />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>

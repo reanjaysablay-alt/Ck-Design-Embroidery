@@ -80,7 +80,7 @@ export default async function AdminStaffPage() {
                 </div>
                 {s.nickname && <div className="text-thread/40 text-xs">{s.email}</div>}
               </div>
-              <div className="flex items-center gap-6 text-xs font-mono text-thread/50">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-thread/50">
                 {s.signedUp ? (
                   <>
                     <span>
@@ -128,7 +128,7 @@ export default async function AdminStaffPage() {
                   <div className="text-thread/50 text-xs mt-0.5">{entry.details}</div>
                 )}
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-3">
                 <span
                   className={`text-[10px] font-mono uppercase tracking-widest border rounded-sm px-1.5 py-0.5 ${
                     entry.actor_role === 'admin'

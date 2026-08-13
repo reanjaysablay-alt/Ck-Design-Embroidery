@@ -27,7 +27,7 @@ export default async function AdminInquiriesPage() {
               inquiry.read ? 'bg-canvas2 border-white/5' : 'bg-canvas2 border-gold/40'
             }`}
           >
-            <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-thread/40">#{inquiry.id}</span>
