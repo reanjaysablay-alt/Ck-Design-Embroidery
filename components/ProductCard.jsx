@@ -1,19 +1,13 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
 import { productImageSrc } from '@/lib/placeholder';
 
-export default function ProductCard({ product }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user || null));
-  }, []);
-
+// isLoggedIn comes from the parent Server Component, which already
+// knows the session with zero delay via createClient() on the server.
+// Previously this did its own client-side supabase.auth.getUser() call
+// per card, which meant every card rendered non-clickable until that
+// async check resolved — the exact "always delays before it opens" bug.
+export default function ProductCard({ product, isLoggedIn }) {
   const outOfStock = product.inStock === false;
 
   const image = (
@@ -39,7 +33,7 @@ export default function ProductCard({ product }) {
   );
 
   // Not logged in — render the card but don't make it clickable.
-  if (!user) {
+  if (!isLoggedIn) {
     return (
       <div className="group block">
         {image}
@@ -52,9 +46,10 @@ export default function ProductCard({ product }) {
     );
   }
 
-  // Logged in — the card links to the product detail page (customers
-  // can still view an out-of-stock product's details, they just can't
-  // add it to their cart — see ProductDetail).
+  // Logged in — the card links to the product detail page immediately,
+  // no async check or delay (customers can still view an out-of-stock
+  // product's details, they just can't add it to their cart — see
+  // ProductDetail).
   return (
     <Link href={`/shop/${product.slug}`} className="group block">
       {image}

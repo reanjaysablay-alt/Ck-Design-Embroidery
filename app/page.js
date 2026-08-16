@@ -5,10 +5,17 @@ import ProductCard from '@/components/ProductCard';
 import RatingsSection from '@/components/RatingsSection';
 import { getProducts } from '@/lib/products';
 import { getSiteSettings } from '@/lib/settings';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function Home() {
-  const products = await getProducts();
-  const settings = await getSiteSettings();
+  const [products, settings, supabase] = await Promise.all([
+    getProducts(),
+    getSiteSettings(),
+    createClient(),
+  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const featured = products.slice(0, 4);
 
   return (
@@ -103,7 +110,7 @@ export default async function Home() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
           {featured.map((p) => (
-            <ProductCard key={p.slug} product={p} />
+            <ProductCard key={p.slug} product={p} isLoggedIn={!!user} />
           ))}
         </div>
       </section>
