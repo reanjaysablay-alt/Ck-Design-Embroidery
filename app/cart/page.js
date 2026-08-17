@@ -31,7 +31,7 @@ export default function CartPage() {
 
       <div className="divide-y divide-white/10 mb-10">
         {items.map((item) => (
-          <div key={item.key} className="flex items-center gap-5 py-6">
+          <div key={item.key} className="flex items-start gap-5 py-6">
             <div className="relative w-20 h-24 bg-linen2 rounded-sm overflow-hidden flex-shrink-0">
               <Image src={productImageSrc(item.image)} alt={item.name} fill sizes="80px" className="object-cover" />
             </div>
@@ -59,31 +59,36 @@ export default function CartPage() {
                   {item.note}
                 </div>
               )}
+
+              {/* Quantity — sits under the product details instead of
+                  in its own column, so it reads as part of this item
+                  rather than a separate table column. */}
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  onClick={() => updateQty(item.key, item.qty - 1)}
+                  className="w-8 h-8 border border-white/20 rounded-sm text-thread hover:border-gold"
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+                <span className="font-mono w-6 text-center">{item.qty}</span>
+                <button
+                  onClick={() => updateQty(item.key, item.qty + 1)}
+                  className="w-8 h-8 border border-white/20 rounded-sm text-thread hover:border-gold"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+
               <button
                 onClick={() => removeItem(item.key)}
-                className="text-stitchRed text-xs uppercase tracking-widest mt-2 hover:underline"
+                className="text-stitchRed text-xs uppercase tracking-widest mt-3 hover:underline"
               >
                 Remove
               </button>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => updateQty(item.key, item.qty - 1)}
-                className="w-8 h-8 border border-white/20 rounded-sm text-thread hover:border-gold"
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-              <span className="font-mono w-6 text-center">{item.qty}</span>
-              <button
-                onClick={() => updateQty(item.key, item.qty + 1)}
-                className="w-8 h-8 border border-white/20 rounded-sm text-thread hover:border-gold"
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
-            <div className="font-mono text-thread w-16 text-right">
+            <div className="font-mono text-thread w-16 text-right flex-shrink-0">
               ${(item.price * item.qty).toFixed(2)}
             </div>
           </div>
