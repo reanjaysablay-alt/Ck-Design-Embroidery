@@ -15,6 +15,7 @@ import {
 } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { CartProvider } from '@/components/CartContext';
 import { getSiteSettings } from '@/lib/settings';
 import { getFontOption } from '@/lib/fonts';
@@ -95,6 +96,7 @@ export default async function RootLayout({ children }) {
         <CartProvider>
           <Header />
           <main>{children}</main>
+          <Footer />
         </CartProvider>
       </body>
     </html>
