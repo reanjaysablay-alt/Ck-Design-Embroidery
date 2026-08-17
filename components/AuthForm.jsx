@@ -251,29 +251,6 @@ function AuthFormInner({ initialMode }) {
     <div className="max-w-sm mx-auto px-5 py-24">
       <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">Account</p>
 
-      {/* Log in / Create account — real navigation between /login and
-          /signup, not a local tab toggle, so they're separate pages. */}
-      {mode !== 'reset' && (
-        <div className="flex gap-3 mb-8 border-b border-white/10 pb-4">
-          <Link
-            href="/login"
-            className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
-              mode === 'login' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
-            }`}
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className={`text-sm uppercase tracking-widest pb-2 transition-colors ${
-              mode === 'signup' ? 'text-gold border-b-2 border-gold' : 'text-thread/50 hover:text-thread/80'
-            }`}
-          >
-            Create account
-          </Link>
-        </div>
-      )}
-
       {authError && (
         <p className="text-stitchRed text-sm mb-6">
           Something went wrong — please try again.
@@ -286,6 +263,12 @@ function AuthFormInner({ initialMode }) {
 
       {mode === 'login' && (
         <form onSubmit={handleLogin} className="space-y-4">
+          <div className="mb-4">
+            <h1 className="font-display text-3xl text-thread mb-2">Log in</h1>
+            <p className="text-thread/60 text-sm leading-relaxed">
+              Welcome back — enter your email and password to continue.
+            </p>
+          </div>
           <Field label="Email" type="email" value={loginEmail} onChange={setLoginEmail} required />
           <Field label="Password" type="password" value={loginPassword} onChange={setLoginPassword} required />
           <div className="text-right">
@@ -304,6 +287,12 @@ function AuthFormInner({ initialMode }) {
           >
             {loading ? 'Logging in…' : 'Log in'}
           </button>
+          <p className="text-center text-thread/50 text-sm pt-2">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="text-gold hover:underline">
+              Create one
+            </Link>
+          </p>
         </form>
       )}
 
@@ -379,6 +368,12 @@ function SignupForm({
         >
           {loading ? 'Sending code…' : 'Send code'}
         </button>
+        <p className="text-center text-thread/50 text-sm">
+          Already have an account?{' '}
+          <Link href="/login" className="text-gold hover:underline">
+            Log in
+          </Link>
+        </p>
       </div>
     );
   }
