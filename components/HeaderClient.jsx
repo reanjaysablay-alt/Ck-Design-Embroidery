@@ -158,15 +158,37 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
               )}
             </div>
           ) : (
-            <Link href="/login" className="hidden md:inline-block text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
-              Log in
-            </Link>
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                href="/signup"
+                className="text-thread/80 hover:text-thread text-xs uppercase tracking-widest border border-white/20 rounded-full px-4 py-2 transition-colors"
+              >
+                Sign Up
+              </Link>
+              <Link
+                href="/login"
+                className="text-thread/80 hover:text-thread text-xs uppercase tracking-widest border border-white/20 rounded-full px-4 py-2 transition-colors"
+              >
+                Login
+              </Link>
+            </div>
           )}
 
           {!user && (
-            <Link href="/login" className="md:hidden text-thread/80 hover:text-gold text-sm uppercase tracking-widest">
-              Log in
-            </Link>
+            <div className="flex md:hidden items-center gap-2">
+              <Link
+                href="/signup"
+                className="text-thread/80 hover:text-thread text-xs uppercase tracking-widest border border-white/20 rounded-full px-3 py-1.5 transition-colors"
+              >
+                Sign Up
+              </Link>
+              <Link
+                href="/login"
+                className="text-thread/80 hover:text-thread text-xs uppercase tracking-widest border border-white/20 rounded-full px-3 py-1.5 transition-colors"
+              >
+                Login
+              </Link>
+            </div>
           )}
 
           {user && (
