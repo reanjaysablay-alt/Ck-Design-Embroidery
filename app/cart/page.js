@@ -88,9 +88,6 @@ export default function CartPage() {
                 Remove
               </button>
             </div>
-            <div className="font-mono text-thread w-16 text-right flex-shrink-0">
-              ${(item.price * item.qty).toFixed(2)}
-            </div>
           </div>
         ))}
       </div>
