@@ -1,8 +1,25 @@
 import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
+import { getSiteSettings } from '@/lib/settings';
+import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
+import { updateSiteSettings } from '@/app/admin/actions';
 
-// Settings has been removed from the admin dashboard — this route is
-// kept only so an old bookmark/link doesn't 404, and just bounces
-// straight to Orders.
-export default function AdminSettingsPage() {
-  redirect('/admin/orders');
+export const metadata = { title: 'Site Settings — Stitchhouse Admin' };
+
+export default async function AdminSettingsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminEmail(user?.email)) redirect('/admin/orders');
+
+  const settings = await getSiteSettings();
+
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold text-slate-900 mb-8">Site Settings</h1>
+      <SiteSettingsForm settings={settings} action={updateSiteSettings} />
+    </div>
+  );
 }

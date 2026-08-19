@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { computeTotal } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
+import { verifyCartItems } from '@/lib/cartVerify';
 
 export async function POST(request) {
   const supabase = await createClient();
@@ -22,13 +22,17 @@ export async function POST(request) {
   }
 
   try {
+    // Re-price against the real products table — never trust price,
+    // total, or stock status as sent from the browser.
+    const { items: verifiedItems, total } = await verifyCartItems(items);
+
     const { data: order, error: dbError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
         customer_email: user.email,
-        items,
-        total: computeTotal(items),
+        items: verifiedItems,
+        total,
         currency: 'USD',
         payment_method: 'cod',
         payment_status: 'pending_cod',
@@ -53,6 +57,7 @@ export async function POST(request) {
     return NextResponse.json({ orderId: order.id });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Could not place order' }, { status: 500 });
+    const status = err.message?.includes('available') || err.message?.includes('stock') || err.message?.includes('Invalid') || err.message?.includes('empty') ? 400 : 500;
+    return NextResponse.json({ error: err.message || 'Could not place order' }, { status });
   }
 }

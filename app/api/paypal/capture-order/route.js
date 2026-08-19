@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { captureOrder, computeTotal, extractCaptureId } from '@/lib/paypal';
+import { captureOrder, extractCaptureId } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
+import { verifyCartItems } from '@/lib/cartVerify';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -37,6 +38,12 @@ export async function POST(request) {
   }
 
   try {
+    // Re-verify against the real products table again here too — the
+    // actual PayPal charge was already locked in at create-order time,
+    // but this is what gets stored as the order record, so it must
+    // reflect real prices, not whatever the browser resubmits now.
+    const { items: verifiedItems, total: verifiedTotal } = await verifyCartItems(items);
+
     const capture = await captureOrder(orderID);
     const status = capture.status;
 
@@ -49,8 +56,8 @@ export async function POST(request) {
       .insert({
         user_id: user.id,
         customer_email: user.email,
-        items,
-        total: computeTotal(items),
+        items: verifiedItems,
+        total: verifiedTotal,
         currency: 'USD',
         payment_method: 'paypal',
         payment_status: 'paid',

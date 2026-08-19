@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createOrder } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
+import { verifyCartItems } from '@/lib/cartVerify';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -36,10 +37,15 @@ export async function POST(request) {
   }
 
   try {
-    const order = await createOrder({ items, currency: currency || 'USD' });
+    // Re-price against the real products table — this is the amount
+    // that actually gets charged, so it's the critical point to verify
+    // at. Anything the browser sent for `price` is discarded here.
+    const { items: verifiedItems } = await verifyCartItems(items);
+    const order = await createOrder({ items: verifiedItems, currency: currency || 'USD' });
     return NextResponse.json({ id: order.id });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Could not start PayPal checkout' }, { status: 500 });
+    const status = err.message?.includes('available') || err.message?.includes('stock') || err.message?.includes('Invalid') || err.message?.includes('empty') ? 400 : 500;
+    return NextResponse.json({ error: err.message || 'Could not start PayPal checkout' }, { status });
   }
 }
