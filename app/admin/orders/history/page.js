@@ -19,10 +19,10 @@ export default async function AdminOrderHistoryPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-        <h1 className="font-display text-3xl text-thread">Order History</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Order History</h1>
         <Link
           href="/admin/orders"
-          className="text-xs uppercase tracking-widest text-thread/50 hover:text-gold"
+          className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
         >
           ← Back to Orders
         </Link>
@@ -33,7 +33,7 @@ export default async function AdminOrderHistoryPage() {
           <OrderCard key={order.id} order={order} designUrls={designUrls} />
         ))}
         {(!orders || orders.length === 0) && (
-          <p className="text-thread/50">No completed or canceled orders yet.</p>
+          <p className="text-slate-500">No completed or canceled orders yet.</p>
         )}
       </div>
     </div>

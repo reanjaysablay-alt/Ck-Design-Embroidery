@@ -13,7 +13,7 @@ export default function DeleteProductButton({ id, name, action }) {
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
-        className="text-stitchRed text-xs uppercase tracking-widest hover:underline"
+        className="text-red-600 text-xs uppercase tracking-widest hover:underline"
       >
         Delete
       </button>

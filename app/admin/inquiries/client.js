@@ -18,7 +18,7 @@ export function MarkInquiryReadButton({ id }) {
   return (
     <button
       onClick={handleMarkRead}
-      className="text-gold text-xs uppercase tracking-widest hover:underline"
+      className="text-indigo-600 text-xs uppercase tracking-widest hover:underline"
     >
       Mark as read
     </button>
@@ -41,7 +41,7 @@ export function DeleteInquiryButton({ id }) {
   return (
     <button
       onClick={handleDelete}
-      className="text-stitchRed text-xs uppercase tracking-widest hover:underline"
+      className="text-red-600 text-xs uppercase tracking-widest hover:underline"
     >
       Delete
     </button>
@@ -81,7 +81,7 @@ export function ReplyForm({ id, existingReply }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-gold text-xs uppercase tracking-widest hover:underline"
+        className="text-indigo-600 text-xs uppercase tracking-widest hover:underline"
       >
         Edit reply
       </button>
@@ -95,14 +95,14 @@ export function ReplyForm({ id, existingReply }) {
         onChange={(e) => setText(e.target.value)}
         rows={3}
         placeholder="Write a reply — this gets emailed to the customer."
-        className="w-full bg-canvas border border-white/10 rounded-sm px-3 py-2 text-sm text-thread placeholder:text-thread/30"
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
       />
-      {error && <p className="text-stitchRed text-xs">{error}</p>}
+      {error && <p className="text-red-600 text-xs">{error}</p>}
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
           disabled={sending || !text.trim()}
-          className="bg-gold text-ink font-body uppercase tracking-widest text-xs px-4 py-2 rounded-sm hover:bg-thread transition-colors disabled:opacity-50"
+          className="bg-indigo-600 text-white font-medium text-xs px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50"
         >
           {sending ? 'Sending…' : existingReply ? 'Update reply' : 'Send reply'}
         </button>
@@ -114,7 +114,7 @@ export function ReplyForm({ id, existingReply }) {
               setOpen(false);
               setError('');
             }}
-            className="text-thread/50 text-xs uppercase tracking-widest hover:text-thread"
+            className="text-slate-500 text-xs uppercase tracking-widest hover:text-slate-800"
           >
             Cancel
           </button>

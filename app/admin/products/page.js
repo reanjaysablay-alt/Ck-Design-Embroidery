@@ -20,33 +20,33 @@ export default async function AdminProductsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-        <h1 className="font-display text-3xl text-thread">Products</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Products</h1>
         <Link
           href="/admin/products/new"
-          className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-5 py-2.5 rounded-sm hover:bg-thread transition-colors"
+          className="bg-indigo-600 text-white font-medium text-sm px-5 py-2.5 rounded-full hover:bg-indigo-700 transition-colors"
         >
-          Add Product
+          + Add Product
         </Link>
       </div>
 
-      <div className="divide-y divide-white/10 border-t border-b border-white/10">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100 px-5">
         {products.map((p) => (
           <div key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-4">
             <div className="flex-1 min-w-[140px]">
-              <div className="font-display text-lg text-thread truncate flex items-center gap-2">
+              <div className="text-slate-900 font-medium truncate flex items-center gap-2">
                 {p.name}
                 {p.inStock === false && (
-                  <span className="bg-stitchRed text-thread text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm">
+                  <span className="bg-red-50 text-red-600 border border-red-200 text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-full">
                     Out of Stock
                   </span>
                 )}
               </div>
-              <div className="text-thread/40 text-xs font-mono">{p.slug} · {p.category}</div>
+              <div className="text-slate-400 text-xs font-mono">{p.slug} · {p.category}</div>
             </div>
-            <div className="font-mono text-thread flex-shrink-0">${p.price}</div>
+            <div className="font-mono text-slate-900 font-medium flex-shrink-0">${p.price}</div>
             <Link
               href={`/admin/products/${p.id}/edit`}
-              className="text-gold text-xs uppercase tracking-widest hover:underline flex-shrink-0"
+              className="text-indigo-600 text-xs uppercase tracking-widest hover:underline flex-shrink-0"
             >
               Edit
             </Link>
@@ -54,10 +54,9 @@ export default async function AdminProductsPage() {
           </div>
         ))}
         {products.length === 0 && (
-          <p className="text-thread/50 py-8">No products yet — add your first one.</p>
+          <p className="text-slate-500 py-8">No products yet — add your first one.</p>
         )}
       </div>
     </div>
   );
 }
-

@@ -98,7 +98,7 @@ export default function ProductForm({ product, action, submitLabel }) {
       </div>
 
       <div>
-        <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">
+        <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">
           Product Image
         </label>
         {previewUrl && (
@@ -106,7 +106,7 @@ export default function ProductForm({ product, action, submitLabel }) {
           <img
             src={previewUrl}
             alt=""
-            className="w-32 h-32 object-cover rounded-sm mb-3 border border-white/10 bg-white"
+            className="w-32 h-32 object-cover rounded-xl mb-3 border border-slate-200 bg-white"
           />
         )}
 
@@ -116,7 +116,7 @@ export default function ProductForm({ product, action, submitLabel }) {
           accept="image/*"
           required={!product?.image}
           onChange={handleFileChange}
-          className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:bg-gold file:text-ink file:text-xs file:uppercase file:tracking-widest focus-visible:outline-gold"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white file:text-xs file:uppercase file:tracking-widest focus-visible:outline-indigo-500"
         />
 
         {/* Hidden input carrying the background-removed file to the server action */}
@@ -125,18 +125,18 @@ export default function ProductForm({ product, action, submitLabel }) {
         {product?.image && (
           <>
             <input type="hidden" name="existingImage" value={product.image} />
-            <p className="text-thread/40 text-xs mt-2">Leave blank to keep the current image.</p>
+            <p className="text-slate-400 text-xs mt-2">Leave blank to keep the current image.</p>
           </>
         )}
 
         {processing && (
-          <p className="text-gold text-sm mt-3 flex items-center gap-2">
-            <span className="inline-block w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+          <p className="text-indigo-600 text-sm mt-3 flex items-center gap-2">
+            <span className="inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             Removing background… (this may take a few seconds)
           </p>
         )}
         {processingError && (
-          <p className="text-stitchRed text-sm mt-3">{processingError}</p>
+          <p className="text-red-600 text-sm mt-3">{processingError}</p>
         )}
         {!processing && processedFile && !processingError && (
           <p className="text-green-400 text-sm mt-3">
@@ -146,12 +146,12 @@ export default function ProductForm({ product, action, submitLabel }) {
       </div>
 
       <div>
-        <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">Description</label>
+        <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">Description</label>
         <textarea
           name="description"
           rows={4}
           defaultValue={product?.description}
-          className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-indigo-500"
         />
       </div>
 
@@ -167,25 +167,25 @@ export default function ProductForm({ product, action, submitLabel }) {
         defaultValue={product?.sizes?.join(', ')}
       />
 
-      <label className="flex items-center gap-3 bg-canvas2 border border-white/15 rounded-sm px-4 py-3 cursor-pointer w-fit">
+      <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer w-fit">
         <input
           type="checkbox"
           name="outOfStock"
           defaultChecked={product ? !product.inStock : false}
-          className="w-4 h-4 accent-stitchRed"
+          className="w-4 h-4 accent-red-600"
         />
-        <span className="text-sm text-thread">
-          Mark as <span className="text-stitchRed">Out of Stock</span>
+        <span className="text-sm text-slate-700">
+          Mark as <span className="text-red-600">Out of Stock</span>
         </span>
       </label>
-      <p className="text-thread/40 text-xs -mt-4">
+      <p className="text-slate-400 text-xs -mt-4">
         Out-of-stock products stay visible in the shop with an "Out of Stock" label, but customers can't add them to their cart.
       </p>
 
       <button
         type="submit"
         disabled={processing}
-        className="bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60"
+        className="bg-indigo-600 text-white font-medium text-sm px-8 py-3.5 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-60"
       >
         {processing ? 'Processing image…' : submitLabel}
       </button>
@@ -196,14 +196,14 @@ export default function ProductForm({ product, action, submitLabel }) {
 function Field({ label, name, defaultValue, type = 'text', step, required }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">{label}</label>
+      <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">{label}</label>
       <input
         type={type}
         name={name}
         step={step}
         defaultValue={defaultValue ?? ''}
         required={required}
-        className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread focus-visible:outline-gold"
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-indigo-500"
       />
     </div>
   );
