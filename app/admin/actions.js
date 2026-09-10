@@ -8,6 +8,7 @@ import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
+import { restoreStock } from '@/lib/cartVerify';
 import {
   sendMail,
   orderToShipCustomerEmail,
@@ -416,6 +417,15 @@ export async function cancelOrder(formData) {
   const admin = createAdminClient();
   const id = formData.get('id');
 
+  // Only restore stock if this order wasn't already canceled — guards
+  // against a double form-submit crediting stock back twice.
+  const { data: existing } = await admin
+    .from('orders')
+    .select('order_status')
+    .eq('id', id)
+    .single();
+  const alreadyCanceled = existing?.order_status === 'canceled';
+
   const { data: order, error } = await admin
     .from('orders')
     .update({ order_status: 'canceled' })
@@ -424,6 +434,10 @@ export async function cancelOrder(formData) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  if (!alreadyCanceled && order.stock_deductions?.length) {
+    await restoreStock(order.stock_deductions);
+  }
 
   // Refund automatically if it was a paid PayPal order.
   let refunded = false;
@@ -455,7 +469,9 @@ export async function cancelOrder(formData) {
     action: 'order.cancel',
     targetType: 'order',
     targetId: order.id,
-    details: `Canceled order #${order.id} ($${total})${refunded ? ' — PayPal payment refunded' : ''}`,
+    details: `Canceled order #${order.id} ($${total})${refunded ? ' — PayPal payment refunded' : ''}${
+      !alreadyCanceled && order.stock_deductions?.length ? ' — stock restored' : ''
+    }`,
   });
 
   revalidatePath('/admin/orders');

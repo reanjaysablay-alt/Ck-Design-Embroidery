@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
-import { verifyCartItems } from '@/lib/cartVerify';
+import { verifyCartItems, deductStock } from '@/lib/cartVerify';
 
 export async function POST(request) {
   const supabase = await createClient();
@@ -24,7 +24,7 @@ export async function POST(request) {
   try {
     // Re-price against the real products table — never trust price,
     // total, or stock status as sent from the browser.
-    const { items: verifiedItems, total } = await verifyCartItems(items);
+    const { items: verifiedItems, total, stockDeductions } = await verifyCartItems(items);
 
     const { data: order, error: dbError } = await supabase
       .from('orders')
@@ -38,11 +38,16 @@ export async function POST(request) {
         payment_status: 'pending_cod',
         order_status: 'pending',
         shipping_address: address,
+        stock_deductions: stockDeductions,
       })
       .select('*')
       .single();
 
     if (dbError) throw dbError;
+
+    // Only deduct AFTER the order is confirmed saved — an order that
+    // failed to insert shouldn't take stock away from anyone.
+    await deductStock(stockDeductions);
 
     if (process.env.ADMIN_EMAILS) {
       const { subject, html, attachments } = await newOrderAdminEmail(order);

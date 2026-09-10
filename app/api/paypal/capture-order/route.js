@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { captureOrder, extractCaptureId } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
-import { verifyCartItems } from '@/lib/cartVerify';
+import { verifyCartItems, deductStock } from '@/lib/cartVerify';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -42,7 +42,9 @@ export async function POST(request) {
     // actual PayPal charge was already locked in at create-order time,
     // but this is what gets stored as the order record, so it must
     // reflect real prices, not whatever the browser resubmits now.
-    const { items: verifiedItems, total: verifiedTotal } = await verifyCartItems(items);
+    // Runs BEFORE capturing the payment, so if stock ran out between
+    // create-order and now, the customer isn't charged for nothing.
+    const { items: verifiedItems, total: verifiedTotal, stockDeductions } = await verifyCartItems(items);
 
     const capture = await captureOrder(orderID);
     const status = capture.status;
@@ -65,11 +67,18 @@ export async function POST(request) {
         paypal_order_id: orderID,
         paypal_capture_id: extractCaptureId(capture),
         shipping_address: address,
+        stock_deductions: stockDeductions,
       })
       .select('*')
       .single();
 
     if (dbError) throw dbError;
+
+    // Only deduct AFTER the order is confirmed saved — an order that
+    // failed to insert shouldn't take stock away from anyone (the
+    // payment already went through at this point regardless, so the
+    // order itself must still succeed — see the catch block below).
+    await deductStock(stockDeductions);
 
     if (process.env.ADMIN_EMAILS) {
       const { subject, html, attachments } = await newOrderAdminEmail(order);

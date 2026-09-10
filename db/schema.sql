@@ -66,6 +66,13 @@ create table if not exists public.orders (
   courier_name text,
   tracking_number text,
   tracking_url text,
+  -- Exactly which product/size/quantity combinations this order
+  -- deducted from stock at checkout, e.g.
+  -- [{"productId": 12, "size": "M", "qty": 2}]. Stored on the order
+  -- itself (not recomputed later) so canceling always restores the
+  -- exact amount taken, even if the product's sizes or stock have
+  -- since changed.
+  stock_deductions jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -457,3 +464,83 @@ alter table public.orders add column if not exists tracking_url text;
 -- re-run — only needed once on a database created before this change.
 -- ---------------------------------------------------------------------------
 alter table public.products add column if not exists stock jsonb;
+
+-- ---------------------------------------------------------------------------
+-- Stock deduction/restoration, called at checkout and on order
+-- cancellation. Implemented as SECURITY DEFINER functions (not plain
+-- table updates) for two reasons:
+--   1. Atomicity — the read-modify-write happens in a single statement
+--      inside Postgres, so two customers buying the last unit at the
+--      same time can't both succeed (no race condition).
+--   2. Customers' own session can call this narrow, safe operation
+--      even though they have no general write access to the products
+--      table (see the "no insert/update/delete policy" note above) —
+--      the function runs with elevated privileges for just this one
+--      job, nothing more.
+-- ---------------------------------------------------------------------------
+create or replace function public.decrement_product_stock(p_product_id bigint, p_size text, p_qty int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_stock jsonb;
+begin
+  update public.products
+  set stock = jsonb_set(
+        stock,
+        array[p_size],
+        to_jsonb(greatest(0, coalesce((stock->>p_size)::int, 0) - p_qty))
+      )
+  where id = p_product_id and stock ? p_size
+  returning stock into updated_stock;
+
+  if updated_stock is not null then
+    update public.products
+    set in_stock = exists (
+      select 1 from jsonb_each_text(updated_stock) as kv(k, v)
+      where v::int > 0
+    )
+    where id = p_product_id;
+  end if;
+end;
+$$;
+
+grant execute on function public.decrement_product_stock(bigint, text, int) to authenticated;
+
+create or replace function public.restore_product_stock(p_product_id bigint, p_size text, p_qty int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_stock jsonb;
+begin
+  update public.products
+  set stock = jsonb_set(
+        coalesce(stock, '{}'::jsonb),
+        array[p_size],
+        to_jsonb(coalesce((stock->>p_size)::int, 0) + p_qty)
+      )
+  where id = p_product_id and stock is not null and stock ? p_size
+  returning stock into updated_stock;
+
+  if updated_stock is not null then
+    update public.products
+    set in_stock = true
+    where id = p_product_id;
+  end if;
+end;
+$$;
+
+grant execute on function public.restore_product_stock(bigint, text, int) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Migration: add stock_deductions to orders, recording exactly what
+-- was taken from stock at checkout so cancellation can restore the
+-- exact amount later. Safe to re-run — only needed once on a database
+-- created before this change.
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists stock_deductions jsonb;
