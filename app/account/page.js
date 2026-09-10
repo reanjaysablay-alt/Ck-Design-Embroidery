@@ -88,6 +88,26 @@ function AccountOrderCard({ order }) {
         {' — '}
         <span className="capitalize">{order.payment_status.replace('_', ' ')}</span>
       </div>
+
+      {order.courier_name && order.tracking_number && (
+        <div className="text-sm text-thread/70 bg-canvas2/60 border border-white/10 rounded-sm px-4 py-2.5 mt-3">
+          <span className="font-mono text-xs uppercase tracking-widest text-gold mr-1">
+            Tracking:
+          </span>
+          {order.courier_name} — #{order.tracking_number}
+          {order.tracking_url && (
+            <a
+              href={order.tracking_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-gold underline hover:text-thread"
+            >
+              Track →
+            </a>
+          )}
+        </div>
+      )}
+
       <ul className="text-sm text-thread/50 mt-3 space-y-1">
         {order.items?.map((item, i) => (
           <li key={i}>

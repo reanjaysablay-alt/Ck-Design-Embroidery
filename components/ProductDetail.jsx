@@ -7,14 +7,18 @@ import { productImageSrc } from '@/lib/placeholder';
 
 export default function ProductDetail({ product }) {
   const { addItem } = useCart();
-  const [size, setSize] = useState(product.sizes ? product.sizes[0] : null);
+  // Default to the first size that actually has stock, not just the
+  // first size in the list — no point pre-selecting a sold-out size.
+  const firstAvailableSize = product.sizes?.find((s) => (product.stock?.[s] ?? 1) > 0) || product.sizes?.[0] || null;
+  const [size, setSize] = useState(firstAvailableSize);
   const [type, setType] = useState('plain'); // 'plain' | 'custom'
   const [note, setNote] = useState('');
   const [design, setDesign] = useState(null); // { path, name } once uploaded
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | done | error
   const [uploadError, setUploadError] = useState('');
   const [added, setAdded] = useState(false);
-  const outOfStock = product.inStock === false;
+  const selectedSizeStock = product.stock && size ? product.stock[size] : null;
+  const outOfStock = product.inStock === false || selectedSizeStock === 0;
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
@@ -58,9 +62,14 @@ return (
         <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">{product.category}</p>
         <h1 className="font-display text-4xl text-thread mb-4">{product.name}</h1>
         <p className="font-mono text-2xl text-thread mb-6">${product.price}</p>
-        {outOfStock && (
+        {product.inStock === false && (
           <p className="inline-block bg-stitchRed text-thread text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm mb-6">
             Out of Stock
+          </p>
+        )}
+        {product.inStock !== false && selectedSizeStock === 0 && (
+          <p className="inline-block border border-stitchRed text-stitchRed text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm mb-6">
+            Size {size} is sold out — pick another size
           </p>
         )}
         <p className="text-thread/70 leading-relaxed mb-8">{product.description}</p>
@@ -79,20 +88,32 @@ return (
         {product.sizes && (
           <div className="mb-8">
             <div className="text-thread/40 uppercase tracking-widest text-xs mb-2">Size</div>
-            <div className="flex gap-2">
-              {product.sizes.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={`px-4 py-2 text-sm border rounded-sm transition-colors ${
-                    size === s
-                      ? 'border-gold text-gold'
-                      : 'border-white/20 text-thread/70 hover:border-white/40'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {product.sizes.map((s) => {
+                const qty = product.stock ? product.stock[s] ?? 0 : null;
+                const soldOut = qty === 0;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => !soldOut && setSize(s)}
+                    disabled={soldOut}
+                    className={`px-4 py-2 text-sm border rounded-sm transition-colors flex flex-col items-center leading-tight ${
+                      soldOut
+                        ? 'border-white/10 text-thread/25 cursor-not-allowed line-through'
+                        : size === s
+                        ? 'border-gold text-gold'
+                        : 'border-white/20 text-thread/70 hover:border-white/40'
+                    }`}
+                  >
+                    {s}
+                    {product.stock && (
+                      <span className="text-[10px] normal-case tracking-normal opacity-70">
+                        {soldOut ? 'Sold out' : `${qty} left`}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -171,7 +192,9 @@ return (
           className="w-full md:w-auto bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {outOfStock
-            ? 'Out of Stock'
+            ? selectedSizeStock === 0
+              ? `${size} Sold Out`
+              : 'Out of Stock'
             : added
             ? 'Added to Cart ✓'
             : uploadStatus === 'uploading'

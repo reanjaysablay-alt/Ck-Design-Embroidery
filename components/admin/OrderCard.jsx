@@ -73,6 +73,25 @@ export default function OrderCard({ order, designUrls, actions, feeAction }) {
         </div>
       )}
 
+      {order.courier_name && order.tracking_number && (
+        <div className="text-sm text-slate-600 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2.5 mb-3">
+          <span className="font-mono text-xs uppercase tracking-widest text-indigo-500 mr-1">
+            Tracking:
+          </span>
+          {order.courier_name} — #{order.tracking_number}
+          {order.tracking_url && (
+            <a
+              href={order.tracking_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-indigo-600 underline hover:text-indigo-800"
+            >
+              Track →
+            </a>
+          )}
+        </div>
+      )}
+
       <ul className="text-sm text-slate-600 mb-4 space-y-2 divide-y divide-slate-100">
         {order.items?.map((item, i) => (
           <li key={i} className={i > 0 ? 'pt-2' : ''}>

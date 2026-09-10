@@ -13,6 +13,11 @@ create table if not exists public.products (
   threads text[],
   sizes text[],
   in_stock boolean not null default true,
+  -- Per-size stock quantities, e.g. {"S": 10, "M": 15, "L": 0}. Null
+  -- means stock isn't tracked per-size for this product (falls back
+  -- to the plain in_stock boolean above) — used for products with no
+  -- sizes at all.
+  stock jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -53,6 +58,14 @@ create table if not exists public.orders (
   paypal_order_id text,
   paypal_capture_id text,
   shipping_address jsonb,
+  -- Manual courier tracking — filled in by staff when an order is
+  -- marked shipped (to_ship -> to_receive). Only relevant to delivery
+  -- orders (PayPal/COD); walk-in orders never use these since there's
+  -- no courier involved. No courier API integration — staff just type
+  -- in whatever the courier's own system gave them.
+  courier_name text,
+  tracking_number text,
+  tracking_url text,
   created_at timestamptz not null default now()
 );
 
@@ -351,7 +364,10 @@ alter table public.products add column if not exists in_stock boolean not null d
 -- ---------------------------------------------------------------------------
 alter table public.orders drop constraint if exists orders_order_status_check;
 update public.orders set order_status = 'to_ship' where order_status = 'accepted';
-update public.orders set order_status = 'canceled' where order_status = 'declined';
+update public.orders set order_status = 'canceled' where order_status in ('declined', 'cancelled');
+update public.orders set order_status = 'pending' where order_status not in (
+  'pending', 'to_ship', 'to_receive', 'completed', 'canceled'
+);
 alter table public.orders
   add constraint orders_order_status_check
   check (order_status in ('pending', 'to_ship', 'to_receive', 'completed', 'canceled'));
@@ -406,8 +422,38 @@ alter table public.orders add constraint orders_payment_method_check
   check (payment_method in ('paypal', 'cod', 'walkin'));
 
 alter table public.orders drop constraint if exists orders_order_status_check;
+-- Defensive remapping, run again here in case this block is ever run
+-- on its own without the earlier order_status migration above having
+-- run first — remaps any known legacy status name, then coerces
+-- anything still unrecognized to 'pending' as a last resort so this
+-- constraint can never fail to apply regardless of what's actually in
+-- the table.
+update public.orders set order_status = 'to_ship' where order_status = 'accepted';
+update public.orders set order_status = 'canceled' where order_status in ('declined', 'cancelled');
+update public.orders set order_status = 'to_receive' where order_status = 'shipped';
+update public.orders set order_status = 'completed' where order_status = 'delivered';
+update public.orders set order_status = 'pending' where order_status not in (
+  'pending', 'to_ship', 'to_receive', 'completed', 'canceled',
+  'preparing', 'ready_for_pickup', 'picked_up'
+);
 alter table public.orders add constraint orders_order_status_check
   check (order_status in (
     'pending', 'to_ship', 'to_receive', 'completed', 'canceled',
     'preparing', 'ready_for_pickup', 'picked_up'
   ));
+
+-- ---------------------------------------------------------------------------
+-- Migration: add manual courier tracking fields, filled in by staff
+-- when marking a delivery order as shipped. Safe to re-run — only
+-- needed once on a database created before this change.
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists courier_name text;
+alter table public.orders add column if not exists tracking_number text;
+alter table public.orders add column if not exists tracking_url text;
+
+-- ---------------------------------------------------------------------------
+-- Migration: add per-size stock tracking to products (e.g. S/M/L/XL
+-- quantities), shown to customers on each product page. Safe to
+-- re-run — only needed once on a database created before this change.
+-- ---------------------------------------------------------------------------
+alter table public.products add column if not exists stock jsonb;

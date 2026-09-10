@@ -14,6 +14,15 @@ export default function ProductForm({ product, action, submitLabel }) {
   const [processedFile, setProcessedFile] = useState(null);
   const [originalName, setOriginalName] = useState('');
 
+  // Sizes is tracked in state (not just a defaultValue) so the stock
+  // quantity inputs below can regenerate live as the admin types —
+  // add "XXL" and a quantity field for it shows up immediately.
+  const [sizesInput, setSizesInput] = useState(product?.sizes?.join(', ') || '');
+  const sizeList = sizesInput
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   // File input that holds the processed (background-removed) image.
   const processedInputRef = useRef(null);
 
@@ -164,8 +173,39 @@ export default function ProductForm({ product, action, submitLabel }) {
       <Field
         label="Sizes (comma-separated, leave blank if not sized)"
         name="sizes"
-        defaultValue={product?.sizes?.join(', ')}
+        value={sizesInput}
+        onChange={setSizesInput}
       />
+
+      {sizeList.length > 0 && (
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">
+            Stock per size
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {sizeList.map((size) => (
+              <div key={size}>
+                <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">
+                  {size}
+                </label>
+                <input
+                  type="number"
+                  name={`stock_${size}`}
+                  min="0"
+                  step="1"
+                  defaultValue={product?.stock?.[size] ?? ''}
+                  placeholder="0"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus-visible:outline-indigo-500"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-slate-400 text-xs mt-2">
+            Customers will see exactly how many of each size are left on the product page.
+            A size shows as sold out once its quantity hits 0.
+          </p>
+        </div>
+      )}
 
       <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer w-fit">
         <input
@@ -179,7 +219,9 @@ export default function ProductForm({ product, action, submitLabel }) {
         </span>
       </label>
       <p className="text-slate-400 text-xs -mt-4">
-        Out-of-stock products stay visible in the shop with an "Out of Stock" label, but customers can't add them to their cart.
+        {sizeList.length > 0
+          ? 'Overrides the per-size stock above — use this to force the whole product unavailable regardless of quantities (e.g. discontinued).'
+          : "Out-of-stock products stay visible in the shop with an \"Out of Stock\" label, but customers can't add them to their cart."}
       </p>
 
       <button
@@ -193,7 +235,8 @@ export default function ProductForm({ product, action, submitLabel }) {
   );
 }
 
-function Field({ label, name, defaultValue, type = 'text', step, required }) {
+function Field({ label, name, defaultValue, value, onChange, type = 'text', step, required }) {
+  const isControlled = value !== undefined;
   return (
     <div>
       <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">{label}</label>
@@ -201,7 +244,9 @@ function Field({ label, name, defaultValue, type = 'text', step, required }) {
         type={type}
         name={name}
         step={step}
-        defaultValue={defaultValue ?? ''}
+        {...(isControlled
+          ? { value, onChange: (e) => onChange(e.target.value) }
+          : { defaultValue: defaultValue ?? '' })}
         required={required}
         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-indigo-500"
       />

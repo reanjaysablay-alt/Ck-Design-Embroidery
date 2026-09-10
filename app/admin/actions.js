@@ -53,6 +53,32 @@ async function requireStaffOrAdmin() {
 function parseProductForm(formData) {
   const sizesRaw = formData.get('sizes')?.toString().trim();
   const threadsRaw = formData.get('threads')?.toString().trim();
+  const sizes = sizesRaw ? sizesRaw.split(',').map((s) => s.trim()).filter(Boolean) : null;
+
+  // Per-size stock quantities, e.g. { S: 10, M: 15, L: 0 } — only
+  // tracked when the product actually has sizes. Each field is named
+  // stock_<size> in the form (see ProductForm.jsx).
+  let stock = null;
+  if (sizes?.length) {
+    stock = {};
+    for (const size of sizes) {
+      const raw = formData.get(`stock_${size}`);
+      const qty = Number(raw);
+      stock[size] = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0;
+    }
+  }
+
+  // Manual "Mark as Out of Stock" checkbox always wins (e.g. a
+  // discontinued item you don't want orderable even if some stock
+  // count is still sitting non-zero). Otherwise, if stock is tracked
+  // per-size, in_stock is derived automatically from whether any size
+  // still has quantity left.
+  const manuallyOutOfStock = formData.get('outOfStock') === 'on';
+  const inStock = manuallyOutOfStock
+    ? false
+    : stock
+    ? Object.values(stock).some((qty) => qty > 0)
+    : true;
 
   return {
     slug: formData.get('slug')?.toString().trim(),
@@ -62,10 +88,9 @@ function parseProductForm(formData) {
     description: formData.get('description')?.toString().trim() || null,
     stitch_count: formData.get('stitchCount')?.toString().trim() || null,
     threads: threadsRaw ? threadsRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
-    sizes: sizesRaw ? sizesRaw.split(',').map((s) => s.trim()).filter(Boolean) : null,
-    // Checkbox convention: present + "on" when checked, absent when
-    // unchecked — so no value at all means the product is in stock.
-    in_stock: formData.get('outOfStock') === 'on' ? false : true,
+    sizes,
+    stock,
+    in_stock: inStock,
   };
 }
 
@@ -240,10 +265,18 @@ export async function markShipped(formData) {
   const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
+  const courierName = formData.get('courierName')?.toString().trim() || null;
+  const trackingNumber = formData.get('trackingNumber')?.toString().trim() || null;
+  const trackingUrl = formData.get('trackingUrl')?.toString().trim() || null;
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'to_receive' })
+    .update({
+      order_status: 'to_receive',
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+      tracking_url: trackingUrl,
+    })
     .eq('id', id)
     .select('*')
     .single();
@@ -251,9 +284,11 @@ export async function markShipped(formData) {
   if (error) throw new Error(error.message);
 
   const total = Number(order.total).toFixed(2);
+  const trackingLine =
+    courierName && trackingNumber ? ` Shipped via ${courierName}, tracking #${trackingNumber}.` : '';
   await notifyOrderStatus(admin, order, {
     title: 'Order shipped 📦',
-    body: `Order #${order.id} ($${total}) is on its way to you.`,
+    body: `Order #${order.id} ($${total}) is on its way to you.${trackingLine}`,
     emailTemplateFn: orderToReceiveCustomerEmail,
   });
 
@@ -263,7 +298,9 @@ export async function markShipped(formData) {
     action: 'order.ship',
     targetType: 'order',
     targetId: order.id,
-    details: `Marked order #${order.id} as shipped — moved to To Receive`,
+    details: `Marked order #${order.id} as shipped — moved to To Receive${
+      courierName ? ` (${courierName}${trackingNumber ? ` #${trackingNumber}` : ''})` : ''
+    }`,
   });
 
   revalidatePath('/admin/orders');
