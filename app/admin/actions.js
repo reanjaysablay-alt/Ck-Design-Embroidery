@@ -266,18 +266,10 @@ export async function markShipped(formData) {
   const actor = await requireStaffOrAdmin();
   const admin = createAdminClient();
   const id = formData.get('id');
-  const courierName = formData.get('courierName')?.toString().trim() || null;
-  const trackingNumber = formData.get('trackingNumber')?.toString().trim() || null;
-  const trackingUrl = formData.get('trackingUrl')?.toString().trim() || null;
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({
-      order_status: 'to_receive',
-      courier_name: courierName,
-      tracking_number: trackingNumber,
-      tracking_url: trackingUrl,
-    })
+    .update({ order_status: 'to_receive' })
     .eq('id', id)
     .select('*')
     .single();
@@ -285,11 +277,9 @@ export async function markShipped(formData) {
   if (error) throw new Error(error.message);
 
   const total = Number(order.total).toFixed(2);
-  const trackingLine =
-    courierName && trackingNumber ? ` Shipped via ${courierName}, tracking #${trackingNumber}.` : '';
   await notifyOrderStatus(admin, order, {
     title: 'Order shipped 📦',
-    body: `Order #${order.id} ($${total}) is on its way to you.${trackingLine}`,
+    body: `Order #${order.id} ($${total}) is on its way to you.`,
     emailTemplateFn: orderToReceiveCustomerEmail,
   });
 
@@ -299,9 +289,7 @@ export async function markShipped(formData) {
     action: 'order.ship',
     targetType: 'order',
     targetId: order.id,
-    details: `Marked order #${order.id} as shipped — moved to To Receive${
-      courierName ? ` (${courierName}${trackingNumber ? ` #${trackingNumber}` : ''})` : ''
-    }`,
+    details: `Marked order #${order.id} as shipped — moved to To Receive`,
   });
 
   revalidatePath('/admin/orders');

@@ -16,41 +16,8 @@ export function AcceptButton({ id, action, label = 'Accept — To Ship' }) {
 
 export function ShipButton({ id, action }) {
   return (
-    <form action={action} className="flex flex-wrap items-end gap-2 w-full">
+    <form action={action}>
       <input type="hidden" name="id" value={id} />
-      <div>
-        <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">
-          Courier
-        </label>
-        <input
-          type="text"
-          name="courierName"
-          placeholder="e.g. Aramex"
-          className="w-32 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-800"
-        />
-      </div>
-      <div>
-        <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">
-          Tracking #
-        </label>
-        <input
-          type="text"
-          name="trackingNumber"
-          placeholder="e.g. 1234567890"
-          className="w-36 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-800"
-        />
-      </div>
-      <div>
-        <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">
-          Tracking link (optional)
-        </label>
-        <input
-          type="url"
-          name="trackingUrl"
-          placeholder="https://..."
-          className="w-40 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-800"
-        />
-      </div>
       <button
         type="submit"
         className="bg-indigo-600 text-white font-medium text-xs px-5 py-2.5 rounded-full hover:bg-indigo-700 transition-colors"
