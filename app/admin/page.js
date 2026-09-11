@@ -27,6 +27,12 @@ const CARD_ICONS = {
       <path d="M12 13v8" />
     </svg>
   ),
+  sales: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 7h6v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
 function DashboardCard({ href, value, label, icon, accent }) {
@@ -56,6 +62,12 @@ export default async function AdminHome() {
     .from('orders')
     .select('*', { count: 'exact', head: true })
     .eq('order_status', 'pending');
+
+  const { data: soldOrders } = await admin
+    .from('orders')
+    .select('total')
+    .in('order_status', ['completed', 'picked_up']);
+  const totalRevenue = (soldOrders || []).reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   const { count: unreadInquiries } = await admin
     .from('contact_inquiries')
@@ -91,6 +103,13 @@ export default async function AdminHome() {
       <p className="text-slate-400 text-sm mb-1">{today}</p>
       <h1 className="text-2xl font-semibold text-slate-900 mb-8">Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <DashboardCard
+          href="/admin/sales"
+          value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label="Total revenue"
+          icon={CARD_ICONS.sales}
+          accent="emerald"
+        />
         <DashboardCard
           href="/admin/orders"
           value={pendingCount ?? 0}

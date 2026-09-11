@@ -14,6 +14,12 @@ const ICONS = {
       <rect x="3" y="16" width="7" height="5" rx="1.5" />
     </svg>
   ),
+  sales: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 7h6v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   orders: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round" />
@@ -108,6 +114,7 @@ function NavLinks({ isAdmin, pathname, onNavigate }) {
     <nav className="flex flex-col gap-1 flex-1">
       <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Menu</p>
       <NavItem href="/admin" icon={ICONS.dashboard} label="Dashboard" active={pathname === '/admin'} onClick={onNavigate} />
+      <NavItem href="/admin/sales" icon={ICONS.sales} label="Sales" active={pathname === '/admin/sales'} onClick={onNavigate} />
       <NavItem href="/admin/orders" icon={ICONS.orders} label="Orders" active={pathname === '/admin/orders'} onClick={onNavigate} />
       <NavItem href="/admin/orders/history" icon={ICONS.history} label="Order History" active={pathname === '/admin/orders/history'} onClick={onNavigate} />
       <NavItem href="/admin/inquiries" icon={ICONS.inquiries} label="Inquiries" active={pathname === '/admin/inquiries'} onClick={onNavigate} />
