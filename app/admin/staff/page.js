@@ -12,6 +12,7 @@ const ACTION_LABELS = {
   'order.picked_up': 'Marked an order as picked up',
   'order.cancel': 'Canceled an order',
   'order.set_fee': 'Set a customization fee',
+  'order.set_delivery_fee': 'Set a delivery fee',
   'inquiry.reply': 'Replied to an inquiry',
   'inquiry.read': 'Marked an inquiry as read',
   'inquiry.delete': 'Deleted an inquiry',

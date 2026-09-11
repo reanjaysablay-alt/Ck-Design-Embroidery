@@ -89,6 +89,15 @@ function AccountOrderCard({ order }) {
         <span className="capitalize">{order.payment_status.replace('_', ' ')}</span>
       </div>
 
+      {order.payment_method === 'cod' && Number(order.delivery_fee) > 0 && (
+        <div className="text-sm text-thread/60 mt-1">
+          <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
+            Delivery fee:
+          </span>{' '}
+          ${Number(order.delivery_fee).toFixed(2)}
+        </div>
+      )}
+
       <ul className="text-sm text-thread/50 mt-3 space-y-1">
         {order.items?.map((item, i) => (
           <li key={i}>

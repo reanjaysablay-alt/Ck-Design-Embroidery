@@ -9,6 +9,7 @@ import {
   markPickedUp,
   cancelOrder,
   setCustomizationFee,
+  setDeliveryFee,
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -112,6 +113,9 @@ export default async function AdminOrdersPage({ searchParams }) {
               order={order}
               designUrls={designUrls}
               feeAction={feeLocked ? undefined : setCustomizationFee}
+              deliveryFeeAction={
+                order.payment_method === 'cod' && !feeLocked ? setDeliveryFee : undefined
+              }
               actions={
                 <>
                   {order.order_status === 'pending' && (

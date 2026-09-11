@@ -465,16 +465,16 @@ export async function cancelOrder(formData) {
   revalidatePath('/admin/orders');
 }
 
-// Recomputes an order's total from its items: base price × qty for
-// every item, plus each custom item's own customizationFee (if set).
-function computeOrderTotalWithFees(items) {
-  return items
-    .reduce((sum, item) => {
-      const base = Number(item.price) * Number(item.qty);
-      const fee = item.type === 'custom' ? Number(item.customizationFee || 0) : 0;
-      return sum + base + fee;
-    }, 0)
-    .toFixed(2);
+// Recomputes an order's total from its items (base price × qty for
+// every item, plus each custom item's own customizationFee if set)
+// plus the order-level delivery fee, if any.
+function computeOrderTotalWithFees(items, deliveryFee = 0) {
+  const itemsTotal = items.reduce((sum, item) => {
+    const base = Number(item.price) * Number(item.qty);
+    const fee = item.type === 'custom' ? Number(item.customizationFee || 0) : 0;
+    return sum + base + fee;
+  }, 0);
+  return (itemsTotal + Number(deliveryFee || 0)).toFixed(2);
 }
 
 // Adds, changes, or clears the customization charge on a single custom
@@ -515,7 +515,7 @@ export async function setCustomizationFee(formData) {
     return updated;
   });
 
-  const total = computeOrderTotalWithFees(items);
+  const total = computeOrderTotalWithFees(items, existing.delivery_fee);
 
   const { data: order, error } = await admin
     .from('orders')
@@ -528,7 +528,7 @@ export async function setCustomizationFee(formData) {
   await notifyOrderStatus(admin, order, {
     title: 'Order total updated 💲',
     body: `A customization charge was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
-    emailTemplateFn: orderTotalUpdatedCustomerEmail,
+    emailTemplateFn: (o) => orderTotalUpdatedCustomerEmail(o, 'customization charge'),
   });
 
   await logActivity({
@@ -538,6 +538,64 @@ export async function setCustomizationFee(formData) {
     targetType: 'order',
     targetId: order.id,
     details: `Set customization fee on order #${order.id}, item ${itemIndex + 1} — new total $${Number(order.total).toFixed(2)}`,
+  });
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/admin/orders/history');
+}
+
+// Sets (or clears) the delivery fee on a Cash on Delivery order — the
+// only payment method this applies to, since PayPal is prepaid at
+// checkout and Walk-in orders are never delivered. Recalculates the
+// order total and notifies the customer, same pattern as
+// setCustomizationFee above but at the order level, not per-item.
+export async function setDeliveryFee(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+  const feeRaw = formData.get('fee')?.toString().trim();
+  const fee = feeRaw ? Number(feeRaw) : 0;
+
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (existing.payment_method !== 'cod') {
+    throw new Error('Delivery fee only applies to Cash on Delivery orders.');
+  }
+
+  // Once an order has shipped (or moved beyond that), the fee is
+  // locked — never trust that the UI hides the field, re-check here.
+  if (!['pending', 'to_ship'].includes(existing.order_status)) {
+    throw new Error('Delivery fee can no longer be changed — this order has already shipped.');
+  }
+
+  const total = computeOrderTotalWithFees(existing.items || [], fee);
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ delivery_fee: fee, total })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  await notifyOrderStatus(admin, order, {
+    title: 'Order total updated 💲',
+    body: `A delivery fee was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
+    emailTemplateFn: (o) => orderTotalUpdatedCustomerEmail(o, 'delivery fee'),
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.set_delivery_fee',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Set delivery fee on order #${order.id} to $${fee.toFixed(2)} — new total $${Number(order.total).toFixed(2)}`,
   });
 
   revalidatePath('/admin/orders');

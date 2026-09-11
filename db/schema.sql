@@ -73,6 +73,10 @@ create table if not exists public.orders (
   -- exact amount taken, even if the product's sizes or stock have
   -- since changed.
   stock_deductions jsonb,
+  -- Delivery fee, only ever added to Cash on Delivery orders (PayPal
+  -- is prepaid at checkout, Walk-in has no delivery). Set by staff
+  -- before the order ships — see setDeliveryFee.
+  delivery_fee numeric(10, 2) not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -544,3 +548,10 @@ grant execute on function public.restore_product_stock(bigint, text, int) to aut
 -- created before this change.
 -- ---------------------------------------------------------------------------
 alter table public.orders add column if not exists stock_deductions jsonb;
+
+-- ---------------------------------------------------------------------------
+-- Migration: add delivery_fee to orders, settable by staff/admin on
+-- Cash on Delivery orders only (see setDeliveryFee). Safe to re-run —
+-- only needed once on a database created before this change.
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists delivery_fee numeric(10, 2) not null default 0;

@@ -33,7 +33,9 @@ export function StatusBadge({ status }) {
 // read-only. `feeAction`, if passed, adds an inline "customization
 // fee" field to each custom item — only the active orders page wires
 // this up, so completed/canceled orders in history stay read-only.
-export default function OrderCard({ order, designUrls, actions, feeAction }) {
+// `deliveryFeeAction`, if passed, adds an order-level delivery fee
+// field — only ever wired up for Cash on Delivery orders.
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -71,6 +73,40 @@ export default function OrderCard({ order, designUrls, actions, feeAction }) {
           <br />
           {order.shipping_address.line1}, {order.shipping_address.city}, {order.shipping_address.emirate}
         </div>
+      )}
+
+      {order.payment_method === 'cod' && Number(order.delivery_fee) > 0 && !deliveryFeeAction && (
+        <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mb-3">
+          <span className="font-mono text-xs uppercase tracking-widest text-slate-400 mr-1">
+            Delivery fee:
+          </span>
+          ${Number(order.delivery_fee).toFixed(2)}
+        </div>
+      )}
+
+      {order.payment_method === 'cod' && deliveryFeeAction && (
+        <form action={deliveryFeeAction} className="flex flex-wrap items-center gap-2 mb-3">
+          <input type="hidden" name="id" value={order.id} />
+          <span className="font-mono text-xs uppercase tracking-widest text-slate-400">
+            Delivery fee
+          </span>
+          <span className="text-slate-400 text-xs">$</span>
+          <input
+            type="number"
+            name="fee"
+            step="0.01"
+            min="0"
+            defaultValue={order.delivery_fee > 0 ? order.delivery_fee : ''}
+            placeholder="0.00"
+            className="w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800"
+          />
+          <button
+            type="submit"
+            className="text-[10px] uppercase tracking-widest text-indigo-600 hover:text-indigo-800 border border-indigo-200 bg-indigo-50 rounded-full px-3 py-1.5"
+          >
+            {Number(order.delivery_fee) > 0 ? 'Update' : 'Add delivery fee'}
+          </button>
+        </form>
       )}
 
       <ul className="text-sm text-slate-600 mb-4 space-y-2 divide-y divide-slate-100">
