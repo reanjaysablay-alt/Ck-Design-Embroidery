@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { formatDateTime } from '@/lib/formatDate';
 
 // Bell icon in the customer header. Opens a dropdown of the user's
 // recent notifications — notifications only, no account/profile info,
@@ -142,7 +143,7 @@ export default function NotificationsBell({ userId }) {
                     </div>
                     <p className="text-thread/60 text-xs mt-1 leading-relaxed">{n.body}</p>
                     <div className="text-thread/30 text-[10px] font-mono mt-1.5">
-                      {new Date(n.created_at).toLocaleString()}
+                      {formatDateTime(n.created_at)}
                     </div>
                   </div>
                 ))}

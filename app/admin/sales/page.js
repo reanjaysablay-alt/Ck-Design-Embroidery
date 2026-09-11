@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import { toShopTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Sales — Stitchhouse Admin' };
 
@@ -25,26 +26,33 @@ export default async function AdminSalesPage() {
   const totalOrders = sales.length;
   const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // All "what day is it" reasoning below uses the shop's actual Dubai
+  // wall-clock time (via toShopTime), not the server process's own
+  // timezone — otherwise "this month" and the daily chart buckets
+  // could be off by several hours' worth of orders whenever the
+  // server itself isn't running in Dubai time (Vercel defaults to
+  // UTC).
+  const nowShop = toShopTime();
+  const startOfMonthShop = new Date(Date.UTC(nowShop.getUTCFullYear(), nowShop.getUTCMonth(), 1));
   const thisMonthRevenue = sales
-    .filter((o) => new Date(o.created_at) >= startOfMonth)
+    .filter((o) => toShopTime(o.created_at) >= startOfMonthShop)
     .reduce((sum, o) => sum + Number(o.total || 0), 0);
 
-  // Revenue per day for the last 14 days, for the bar chart.
+  // Revenue per day for the last 14 days, for the bar chart — each
+  // day boundary is midnight in Dubai time, not server-local midnight.
   const days = [];
   for (let i = 13; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    d.setHours(0, 0, 0, 0);
+    const d = new Date(nowShop);
+    d.setUTCDate(d.getUTCDate() - i);
+    d.setUTCHours(0, 0, 0, 0);
     days.push(d);
   }
   const dayTotals = days.map((day) => {
     const next = new Date(day);
-    next.setDate(next.getDate() + 1);
+    next.setUTCDate(next.getUTCDate() + 1);
     const total = sales
       .filter((o) => {
-        const created = new Date(o.created_at);
+        const created = toShopTime(o.created_at);
         return created >= day && created < next;
       })
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -97,11 +105,11 @@ export default async function AdminSalesPage() {
                 <div
                   className="w-full bg-indigo-500 group-hover:bg-indigo-600 rounded-t-md transition-colors"
                   style={{ height: `${Math.max((total / maxDayTotal) * 100, total > 0 ? 4 : 0)}%` }}
-                  title={`${day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${money(total)}`}
+                  title={`${day.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}: ${money(total)}`}
                 />
               </div>
               <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                {day.toLocaleDateString(undefined, { day: 'numeric' })}
+                {day.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
               </span>
             </div>
           ))}

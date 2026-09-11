@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, getStaffEmailList } from '@/lib/admin';
+import { formatDate, formatDateTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Staff — Stitchhouse Admin' };
 
@@ -87,12 +88,12 @@ export default async function AdminStaffPage() {
                 {s.signedUp ? (
                   <>
                     <span>
-                      Joined {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—'}
+                      Joined {s.createdAt ? formatDate(s.createdAt) : '—'}
                     </span>
                     <span>
                       Last sign-in{' '}
                       {s.lastSignInAt
-                        ? new Date(s.lastSignInAt).toLocaleString()
+                        ? formatDateTime(s.lastSignInAt)
                         : 'never'}
                     </span>
                   </>
@@ -143,7 +144,7 @@ export default async function AdminStaffPage() {
                 </span>
                 <span className="text-slate-500 text-xs font-mono">{entry.actor_email}</span>
                 <span className="text-slate-400 text-xs font-mono whitespace-nowrap">
-                  {new Date(entry.created_at).toLocaleString()}
+                  {formatDateTime(entry.created_at)}
                 </span>
               </div>
             </div>

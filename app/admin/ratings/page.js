@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { MarkInquiryReadButton, DeleteInquiryButton } from '../inquiries/client';
+import { formatDateTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Ratings — Admin — Stitchhouse' };
 
@@ -42,7 +43,7 @@ export default async function AdminRatingsPage() {
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="font-mono text-xs text-slate-400">
-                  {new Date(rating.created_at).toLocaleString()}
+                  {formatDateTime(rating.created_at)}
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { MarkInquiryReadButton, DeleteInquiryButton, ReplyForm } from './client';
+import { formatDateTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Inquiries — Admin — Stitchhouse' };
 
@@ -42,7 +43,7 @@ export default async function AdminInquiriesPage() {
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="font-mono text-xs text-slate-400">
-                  {new Date(inquiry.created_at).toLocaleString()}
+                  {formatDateTime(inquiry.created_at)}
                 </div>
               </div>
             </div>
@@ -58,7 +59,7 @@ export default async function AdminInquiriesPage() {
             {inquiry.reply && (
               <div className="border-l-2 border-indigo-400 pl-4 mb-3">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-indigo-600 mb-1">
-                  Your reply · {new Date(inquiry.replied_at).toLocaleString()}
+                  Your reply · {formatDateTime(inquiry.replied_at)}
                 </div>
                 <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
                   {inquiry.reply}

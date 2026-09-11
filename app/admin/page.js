@@ -91,7 +91,8 @@ export default async function AdminHome() {
     ? await supabase.from('products').select('*', { count: 'exact', head: true })
     : { count: null };
 
-  const today = new Date().toLocaleDateString(undefined, {
+  const today = new Date().toLocaleDateString('en-US', {
+    timeZone: 'Asia/Dubai',
     weekday: 'long',
     year: 'numeric',
     month: 'long',

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { formatDateTime } from '@/lib/formatDate';
 
 // Notification list on the customer /account page. Reads the user's own
 // notifications via RLS, marks them as read, and subscribes to Supabase
@@ -96,7 +97,7 @@ export default function NotificationsPanel({ userId }) {
           </div>
           <p className="text-thread/70 text-sm mt-1 leading-relaxed">{n.body}</p>
           <div className="text-thread/40 text-xs font-mono mt-2">
-            {new Date(n.created_at).toLocaleString()}
+            {formatDateTime(n.created_at)}
           </div>
         </div>
       ))}

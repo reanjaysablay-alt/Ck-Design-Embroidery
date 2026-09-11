@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
+import { formatDate } from '@/lib/formatDate';
 
 export const metadata = { title: 'Track Order — Stitchhouse' };
 
@@ -71,7 +72,7 @@ function AccountOrderCard({ order }) {
         <div>
           <div className="font-mono text-xs text-thread/40">Order #{order.id}</div>
           <div className="text-thread/60 text-sm">
-            {new Date(order.created_at).toLocaleDateString()}
+            {formatDate(order.created_at)}
           </div>
         </div>
         <div className="flex items-center gap-3">

@@ -1,3 +1,5 @@
+import { formatDateTime } from '@/lib/formatDate';
+
 export function StatusBadge({ status }) {
   const styles = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -41,7 +43,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
           <div className="font-mono text-xs text-slate-400">
-            Order #{order.id} · {new Date(order.created_at).toLocaleString()}
+            Order #{order.id} · {formatDateTime(order.created_at)}
           </div>
           <div className="text-slate-900 font-medium">{order.customer_email}</div>
         </div>
