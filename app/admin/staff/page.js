@@ -5,6 +5,10 @@ import { formatDate, formatDateTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Staff — Stitchhouse Admin' };
 
+// Always compute fresh from the database — the activity log and
+// sign-in times must never show a cached/stale snapshot.
+export const dynamic = 'force-dynamic';
+
 const ACTION_LABELS = {
   'order.accept': 'Accepted an order',
   'order.ship': 'Marked an order as shipped',

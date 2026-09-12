@@ -2,6 +2,11 @@ import Link from 'next/link';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 
+// Always compute fresh from the database — the dashboard's counts
+// (pending orders, revenue, unread inquiries...) must never show a
+// cached/stale snapshot.
+export const dynamic = 'force-dynamic';
+
 const CARD_ICONS = {
   orders: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

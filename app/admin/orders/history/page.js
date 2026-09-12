@@ -3,6 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 
+// Always compute fresh from the database — a newly canceled/completed
+// order should appear here immediately, not a cached snapshot.
+export const dynamic = 'force-dynamic';
+
 // Completed, picked up, and canceled orders land here once they leave
 // the active Orders page — read-only, no action buttons, since there's
 // nothing left to do on them.

@@ -21,6 +21,10 @@ import {
 } from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 
+// Always compute fresh from the database — active orders change
+// constantly and must never show a cached/stale snapshot.
+export const dynamic = 'force-dynamic';
+
 const TABS = [
   { key: 'all', label: 'All Orders', statuses: ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'] },
   { key: 'pending', label: 'Pending', statuses: ['pending'] },

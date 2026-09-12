@@ -6,6 +6,10 @@ import { getProducts } from '@/lib/products';
 import { deleteProduct } from '@/app/admin/actions';
 import DeleteProductButton from '@/components/admin/DeleteProductButton';
 
+// Always compute fresh from the database — a newly added/edited
+// product (including stock levels) must show immediately.
+export const dynamic = 'force-dynamic';
+
 export default async function AdminProductsPage() {
   // Product management is admin-only — staff can't reach this even by
   // typing the URL directly (the nav link is already hidden for them).

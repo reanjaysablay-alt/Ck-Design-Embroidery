@@ -3,6 +3,10 @@ import { toShopTime } from '@/lib/formatDate';
 
 export const metadata = { title: 'Sales — Stitchhouse Admin' };
 
+// Always compute fresh from the database — this page shows live
+// figures, so it must never serve a cached/stale snapshot.
+export const dynamic = 'force-dynamic';
+
 // Orders count as a "sale" once they're actually fulfilled — pending
 // or in-progress orders aren't revenue yet, and canceled orders never
 // were. This matches Completed (delivery pipeline) and Picked Up

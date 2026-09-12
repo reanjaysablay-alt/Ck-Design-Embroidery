@@ -5,6 +5,11 @@ import { formatDate } from '@/lib/formatDate';
 
 export const metadata = { title: 'Track Order — Stitchhouse' };
 
+// Always compute fresh from the database — a customer checking their
+// order status right after staff updates it should never see a
+// cached/stale snapshot.
+export const dynamic = 'force-dynamic';
+
 export default async function AccountPage() {
   const supabase = await createClient();
   const {
