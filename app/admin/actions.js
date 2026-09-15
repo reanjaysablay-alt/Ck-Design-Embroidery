@@ -187,6 +187,30 @@ color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
   revalidatePath('/');
 }
 
+// Clears a staff member's saved name+PIN identity (admin-only). This
+// doesn't touch their actual login (STAFF_EMAILS/Supabase account) —
+// only the lightweight name+PIN accountability layer from
+// StaffIdentifyGate. After this, that name is free again: the next
+// time anyone enters it on the identify screen, it self-registers
+// fresh with whatever PIN they set, exactly like a brand-new name.
+//
+// Note: if that person is already identified in an active browser
+// session, this doesn't force them out mid-session — their identity
+// cookie is still valid until it naturally expires (12 hours) or they
+// use "Not you? Switch". The reset takes effect the next time someone
+// has to identify themselves with that name.
+export async function resetStaffPin(formData) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { error } = await admin.from('staff_profiles').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/settings');
+  revalidatePath('/admin/staff');
+}
+
 // Shared by every order-status transition below: sends the customer's
 // Gmail notification FIRST (so it can never be blocked by anything
 // after it), then writes the in-app notification (wrapped in its own
