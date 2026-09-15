@@ -555,3 +555,35 @@ alter table public.orders add column if not exists stock_deductions jsonb;
 -- only needed once on a database created before this change.
 -- ---------------------------------------------------------------------------
 alter table public.orders add column if not exists delivery_fee numeric(10, 2) not null default 0;
+
+-- ---------------------------------------------------------------------------
+-- Staff identity layer: a shared "staff" login (from STAFF_EMAILS) may
+-- actually be used by more than one physical person. This lets each
+-- person identify themselves by name + a short PIN right after
+-- logging in, so /admin/staff's activity log shows exactly who did
+-- what — not just the shared account's email.
+--
+-- This is NOT a replacement for real authentication — Supabase login
+-- is still the actual security boundary (this doesn't gate access to
+-- anything). It's a lightweight accountability layer on top, so the
+-- PIN is hashed with a simple SHA-256 (see lib/staffIdentity.js)
+-- rather than a full password-hashing algorithm — proportionate to
+-- what it protects (a name badge, not the login itself).
+-- ---------------------------------------------------------------------------
+create table if not exists public.staff_profiles (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  pin_hash text not null,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz
+);
+
+alter table public.staff_profiles enable row level security;
+-- No select/insert/update/delete policy on purpose — only ever
+-- accessed via the service role key, from /api/staff/identify and the
+-- /admin/staff page.
+
+-- Migration: add actor_name to the existing activity log, so entries
+-- made after this change show the individual person's name alongside
+-- the shared account's email. Safe to re-run.
+alter table public.admin_activity_log add column if not exists actor_name text;

@@ -62,6 +62,15 @@ export default async function AdminStaffPage() {
     .order('created_at', { ascending: false })
     .limit(150);
 
+  // The individual people who've identified themselves on a shared
+  // staff login (see StaffIdentifyGate) — separate from the
+  // STAFF_EMAILS login roster above, since one login can be used by
+  // several different named people.
+  const { data: staffProfiles } = await admin
+    .from('staff_profiles')
+    .select('id, name, created_at, last_used_at')
+    .order('last_used_at', { ascending: false, nullsFirst: false });
+
   return (
     <div>
       <h1 className="text-2xl font-semibold text-slate-900 mb-2">Staff</h1>
@@ -112,6 +121,33 @@ export default async function AdminStaffPage() {
         </div>
       )}
 
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Identified Staff Members</h2>
+      <p className="text-slate-500 mb-6">
+        Individual people who've identified themselves by name on a shared staff login (see the
+        name + PIN prompt shown after logging in).
+      </p>
+      {(!staffProfiles || staffProfiles.length === 0) && (
+        <p className="text-slate-500 mb-14">No one has identified themselves yet.</p>
+      )}
+      {staffProfiles && staffProfiles.length > 0 && (
+        <div className="space-y-3 mb-14">
+          {staffProfiles.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
+            >
+              <div className="text-slate-900 font-medium">{p.name}</div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-slate-500">
+                <span>First seen {formatDate(p.created_at)}</span>
+                <span>
+                  Last active {p.last_used_at ? formatDateTime(p.last_used_at) : 'never'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Recent Activity</h2>
       <p className="text-slate-500 mb-6">
         The last {activity?.length || 0} actions taken by staff and admin accounts.
@@ -146,7 +182,16 @@ export default async function AdminStaffPage() {
                 >
                   {entry.actor_role}
                 </span>
-                <span className="text-slate-500 text-xs font-mono">{entry.actor_email}</span>
+                <span className="text-slate-500 text-xs font-mono">
+                  {entry.actor_name ? (
+                    <>
+                      <span className="text-slate-800 font-medium not-italic">{entry.actor_name}</span>{' '}
+                      <span className="text-slate-400">({entry.actor_email})</span>
+                    </>
+                  ) : (
+                    entry.actor_email
+                  )}
+                </span>
                 <span className="text-slate-400 text-xs font-mono whitespace-nowrap">
                   {formatDateTime(entry.created_at)}
                 </span>

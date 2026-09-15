@@ -63,6 +63,11 @@ const ICONS = {
       <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  switchUser: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M17 2l4 4-4 4M3 11V9a4 4 0 014-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 01-4 4H3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   menu: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
@@ -163,6 +168,14 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
     router.refresh();
   }
 
+  // "Not you?" — hands off a shared staff login to the next person,
+  // clearing the name+PIN identity so the gate shows again without
+  // signing all the way out of the actual account.
+  async function handleSwitchIdentity() {
+    await fetch('/api/staff/identify', { method: 'DELETE' });
+    router.refresh();
+  }
+
   const Brand = (
     <Link href="/admin" className="flex items-center gap-2 px-2" onClick={() => setMobileOpen(false)}>
       <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-display italic text-sm flex-shrink-0">
@@ -206,6 +219,16 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
     </button>
   );
 
+  const SwitchIdentity = !isAdmin && (
+    <button
+      onClick={handleSwitchIdentity}
+      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 dark:hover:text-indigo-400 transition-colors"
+    >
+      <span className="text-slate-400 dark:text-slate-500">{ICONS.switchUser}</span>
+      Not you? Switch
+    </button>
+  );
+
   return (
     <>
       {/* Mobile top bar — replaces the full sidebar below md, opens a
@@ -229,6 +252,7 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
           <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
             <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
             {DarkModeToggle}
+            {SwitchIdentity}
             {SignOut}
           </div>
         </div>
@@ -241,6 +265,7 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
           <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
           {DarkModeToggle}
+          {SwitchIdentity}
           {SignOut}
         </div>
       </aside>

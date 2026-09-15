@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { canAccessAdmin, getAdminRole } from '@/lib/admin';
+import { getStaffIdentityName } from '@/lib/staffIdentity';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import StaffIdentifyGate from '@/components/admin/StaffIdentifyGate';
 
 export const metadata = { title: 'Admin — Stitchhouse' };
 
@@ -16,6 +18,18 @@ export default async function AdminLayout({ children }) {
 
   const role = getAdminRole(user.email); // 'admin' | 'staff'
   const isAdmin = role === 'admin';
+
+  // Staff logins can be shared by more than one person — gate on an
+  // individual name+PIN before showing anything, so every action they
+  // take afterward is attributable to a specific person, not just the
+  // shared account. Full admins skip this (there's one business
+  // owner, not a shared login).
+  if (!isAdmin) {
+    const staffName = await getStaffIdentityName();
+    if (!staffName) {
+      return <StaffIdentifyGate />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
