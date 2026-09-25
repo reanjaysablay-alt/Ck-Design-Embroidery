@@ -101,6 +101,17 @@ function AuthFormInner({ initialMode }) {
         password: loginPassword,
       });
       if (error) throw new Error(error.message || 'Could not log in. Please try again.');
+      // Every fresh login re-shows the name+PIN screen for a staff
+      // account, rather than silently reusing whoever last identified
+      // themselves on this browser (which could be a previous shift's
+      // employee, or someone else who used this device). Harmless for
+      // non-staff accounts — there's no identity cookie to clear.
+      try {
+        await fetch('/api/staff/identify', { method: 'DELETE' });
+      } catch {
+        // Not fatal — worst case the identify gate uses a stale cookie
+        // that expires within 12 hours anyway.
+      }
       const dest = await resolveDestination();
       router.push(dest);
       router.refresh();
