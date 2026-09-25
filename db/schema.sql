@@ -563,20 +563,32 @@ alter table public.orders add column if not exists delivery_fee numeric(10, 2) n
 -- logging in, so /admin/staff's activity log shows exactly who did
 -- what — not just the shared account's email.
 --
--- This is NOT a replacement for real authentication — Supabase login
--- is still the actual security boundary (this doesn't gate access to
--- anything). It's a lightweight accountability layer on top, so the
--- PIN is hashed with a simple SHA-256 (see lib/staffIdentity.js)
--- rather than a full password-hashing algorithm — proportionate to
--- what it protects (a name badge, not the login itself).
+-- `approved` gates actual admin-interface access: the first time a
+-- name is used it self-registers but stays unapproved, and the
+-- person sees a "waiting for approval" screen instead of the
+-- dashboard until an admin approves them from /admin/staff. Existing
+-- rows from before this column existed default to true so no one
+-- already in active use gets locked out by the migration.
+--
+-- The PIN itself is still just a lightweight accountability layer on
+-- top of real auth (Supabase login remains the actual account
+-- boundary), so it's hashed with a simple SHA-256 (see
+-- lib/staffIdentity.js) rather than a full password-hashing algorithm.
 -- ---------------------------------------------------------------------------
 create table if not exists public.staff_profiles (
   id bigint generated always as identity primary key,
   name text not null unique,
   pin_hash text not null,
+  approved boolean not null default true,
+  approved_at timestamptz,
   created_at timestamptz not null default now(),
   last_used_at timestamptz
 );
+
+-- Migration: add the approval columns to a database created before
+-- this change. Safe to re-run.
+alter table public.staff_profiles add column if not exists approved boolean not null default true;
+alter table public.staff_profiles add column if not exists approved_at timestamptz;
 
 alter table public.staff_profiles enable row level security;
 -- No select/insert/update/delete policy on purpose — only ever

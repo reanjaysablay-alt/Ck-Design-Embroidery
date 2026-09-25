@@ -20,6 +20,7 @@ import {
   CancelButton,
 } from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
+import AutoRefresh from '@/components/admin/AutoRefresh';
 
 // Always compute fresh from the database — active orders change
 // constantly and must never show a cached/stale snapshot.
@@ -74,6 +75,7 @@ export default async function AdminOrdersPage({ searchParams }) {
 
   return (
     <div>
+      <AutoRefresh />
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
         <Link

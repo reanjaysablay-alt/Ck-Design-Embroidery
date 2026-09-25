@@ -102,7 +102,7 @@ const ICONS = {
   ),
 };
 
-function NavItem({ href, icon, label, active, onClick }) {
+function NavItem({ href, icon, label, active, onClick, badge }) {
   return (
     <Link
       href={href}
@@ -114,27 +114,40 @@ function NavItem({ href, icon, label, active, onClick }) {
       }`}
     >
       <span className={active ? 'text-white' : 'text-slate-400 dark:text-slate-500'}>{icon}</span>
-      {label}
+      <span className="flex-1">{label}</span>
+      {!!badge && (
+        <span
+          className={`text-[10px] font-mono rounded-full px-1.5 py-0.5 leading-none ${
+            active ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+          }`}
+        >
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
 
-function NavLinks({ isAdmin, pathname, onNavigate }) {
+function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
   return (
     <nav className="flex flex-col gap-1 flex-1">
       <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Menu</p>
-      <NavItem href="/admin" icon={ICONS.dashboard} label="Dashboard" active={pathname === '/admin'} onClick={onNavigate} />
-      <NavItem href="/admin/sales" icon={ICONS.sales} label="Sales" active={pathname === '/admin/sales'} onClick={onNavigate} />
-      <NavItem href="/admin/orders" icon={ICONS.orders} label="Orders" active={pathname === '/admin/orders'} onClick={onNavigate} />
+      {isAdmin && (
+        <NavItem href="/admin" icon={ICONS.dashboard} label="Dashboard" active={pathname === '/admin'} onClick={onNavigate} />
+      )}
+      {isAdmin && (
+        <NavItem href="/admin/sales" icon={ICONS.sales} label="Sales" active={pathname === '/admin/sales'} onClick={onNavigate} />
+      )}
+      <NavItem href="/admin/orders" icon={ICONS.orders} label="Orders" active={pathname === '/admin/orders'} onClick={onNavigate} badge={counts.pendingOrders} />
       <NavItem href="/admin/orders/history" icon={ICONS.history} label="Order History" active={pathname === '/admin/orders/history'} onClick={onNavigate} />
-      <NavItem href="/admin/inquiries" icon={ICONS.inquiries} label="Inquiries" active={pathname === '/admin/inquiries'} onClick={onNavigate} />
-      <NavItem href="/admin/messages" icon={ICONS.messages} label="Messages" active={pathname.startsWith('/admin/messages')} onClick={onNavigate} />
-      <NavItem href="/admin/ratings" icon={ICONS.ratings} label="Ratings" active={pathname === '/admin/ratings'} onClick={onNavigate} />
+      <NavItem href="/admin/inquiries" icon={ICONS.inquiries} label="Inquiries" active={pathname === '/admin/inquiries'} onClick={onNavigate} badge={counts.unreadInquiries} />
+      <NavItem href="/admin/messages" icon={ICONS.messages} label="Messages" active={pathname.startsWith('/admin/messages')} onClick={onNavigate} badge={counts.unreadMessages} />
+      <NavItem href="/admin/ratings" icon={ICONS.ratings} label="Ratings" active={pathname === '/admin/ratings'} onClick={onNavigate} badge={counts.unreadRatings} />
       {isAdmin && (
         <>
           <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">Manage</p>
           <NavItem href="/admin/products" icon={ICONS.products} label="Products" active={pathname.startsWith('/admin/products')} onClick={onNavigate} />
-          <NavItem href="/admin/staff" icon={ICONS.staff} label="Staff" active={pathname === '/admin/staff'} onClick={onNavigate} />
+          <NavItem href="/admin/staff" icon={ICONS.staff} label="Staff" active={pathname === '/admin/staff'} onClick={onNavigate} badge={counts.pendingStaffCount} />
           <NavItem href="/admin/settings" icon={ICONS.settings} label="Settings" active={pathname === '/admin/settings'} onClick={onNavigate} />
         </>
       )}
@@ -142,11 +155,43 @@ function NavLinks({ isAdmin, pathname, onNavigate }) {
   );
 }
 
-export default function AdminSidebar({ role, isAdmin, userEmail }) {
+const EMPTY_COUNTS = { pendingOrders: 0, unreadInquiries: 0, unreadRatings: 0, unreadMessages: 0, pendingStaffCount: 0 };
+const COUNTS_POLL_MS = 8000;
+
+export default function AdminSidebar({ role, isAdmin, userEmail, initialCounts }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
+  const [counts, setCounts] = useState(initialCounts || EMPTY_COUNTS);
+
+  // Nav badges (Orders/Inquiries/Ratings/Messages/Staff) are static
+  // server-rendered props otherwise, which only ever refresh on a full
+  // page navigation. Poll instead so a new order, message, or staff
+  // approval request shows up on its own — the same reason the
+  // Messages inbox itself polls /api/admin/messages rather than
+  // relying on a manual refresh.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function poll() {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const res = await fetch('/api/admin/badge-counts');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setCounts(data);
+      } catch {
+        // Transient network hiccup — the next poll will retry.
+      }
+    }
+
+    const id = setInterval(poll, COUNTS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   // Dark mode toggles a `dark` class on <html>. Tailwind's dark:
   // variants only exist on admin components, so this has zero effect
@@ -254,7 +299,7 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
 
       {mobileOpen && (
         <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
-          <NavLinks isAdmin={isAdmin} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+          <NavLinks isAdmin={isAdmin} pathname={pathname} onNavigate={() => setMobileOpen(false)} counts={counts} />
           <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
             <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
             {DarkModeToggle}
@@ -267,7 +312,7 @@ export default function AdminSidebar({ role, isAdmin, userEmail }) {
       {/* Desktop sidebar — unchanged fixed column. */}
       <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-screen flex-col py-6 px-4">
         <div className="mb-8">{Brand}</div>
-        <NavLinks isAdmin={isAdmin} pathname={pathname} />
+        <NavLinks isAdmin={isAdmin} pathname={pathname} counts={counts} />
         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
           <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
           {DarkModeToggle}

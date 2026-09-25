@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { canAccessAdmin } from '@/lib/admin';
+import { isAdminEmail } from '@/lib/admin';
 import { SALE_STATUSES, computeTopProducts } from '@/lib/salesStats';
 
-// Staff can view Sales too — it's read-only monitoring, same access
-// level as the rest of the dashboard's day-to-day pages.
-async function requireStaffOrAdmin() {
+// Sales is admin-only now — staff no longer see this page, so this
+// endpoint (which powers it) is locked down the same way.
+async function requireAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !canAccessAdmin(user.email)) {
+  if (!user || !isAdminEmail(user.email)) {
     throw new Error('Not authorized');
   }
   return user;
@@ -29,7 +29,7 @@ async function requireStaffOrAdmin() {
 // aggregation the Sales page does on load, nothing else.
 export async function GET() {
   try {
-    await requireStaffOrAdmin();
+    await requireAdmin();
     const admin = createAdminClient();
     const { data: orders } = await admin
       .from('orders')

@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
+import AutoRefresh from '@/components/admin/AutoRefresh';
 
 // Always compute fresh from the database — the dashboard's counts
 // (pending orders, revenue, unread inquiries...) must never show a
@@ -62,6 +64,14 @@ function DashboardCard({ href, value, label, icon, accent }) {
 }
 
 export default async function AdminHome() {
+  // Dashboard (revenue totals, etc.) is admin-only — staff land on
+  // Orders instead, same as direct hits to /admin/sales.
+  const supabaseAuth = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabaseAuth.auth.getUser();
+  if (!isAdminEmail(authUser?.email)) redirect('/admin/orders');
+
   const admin = createAdminClient();
   const { count: pendingCount } = await admin
     .from('orders')
@@ -86,15 +96,9 @@ export default async function AdminHome() {
     .eq('read', false)
     .eq('type', 'rating');
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isAdmin = isAdminEmail(user?.email);
-
-  const { count: productCount } = isAdmin
-    ? await supabase.from('products').select('*', { count: 'exact', head: true })
-    : { count: null };
+  const { count: productCount } = await supabaseAuth
+    .from('products')
+    .select('*', { count: 'exact', head: true });
 
   const today = new Date().toLocaleDateString('en-US', {
     timeZone: 'Asia/Dubai',
@@ -106,6 +110,7 @@ export default async function AdminHome() {
 
   return (
     <div>
+      <AutoRefresh />
       <p className="text-slate-400 text-sm mb-1">{today}</p>
       <h1 className="text-2xl font-semibold text-slate-900 mb-8">Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -137,15 +142,13 @@ export default async function AdminHome() {
           icon={CARD_ICONS.ratings}
           accent="violet"
         />
-        {isAdmin && (
-          <DashboardCard
-            href="/admin/products"
-            value={productCount ?? 0}
-            label="Products in the shop"
-            icon={CARD_ICONS.products}
-            accent="emerald"
-          />
-        )}
+        <DashboardCard
+          href="/admin/products"
+          value={productCount ?? 0}
+          label="Products in the shop"
+          icon={CARD_ICONS.products}
+          accent="emerald"
+        />
       </div>
     </div>
   );

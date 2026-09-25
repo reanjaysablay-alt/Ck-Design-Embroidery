@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { MarkInquiryReadButton, DeleteInquiryButton, ReplyForm } from './client';
 import { formatDateTime } from '@/lib/formatDate';
+import AutoRefresh from '@/components/admin/AutoRefresh';
 
 export const metadata = { title: 'Inquiries — Admin — Stitchhouse' };
 
@@ -18,6 +19,7 @@ export default async function AdminInquiriesPage() {
 
   return (
     <div>
+      <AutoRefresh />
       <h1 className="text-2xl font-semibold text-slate-900 mb-8">Inquiries</h1>
 
       <div className="space-y-4">

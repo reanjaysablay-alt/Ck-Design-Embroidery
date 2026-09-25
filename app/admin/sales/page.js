@@ -1,7 +1,10 @@
-import { createAdminClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 import { toShopTime } from '@/lib/formatDate';
 import { SALE_STATUSES, computeTopProducts } from '@/lib/salesStats';
 import TopProductsLive from '@/components/admin/TopProductsLive';
+import AutoRefresh from '@/components/admin/AutoRefresh';
 
 export const metadata = { title: 'Sales — Stitchhouse Admin' };
 
@@ -14,6 +17,14 @@ function money(n) {
 }
 
 export default async function AdminSalesPage() {
+  // Sales is admin-only — staff who hit this URL directly get bounced
+  // to Orders, same as the dashboard.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminEmail(user?.email)) redirect('/admin/orders');
+
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')
@@ -73,6 +84,7 @@ export default async function AdminSalesPage() {
 
   return (
     <div>
+      <AutoRefresh />
       <h1 className="text-2xl font-semibold text-slate-900 mb-2">Sales</h1>
       <p className="text-slate-500 mb-8">
         Based on {totalOrders} completed order{totalOrders === 1 ? '' : 's'} — Completed and Picked Up only.

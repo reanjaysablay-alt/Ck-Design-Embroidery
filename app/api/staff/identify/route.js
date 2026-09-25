@@ -5,9 +5,11 @@ import { hashPin, setStaffIdentityCookie, clearStaffIdentityCookie } from '@/lib
 
 // Identifies the individual person currently using a (possibly
 // shared) staff login. First time a name is used, it self-registers
-// with whatever PIN was given. After that, the same name must be
-// paired with the same PIN — so one person can't casually show up in
-// the activity log under a coworker's name.
+// with whatever PIN was given, but stays unapproved — no cookie is
+// set, and the caller gets `pending: true` back — until an admin
+// approves that name from /admin/staff. After that, the same name
+// must be paired with the same PIN, so one person can't casually show
+// up in the activity log under a coworker's name.
 export async function POST(request) {
   const supabase = await createClient();
   const {
@@ -42,6 +44,9 @@ export async function POST(request) {
     if (existing.pin_hash !== pinHash) {
       return NextResponse.json({ error: 'Incorrect PIN for that name.' }, { status: 401 });
     }
+    if (!existing.approved) {
+      return NextResponse.json({ pending: true, name: trimmedName });
+    }
     await admin
       .from('staff_profiles')
       .update({ last_used_at: new Date().toISOString() })
@@ -49,10 +54,11 @@ export async function POST(request) {
   } else {
     const { error } = await admin
       .from('staff_profiles')
-      .insert({ name: trimmedName, pin_hash: pinHash, last_used_at: new Date().toISOString() });
+      .insert({ name: trimmedName, pin_hash: pinHash, approved: false, last_used_at: new Date().toISOString() });
     if (error) {
       return NextResponse.json({ error: 'Could not save your name — please try again.' }, { status: 500 });
     }
+    return NextResponse.json({ pending: true, name: trimmedName });
   }
 
   await setStaffIdentityCookie(trimmedName);

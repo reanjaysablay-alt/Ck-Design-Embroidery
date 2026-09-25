@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
+import AutoRefresh from '@/components/admin/AutoRefresh';
 
 // Always compute fresh from the database — a newly canceled/completed
 // order should appear here immediately, not a cached snapshot.
@@ -22,6 +23,7 @@ export default async function AdminOrderHistoryPage() {
 
   return (
     <div>
+      <AutoRefresh />
       <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <h1 className="text-2xl font-semibold text-slate-900">Order History</h1>
         <Link

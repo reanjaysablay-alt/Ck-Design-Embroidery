@@ -188,6 +188,38 @@ color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
   revalidatePath('/');
 }
 
+// Approves a pending staff identity (admin-only) so that name+PIN can
+// get past StaffIdentifyGate into the actual dashboard. See the
+// `approved` column comment in db/schema.sql.
+export async function approveStaffProfile(formData) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { error } = await admin
+    .from('staff_profiles')
+    .update({ approved: true, approved_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/staff');
+}
+
+// Denies a pending staff identity (admin-only) by deleting the row —
+// the name is free again, so if it's re-entered on the identify
+// screen it self-registers from scratch (new PIN, unapproved) exactly
+// like a brand-new name.
+export async function denyStaffProfile(formData) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { error } = await admin.from('staff_profiles').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/staff');
+}
+
 // Clears a staff member's saved name+PIN identity (admin-only). This
 // doesn't touch their actual login (STAFF_EMAILS/Supabase account) —
 // only the lightweight name+PIN accountability layer from
@@ -677,6 +709,7 @@ export async function sendStaffMessage(formData) {
   });
 
   revalidatePath('/admin/messages');
+  return message;
 }
 
 // Marks every unread customer message in a thread as read by staff —

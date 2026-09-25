@@ -37,11 +37,11 @@ export default function CheckoutClient({ user }) {
   const [method, setMethod] = useState('paypal'); // 'paypal' | 'cod' | 'walkin'
   const [address, setAddress] = useState({
     fullName: user.user_metadata?.full_name || '',
-    phone: '',
-    line1: '',
-    city: '',
-    emirate: '',
-    country: 'United Arab Emirates',
+    phone: user.user_metadata?.address?.phone || '',
+    line1: user.user_metadata?.address?.line1 || '',
+    city: user.user_metadata?.address?.city || '',
+    emirate: user.user_metadata?.address?.emirate || '',
+    country: user.user_metadata?.address?.country || 'United Arab Emirates',
   });
   const [addressValid, setAddressValid] = useState(false);
   const [codSubmitting, setCodSubmitting] = useState(false);
