@@ -587,3 +587,92 @@ alter table public.staff_profiles enable row level security;
 -- made after this change show the individual person's name alongside
 -- the shared account's email. Safe to re-run.
 alter table public.admin_activity_log add column if not exists actor_name text;
+
+-- ---------------------------------------------------------------------------
+-- Customer <-> staff messaging. Lets a signed-in customer message the
+-- shop directly (separate from the one-off contact_inquiries form on
+-- /contact) and get replies from staff/admin, threaded per customer —
+-- shown on the customer's /account/messages page and the dashboard's
+-- /admin/messages inbox.
+--
+-- RLS mirrors the notifications table: a customer can read/insert only
+-- their own rows, and can only ever insert as sender_role = 'customer'
+-- (never spoof a staff reply from the client). Staff/admin read the
+-- full inbox and insert replies through the sendStaffMessage server
+-- action using the service role key — a staff reply's user_id is the
+-- *customer's* id (whose thread it belongs to), not the staff
+-- member's, so it could never satisfy a customer-owns-this-row policy
+-- anyway.
+-- ---------------------------------------------------------------------------
+create table if not exists public.messages (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  sender_role text not null check (sender_role in ('customer', 'staff')),
+  -- Set only for sender_role = 'staff', from the name+PIN identity
+  -- gate (or 'Admin' for a full admin) — so the customer sees who
+  -- replied. Always null for sender_role = 'customer'.
+  sender_name text,
+  -- Denormalized so the admin inbox can list/search conversations by
+  -- email without joining into the auth schema. Always set server-side
+  -- by the trigger below from auth.users, never trusted from the
+  -- client, so it can't be spoofed and stays correct even on a staff
+  -- reply (where the inserting session is staff, not the customer).
+  customer_email text,
+  body text not null,
+  read_by_customer boolean not null default false,
+  read_by_staff boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.messages enable row level security;
+
+drop policy if exists "Users can view their own messages" on public.messages;
+create policy "Users can view their own messages"
+  on public.messages for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their own messages" on public.messages;
+create policy "Users can insert their own messages"
+  on public.messages for insert
+  with check (auth.uid() = user_id and sender_role = 'customer');
+
+-- Lets a customer mark a staff reply in their own thread as read (see
+-- MessageThread.jsx) — same shape as the notifications read policy.
+drop policy if exists "Users can mark their own messages read" on public.messages;
+create policy "Users can mark their own messages read"
+  on public.messages for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists messages_user_id_idx on public.messages(user_id);
+create index if not exists messages_created_at_idx on public.messages(created_at);
+
+-- Always fills customer_email from auth.users server-side, regardless
+-- of who's inserting (the customer themselves, or staff replying on
+-- their thread) — same narrow-SECURITY DEFINER-function reasoning as
+-- decrement_product_stock/restore_product_stock above.
+create or replace function public.set_message_customer_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  select email into new.customer_email from auth.users where id = new.user_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists messages_set_customer_email on public.messages;
+create trigger messages_set_customer_email
+  before insert on public.messages
+  for each row execute function public.set_message_customer_email();
+
+-- Realtime so a customer sees a staff reply appear live on
+-- /account/messages without a manual refresh, same as notifications.
+do $$
+begin
+  alter publication supabase_realtime add table public.messages;
+exception
+  when duplicate_object then null;
+end $$;

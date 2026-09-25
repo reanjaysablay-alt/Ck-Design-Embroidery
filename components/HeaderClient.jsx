@@ -7,11 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
 import { createClient } from '@/lib/supabase/client';
 import NotificationsBell from './NotificationsBell';
+import MessagesBell from './MessagesBell';
 import logo from '@/logo/ck-logo-transparent.png';
 
 const NAV = [
   { href: '/shop', label: 'Shop' },
   { href: '/account#orders', label: 'Track Order' },
+  { href: '/account/messages', label: 'Messages' },
   { href: '/services', label: 'For Your Business' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
@@ -83,6 +85,12 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
           )}
 
           {user && (
+            <span className="flex">
+              <MessagesBell userId={user.id} />
+            </span>
+          )}
+
+          {user && (
             <Link
               href="/cart"
               className="flex relative items-center justify-center text-thread hover:text-gold transition-colors"
@@ -136,6 +144,13 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
                       className="block px-4 py-2.5 text-sm text-thread/80 hover:text-gold hover:bg-white/5 transition-colors"
                     >
                       My Account
+                    </Link>
+                    <Link
+                      href="/account/messages"
+                      onClick={() => setProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-thread/80 hover:text-gold hover:bg-white/5 transition-colors"
+                    >
+                      Messages
                     </Link>
                     <Link
                       href="/account/settings"

@@ -8,6 +8,7 @@ import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
+import { getStaffIdentityName } from '@/lib/staffIdentity';
 import { restoreStock } from '@/lib/cartVerify';
 import {
   sendMail,
@@ -624,4 +625,72 @@ export async function setDeliveryFee(formData) {
 
   revalidatePath('/admin/orders');
   revalidatePath('/admin/orders/history');
+}
+
+// ---------------------------------------------------------------------------
+// Customer messages — /admin/messages. Day-to-day support work, open to
+// staff as well as full admins, same reasoning as orders/inquiries.
+// ---------------------------------------------------------------------------
+
+// Sends a staff/admin reply into a customer's message thread, and
+// drops a matching row into the customer's existing notifications
+// feed so they see it (and the header's notification bell lights up)
+// even if they're not sitting on /account/messages. Uses the admin
+// client because the row's user_id is the *customer's* id, not the
+// replying staff member's — it could never satisfy a
+// customer-owns-this-row RLS policy no matter who's signed in.
+export async function sendStaffMessage(formData) {
+  const actor = await requireStaffOrAdmin();
+  const role = getAdminRole(actor.email);
+  const userId = formData.get('userId')?.toString();
+  const body = formData.get('body')?.toString().trim();
+  if (!userId) throw new Error('Missing conversation');
+  if (!body) throw new Error('Message cannot be empty');
+
+  const admin = createAdminClient();
+  const senderName = role === 'staff' ? (await getStaffIdentityName()) || 'Staff' : 'Admin';
+
+  const { data: message, error } = await admin
+    .from('messages')
+    .insert({ user_id: userId, sender_role: 'staff', sender_name: senderName, body })
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  try {
+    await admin.from('notifications').insert({
+      user_id: userId,
+      title: 'New message from our team 💬',
+      body: body.length > 140 ? `${body.slice(0, 140)}…` : body,
+    });
+  } catch (err) {
+    console.error('Notification insert failed for message', message.id, err.message);
+  }
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: role,
+    action: 'message.reply',
+    targetType: 'message_thread',
+    targetId: userId,
+    details: `Replied in message thread for ${message.customer_email || userId}`,
+  });
+
+  revalidatePath('/admin/messages');
+}
+
+// Marks every unread customer message in a thread as read by staff —
+// called from the thread view when a staff/admin opens a conversation.
+export async function markMessagesReadByStaff(userId) {
+  await requireStaffOrAdmin();
+  if (!userId) return;
+  const admin = createAdminClient();
+  await admin
+    .from('messages')
+    .update({ read_by_staff: true })
+    .eq('user_id', userId)
+    .eq('sender_role', 'customer')
+    .eq('read_by_staff', false);
+
+  revalidatePath('/admin/messages');
 }

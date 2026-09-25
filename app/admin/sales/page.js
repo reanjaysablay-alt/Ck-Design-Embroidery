@@ -1,17 +1,13 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { toShopTime } from '@/lib/formatDate';
+import { SALE_STATUSES, computeTopProducts } from '@/lib/salesStats';
+import TopProductsLive from '@/components/admin/TopProductsLive';
 
 export const metadata = { title: 'Sales — Stitchhouse Admin' };
 
 // Always compute fresh from the database — this page shows live
 // figures, so it must never serve a cached/stale snapshot.
 export const dynamic = 'force-dynamic';
-
-// Orders count as a "sale" once they're actually fulfilled — pending
-// or in-progress orders aren't revenue yet, and canceled orders never
-// were. This matches Completed (delivery pipeline) and Picked Up
-// (walk-in pipeline).
-const SALE_STATUSES = ['completed', 'picked_up'];
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -70,19 +66,10 @@ export default async function AdminSalesPage() {
     byMethod[o.payment_method] = (byMethod[o.payment_method] || 0) + Number(o.total || 0);
   }
 
-  // Top products by revenue, aggregated across every sold order's items.
-  const productTotals = new Map();
-  for (const o of sales) {
-    for (const item of o.items || []) {
-      const key = item.name;
-      const revenue = Number(item.price || 0) * Number(item.qty || 0) + Number(item.customizationFee || 0);
-      const existing = productTotals.get(key) || { name: key, revenue: 0, qty: 0 };
-      existing.revenue += revenue;
-      existing.qty += Number(item.qty || 0);
-      productTotals.set(key, existing);
-    }
-  }
-  const topProducts = [...productTotals.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  // Top products by revenue, aggregated across every sold order's
+  // items — only used as the initial snapshot here; TopProductsLive
+  // below takes over with polled, live-updating data from that point.
+  const topProducts = computeTopProducts(sales);
 
   return (
     <div>
@@ -131,27 +118,9 @@ export default async function AdminSalesPage() {
           </div>
         </div>
 
-        {/* Top products */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-sm font-medium text-slate-700 mb-5">Top products</h2>
-          {topProducts.length === 0 && <p className="text-slate-400 text-sm">No sales yet.</p>}
-          <div className="space-y-3">
-            {topProducts.map((p, i) => (
-              <div key={p.name} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[11px] font-medium flex items-center justify-center flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="text-slate-700 text-sm truncate">{p.name}</span>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-slate-900 text-sm font-medium">{money(p.revenue)}</div>
-                  <div className="text-slate-400 text-xs">{p.qty} sold</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Top products — live, polls for updates independently of
+            the rest of this server-rendered page. */}
+        <TopProductsLive initialTopProducts={topProducts} />
       </div>
     </div>
   );
