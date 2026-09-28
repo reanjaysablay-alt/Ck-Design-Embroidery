@@ -14,11 +14,12 @@ import { groupConversations, formatSenderLabel } from '@/lib/messages';
 // as TopProductsLive on the Dashboard's Sales section.
 const POLL_MS = 4000;
 
-export default function AdminMessagesPanel({ initialMessages, initialSelectedUserId, sendAction, markReadAction }) {
+export default function AdminMessagesPanel({ initialMessages, initialSelectedUserId, sendAction, markReadAction, deleteAction }) {
   const [messages, setMessages] = useState(initialMessages);
   const [selectedUserId, setSelectedUserId] = useState(initialSelectedUserId);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -66,6 +67,23 @@ export default function AdminMessagesPanel({ initialMessages, initialSelectedUse
     // navigation — that would re-run the server component and throw
     // away the polled state we've built up client-side.
     window.history.replaceState(null, '', `/admin/messages?user=${userId}`);
+  }
+
+  async function handleDelete() {
+    if (!selectedUserId) return;
+    const who = selectedConversation?.customerEmail || 'this customer';
+    if (!confirm(`Delete the whole conversation with ${who}? This can't be undone.`)) return;
+    setDeleting(true);
+    try {
+      await deleteAction(selectedUserId);
+      setMessages((prev) => prev.filter((m) => m.user_id !== selectedUserId));
+      setSelectedUserId(null);
+      window.history.replaceState(null, '', '/admin/messages');
+    } catch (err) {
+      alert(err.message || 'Could not delete the conversation.');
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -133,10 +151,18 @@ export default function AdminMessagesPanel({ initialMessages, initialSelectedUse
 
         {selectedUserId && (
           <div className="flex flex-col h-full">
-            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
               <p className="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">
                 {selectedConversation?.customerEmail || 'Customer'}
               </p>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-red-600 text-xs uppercase tracking-widest hover:underline disabled:opacity-50 flex-shrink-0"
+              >
+                {deleting ? 'Deleting…' : 'Delete conversation'}
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">

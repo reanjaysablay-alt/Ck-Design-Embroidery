@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import AdminMessagesPanel from '@/components/admin/AdminMessagesPanel';
-import { sendStaffMessage, markMessagesReadByStaff } from '@/app/admin/actions';
+import { sendStaffMessage, markMessagesReadByStaff, deleteConversation } from '@/app/admin/actions';
 
 export const metadata = { title: 'Messages — Admin — Stitchhouse' };
 
@@ -27,6 +27,7 @@ export default async function AdminMessagesPage({ searchParams }) {
         initialSelectedUserId={initialSelectedUserId}
         sendAction={sendStaffMessage}
         markReadAction={markMessagesReadByStaff}
+        deleteAction={deleteConversation}
       />
     </div>
   );

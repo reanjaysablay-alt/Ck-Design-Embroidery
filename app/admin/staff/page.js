@@ -24,6 +24,8 @@ const ACTION_LABELS = {
   'inquiry.reply': 'Replied to an inquiry',
   'inquiry.read': 'Marked an inquiry as read',
   'inquiry.delete': 'Deleted an inquiry',
+  'message.reply': 'Replied to a customer message',
+  'message.delete_thread': 'Deleted a conversation',
 };
 
 export default async function AdminStaffPage() {

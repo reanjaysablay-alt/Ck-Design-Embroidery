@@ -703,6 +703,37 @@ export async function sendStaffMessage(formData) {
   return message;
 }
 
+// Permanently deletes an entire conversation (every message in one
+// customer's thread). Open to staff as well as admins, and recorded in
+// the activity log so it's attributable.
+export async function deleteConversation(userId) {
+  const actor = await requireStaffOrAdmin();
+  const role = getAdminRole(actor.email);
+  if (!userId) throw new Error('Missing conversation');
+
+  const admin = createAdminClient();
+  const { data: sample } = await admin
+    .from('messages')
+    .select('customer_email')
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await admin.from('messages').delete().eq('user_id', userId);
+  if (error) throw new Error(error.message);
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: role,
+    action: 'message.delete_thread',
+    targetType: 'message_thread',
+    targetId: userId,
+    details: `Deleted the conversation with ${sample?.customer_email || userId}`,
+  });
+
+  revalidatePath('/admin/messages');
+}
+
 // Marks every unread customer message in a thread as read by staff —
 // called from the thread view when a staff/admin opens a conversation.
 export async function markMessagesReadByStaff(userId) {
