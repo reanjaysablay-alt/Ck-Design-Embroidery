@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { formatDateTime } from '@/lib/formatDate';
 
+// Older accounts may still have "New message from our team" rows from
+// before messages got their own bell — hide those so messages only ever
+// show up under the Messages bell, never here.
+const isMessageNotification = (n) => n.title?.startsWith('New message from our team');
+
 // Bell icon in the customer header. Opens a dropdown of the user's
 // recent notifications — notifications only, no account/profile info,
 // that lives in the separate profile menu instead. Subscribes to
@@ -38,7 +43,7 @@ export default function NotificationsBell({ userId }) {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
-      if (mounted && data) setNotifications(data);
+      if (mounted && data) setNotifications(data.filter((n) => !isMessageNotification(n)));
       if (mounted) setLoading(false);
     }
     load();
@@ -56,6 +61,7 @@ export default function NotificationsBell({ userId }) {
         (payload) => {
           if (!mounted) return;
           if (payload.eventType === 'INSERT') {
+            if (isMessageNotification(payload.new)) return;
             setNotifications((prev) => [payload.new, ...prev].slice(0, 10));
           } else {
             load();
@@ -69,6 +75,17 @@ export default function NotificationsBell({ userId }) {
       supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  // Opening the dropdown counts as having checked them — clear the
+  // badge automatically instead of making the customer click a button.
+  // Waits a couple of seconds first so the new ones are still visibly
+  // highlighted while they're being read.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(markAllRead, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, notifications.length]);
 
   async function markAllRead() {
     const unreadOnes = notifications.filter((n) => !n.read);

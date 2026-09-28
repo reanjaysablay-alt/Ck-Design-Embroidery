@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { formatDateTime } from '@/lib/formatDate';
-import { groupConversations } from '@/lib/messages';
+import { groupConversations, formatSenderLabel } from '@/lib/messages';
 
 // Admin/staff can't use Supabase Realtime for this the way the
 // customer-facing MessageThread does — the `messages` RLS policy only
@@ -11,7 +11,7 @@ import { groupConversations } from '@/lib/messages';
 // subscribe across every customer's conversation. Only the server
 // (service role key, never sent to the browser) can read all of them
 // — so this polls a small API route backed by that key, same pattern
-// as TopProductsLive on /admin/sales.
+// as TopProductsLive on the Dashboard's Sales section.
 const POLL_MS = 4000;
 
 export default function AdminMessagesPanel({ initialMessages, initialSelectedUserId, sendAction, markReadAction }) {
@@ -151,7 +151,7 @@ export default function AdminMessagesPanel({ initialMessages, initialSelectedUse
                   >
                     {m.sender_role === 'staff' && (
                       <div className="font-mono text-[10px] uppercase tracking-widest text-indigo-200 mb-1">
-                        {m.sender_name || 'Staff'}
+                        {formatSenderLabel(m.sender_name)}
                       </div>
                     )}
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.body}</p>

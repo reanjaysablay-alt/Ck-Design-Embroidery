@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDateTime } from '@/lib/formatDate';
+import { formatSenderLabel } from '@/lib/messages';
 
 // The customer's side of the messages feature — a simple chat thread
 // with the shop. Reads/writes go straight through the browser Supabase
@@ -116,7 +117,7 @@ export default function MessageThread({ userId, initialMessages }) {
             >
               {m.sender_role === 'staff' && (
                 <div className="font-mono text-[10px] uppercase tracking-widest text-gold mb-1">
-                  {m.sender_name || 'Staff'}
+                  {formatSenderLabel(m.sender_name)}
                 </div>
               )}
               <p className="text-thread/90 text-sm whitespace-pre-wrap leading-relaxed">{m.body}</p>

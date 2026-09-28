@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import PasswordInput from '@/components/PasswordInput';
 
 export default function StaffIdentifyGate() {
   const router = useRouter();
@@ -57,6 +59,17 @@ export default function StaffIdentifyGate() {
     }
   }
 
+  // Signs out of the account entirely and returns to the login page —
+  // an escape hatch for someone stuck on this screen (wrong name
+  // typed, wants to come back later, etc.) instead of being stranded
+  // here with only "Check again".
+  async function handleBackToLogin() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
+
   if (pending) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
@@ -73,6 +86,12 @@ export default function StaffIdentifyGate() {
             className="w-full bg-indigo-600 text-white font-medium text-sm px-6 py-3.5 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-60"
           >
             {loading ? 'Checking…' : 'Check again'}
+          </button>
+          <button
+            onClick={handleBackToLogin}
+            className="w-full text-slate-500 text-sm mt-4 hover:text-slate-800 hover:underline"
+          >
+            Back to log in
           </button>
         </div>
       </div>
@@ -106,15 +125,15 @@ export default function StaffIdentifyGate() {
             <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">
               PIN (4-6 digits)
             </label>
-            <input
-              type="password"
+            <PasswordInput
               inputMode="numeric"
               pattern="[0-9]*"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               required
               maxLength={6}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 tracking-widest focus-visible:outline-indigo-500"
+              inputClassName="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 tracking-widest focus-visible:outline-indigo-500"
+              toggleClassName="text-slate-400 hover:text-slate-700"
             />
           </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}

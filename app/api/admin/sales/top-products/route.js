@@ -17,7 +17,8 @@ async function requireAdmin() {
   return user;
 }
 
-// Polled every few seconds by TopProductsLive on /admin/sales so the
+// Polled every few seconds by TopProductsLive on the Dashboard's Sales
+// section so the
 // ranking updates shortly after a new sale completes. Deliberately a
 // polled endpoint rather than a browser Supabase Realtime subscription:
 // orders' RLS policy only lets a signed-in user read their own rows,

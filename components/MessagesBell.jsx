@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 // Chat-bubble icon in the customer header, next to the notifications
@@ -10,6 +11,8 @@ import { createClient } from '@/lib/supabase/client';
 // reply" indicator. Same Realtime pattern as NotificationsBell.
 export default function MessagesBell({ userId }) {
   const [unread, setUnread] = useState(0);
+  const pathname = usePathname();
+  const onMessagesPage = pathname?.startsWith('/account/messages');
 
   useEffect(() => {
     if (!userId) return;
@@ -43,11 +46,20 @@ export default function MessagesBell({ userId }) {
     };
   }, [userId]);
 
+  // Sitting on the messages page means they're reading the replies
+  // (MessageThread marks them read in the database) — don't show a
+  // badge for what's already on screen.
+  useEffect(() => {
+    if (onMessagesPage) setUnread(0);
+  }, [onMessagesPage]);
+
+  const shownUnread = onMessagesPage ? 0 : unread;
+
   return (
     <Link
       href="/account/messages"
       className="relative flex items-center justify-center text-thread hover:text-gold transition-colors"
-      aria-label={`Messages, ${unread} unread`}
+      aria-label={`Messages, ${shownUnread} unread`}
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
         <path
@@ -56,9 +68,9 @@ export default function MessagesBell({ userId }) {
           strokeLinejoin="round"
         />
       </svg>
-      {unread > 0 && (
+      {shownUnread > 0 && (
         <span className="absolute -top-2 -right-2 bg-stitchRed text-thread text-[11px] font-mono rounded-full w-5 h-5 flex items-center justify-center">
-          {unread > 9 ? '9+' : unread}
+          {shownUnread > 9 ? '9+' : shownUnread}
         </span>
       )}
     </Link>

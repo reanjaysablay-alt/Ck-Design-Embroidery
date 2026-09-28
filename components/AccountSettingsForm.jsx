@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import PasswordInput from './PasswordInput';
 
 const EMPTY_ADDRESS = { line1: '', city: '', emirate: '', phone: '', country: 'United Arab Emirates' };
 
@@ -328,32 +329,32 @@ export default function AccountSettingsForm({ user }) {
         <h2 className="text-xs uppercase tracking-widest text-gold mb-4">Change Password</h2>
         <p className="text-thread/50 text-sm mb-4">Must be at least 8 characters.</p>
         <div className="grid sm:grid-cols-3 gap-3 max-w-2xl mb-4">
-          <input
-            type="password"
+          <PasswordInput
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder="Current password"
             autoComplete="current-password"
             required
-            className="bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            toggleClassName="text-thread/40 hover:text-thread"
           />
-          <input
-            type="password"
+          <PasswordInput
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="New password"
             autoComplete="new-password"
             required
-            className="bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            toggleClassName="text-thread/40 hover:text-thread"
           />
-          <input
-            type="password"
+          <PasswordInput
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm new password"
             autoComplete="new-password"
             required
-            className="bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
+            toggleClassName="text-thread/40 hover:text-thread"
           />
         </div>
         <button

@@ -197,7 +197,7 @@ export default async function AdminStaffPage() {
       )}
 
       {activity && activity.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
           {activity.map((entry) => (
             <div
               key={entry.id}

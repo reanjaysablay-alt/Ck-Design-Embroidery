@@ -14,12 +14,6 @@ const ICONS = {
       <rect x="3" y="16" width="7" height="5" rx="1.5" />
     </svg>
   ),
-  sales: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15 7h6v6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
   orders: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M3 6h2l1.6 9.6a2 2 0 002 1.9h8.8a2 2 0 002-1.7L21 8H6" strokeLinecap="round" strokeLinejoin="round" />
@@ -135,9 +129,6 @@ function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
       {isAdmin && (
         <NavItem href="/admin" icon={ICONS.dashboard} label="Dashboard" active={pathname === '/admin'} onClick={onNavigate} />
       )}
-      {isAdmin && (
-        <NavItem href="/admin/sales" icon={ICONS.sales} label="Sales" active={pathname === '/admin/sales'} onClick={onNavigate} />
-      )}
       <NavItem href="/admin/orders" icon={ICONS.orders} label="Orders" active={pathname === '/admin/orders'} onClick={onNavigate} badge={counts.pendingOrders} />
       <NavItem href="/admin/orders/history" icon={ICONS.history} label="Order History" active={pathname === '/admin/orders/history'} onClick={onNavigate} />
       <NavItem href="/admin/inquiries" icon={ICONS.inquiries} label="Inquiries" active={pathname === '/admin/inquiries'} onClick={onNavigate} badge={counts.unreadInquiries} />
@@ -158,7 +149,7 @@ function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
 const EMPTY_COUNTS = { pendingOrders: 0, unreadInquiries: 0, unreadRatings: 0, unreadMessages: 0, pendingStaffCount: 0 };
 const COUNTS_POLL_MS = 8000;
 
-export default function AdminSidebar({ role, isAdmin, userEmail, initialCounts }) {
+export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -233,10 +224,7 @@ export default function AdminSidebar({ role, isAdmin, userEmail, initialCounts }
         CK
       </span>
       <span className="font-display text-lg text-slate-900 dark:text-slate-100 leading-tight">
-        Admin
-        <span className="block text-[10px] font-mono uppercase tracking-widest text-slate-400 leading-tight">
-          {role}
-        </span>
+        {isAdmin ? 'Admin' : 'Staff'}
       </span>
     </Link>
   );
@@ -309,8 +297,10 @@ export default function AdminSidebar({ role, isAdmin, userEmail, initialCounts }
         </div>
       )}
 
-      {/* Desktop sidebar — unchanged fixed column. */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-screen flex-col py-6 px-4">
+      {/* Desktop sidebar — pinned to the viewport (sticky, full height,
+          scrolls internally if needed) so Log Out stays reachable no
+          matter how long the page next to it gets. */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 h-screen overflow-y-auto flex-col py-6 px-4 self-start">
         <div className="mb-8">{Brand}</div>
         <NavLinks isAdmin={isAdmin} pathname={pathname} counts={counts} />
         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">

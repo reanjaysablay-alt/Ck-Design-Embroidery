@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import PasswordInput from './PasswordInput';
 
 // Shared by app/login/page.js and app/signup/page.js — each is its own
 // URL/page rather than a tab toggle on one page, so "Sign Up" and
@@ -521,17 +522,30 @@ function ResetForm({
 }
 
 function Field({ label, type = 'text', value, onChange, required, placeholder }) {
+  const inputClassName =
+    'w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread placeholder:text-thread/30 focus-visible:outline-gold';
   return (
     <div>
       <label className="block text-xs uppercase tracking-widest text-thread/50 mb-2">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        placeholder={placeholder}
-        className="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-3 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
-      />
+      {type === 'password' ? (
+        <PasswordInput
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          placeholder={placeholder}
+          inputClassName={inputClassName}
+          toggleClassName="text-thread/40 hover:text-thread"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          placeholder={placeholder}
+          className={inputClassName}
+        />
+      )}
     </div>
   );
 }
