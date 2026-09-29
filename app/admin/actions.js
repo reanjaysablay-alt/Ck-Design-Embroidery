@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
@@ -249,10 +250,24 @@ export async function resetStaffPin(formData) {
 // after it), then writes the in-app notification (wrapped in its own
 // try/catch so a problem there never blocks the email or the status
 // update that already happened).
+// Notifies a customer that their order's status changed: an in-app
+// notification (fast, drives the notification bell — kept synchronous
+// so it's there the instant the page refreshes) and an email (slow —
+// a real SMTP round trip to Gmail, easily the single biggest reason a
+// staff/admin button click used to feel like it hung. Deferred via
+// after() so the status change and page refresh happen immediately,
+// and the email goes out a moment later in the background instead of
+// making the person wait on it).
 async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn }) {
   if (order.customer_email) {
-    const { subject, html } = emailTemplateFn(order);
-    await sendMail({ to: order.customer_email, subject, html });
+    after(async () => {
+      try {
+        const { subject, html } = emailTemplateFn(order);
+        await sendMail({ to: order.customer_email, subject, html });
+      } catch (err) {
+        console.error('Order status email failed for order', order.id, err.message);
+      }
+    });
   }
 
   try {

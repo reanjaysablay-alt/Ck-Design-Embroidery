@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { sendMail, inquiryReplyCustomerEmail } from '@/lib/email';
@@ -37,7 +38,16 @@ export async function POST(request) {
     if (fetchError) throw fetchError;
 
     const { subject, html } = inquiryReplyCustomerEmail(inquiry, replyText);
-    await sendMail({ to: inquiry.email, subject, html });
+    // Deferred — the customer's reply is saved and shown right away;
+    // the actual email goes out a moment later so this click doesn't
+    // have to wait on a Gmail SMTP round trip.
+    after(async () => {
+      try {
+        await sendMail({ to: inquiry.email, subject, html });
+      } catch (err) {
+        console.error('Inquiry reply email failed for inquiry', id, err.message);
+      }
+    });
 
     const { error } = await admin
       .from('contact_inquiries')
