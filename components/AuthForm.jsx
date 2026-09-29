@@ -534,7 +534,7 @@ function Field({ label, type = 'text', value, onChange, required, placeholder })
           required={required}
           placeholder={placeholder}
           inputClassName={inputClassName}
-          toggleClassName="text-thread opacity-60 hover:opacity-100"
+          toggleClassName="text-black hover:text-black/70"
         />
       ) : (
         <input
