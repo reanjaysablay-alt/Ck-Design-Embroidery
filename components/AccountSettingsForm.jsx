@@ -336,7 +336,7 @@ export default function AccountSettingsForm({ user }) {
             autoComplete="current-password"
             required
             inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
-            toggleClassName="text-thread/40 hover:text-thread"
+            toggleClassName="text-thread opacity-60 hover:opacity-100"
           />
           <PasswordInput
             value={newPassword}
@@ -345,7 +345,7 @@ export default function AccountSettingsForm({ user }) {
             autoComplete="new-password"
             required
             inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
-            toggleClassName="text-thread/40 hover:text-thread"
+            toggleClassName="text-thread opacity-60 hover:opacity-100"
           />
           <PasswordInput
             value={confirmPassword}
@@ -354,7 +354,7 @@ export default function AccountSettingsForm({ user }) {
             autoComplete="new-password"
             required
             inputClassName="w-full bg-canvas2 border border-white/15 rounded-sm px-4 py-2.5 text-thread placeholder:text-thread/30 focus-visible:outline-gold"
-            toggleClassName="text-thread/40 hover:text-thread"
+            toggleClassName="text-thread opacity-60 hover:opacity-100"
           />
         </div>
         <button

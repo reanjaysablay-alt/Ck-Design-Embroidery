@@ -21,7 +21,7 @@ export default function PasswordInput({ inputClassName = '', toggleClassName = '
         onClick={() => setShow((s) => !s)}
         tabIndex={-1}
         aria-label={show ? 'Hide password' : 'Show password'}
-        className={`absolute inset-y-0 right-0 flex items-center px-3 ${toggleClassName}`}
+        className={`absolute inset-y-0 right-0 flex items-center px-3 z-10 ${toggleClassName}`}
       >
         {show ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
