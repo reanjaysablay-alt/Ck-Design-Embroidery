@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { formatDateTime } from '@/lib/formatDate';
+import { formatLocalDateTime } from '@/lib/formatDate';
 import { formatSenderLabel } from '@/lib/messages';
 
 // The customer's side of the messages feature — a simple chat thread
@@ -122,7 +122,7 @@ export default function MessageThread({ userId, initialMessages }) {
               )}
               <p className="text-thread/90 text-sm whitespace-pre-wrap leading-relaxed">{m.body}</p>
               <div className="text-thread/30 text-[10px] font-mono mt-1.5">
-                {formatDateTime(m.created_at)}
+                {formatLocalDateTime(m.created_at)}
               </div>
             </div>
           </div>

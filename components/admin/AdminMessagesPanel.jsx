@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { formatDateTime } from '@/lib/formatDate';
+import { formatLocalDateTime } from '@/lib/formatDate';
 import { groupConversations, formatSenderLabel } from '@/lib/messages';
 
 // Admin/staff can't use Supabase Realtime for this the way the
@@ -136,7 +136,7 @@ export default function AdminMessagesPanel({ initialMessages, initialSelectedUse
               {c.lastBody}
             </p>
             <p className="text-slate-400 dark:text-slate-500 text-[10px] font-mono mt-1">
-              {formatDateTime(c.lastAt)}
+              {formatLocalDateTime(c.lastAt)}
             </p>
           </button>
         ))}
@@ -193,7 +193,7 @@ export default function AdminMessagesPanel({ initialMessages, initialSelectedUse
                         m.sender_role === 'staff' ? 'text-indigo-200' : 'text-slate-400'
                       }`}
                     >
-                      {formatDateTime(m.created_at)}
+                      {formatLocalDateTime(m.created_at)}
                     </div>
                   </div>
                 </div>
