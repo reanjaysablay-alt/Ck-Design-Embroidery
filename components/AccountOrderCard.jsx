@@ -1,10 +1,12 @@
+import Image from 'next/image';
 import { formatDate } from '@/lib/formatDate';
+import { productImageSrc } from '@/lib/placeholder';
 import OrderStageDetail, { stageLabel, effectiveStage } from './ProductionStageTracker';
 
 // A single order's card on the customer's My Purchases page — shared
 // between the active-orders list and the
 // plain Order History list below it, so both stay visually identical.
-export default function AccountOrderCard({ order, showTracker = true, proofUrl }) {
+export default function AccountOrderCard({ order, showTracker = true, proofUrl, productImages = {} }) {
   return (
     <div className="bg-canvas2 border border-white/5 rounded-sm p-6">
       <div className="flex justify-between items-start mb-3">
@@ -42,9 +44,21 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl }
         </div>
       )}
 
-      <ul className="text-sm text-thread/50 mt-3 space-y-1">
+      <ul className="text-sm text-thread/50 mt-3 space-y-3">
         {order.items?.map((item, i) => (
-          <li key={i}>
+          <li key={i} className="flex gap-3 items-start">
+            {/* Small product thumbnail — from the order itself, or the
+                product's current photo for older orders saved without one. */}
+            <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-sm bg-canvas">
+              <Image
+                src={productImageSrc(item.image || productImages[item.slug])}
+                alt={item.name}
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
             {item.name}{' '}
             <span
               className={`text-[10px] font-mono uppercase tracking-widest border rounded-sm px-1.5 py-0.5 align-middle ${
@@ -80,6 +94,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl }
                 ${Number(item.customizationFee).toFixed(2)}
               </div>
             )}
+            </div>
           </li>
         ))}
       </ul>

@@ -6,6 +6,7 @@ import OrderHistoryToggle from '@/components/OrderHistoryToggle';
 import { TRACKER_STAGES, effectiveStage } from '@/components/ProductionStageTracker';
 import OrderTrackingTabs from '@/components/OrderTrackingTabs';
 import { getDesignDownloadUrl } from '@/lib/upload';
+import { getProducts } from '@/lib/products';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
 export const metadata = { title: 'My Purchases — Stitchhouse' };
@@ -49,6 +50,12 @@ export default async function AccountPage() {
       })
   );
 
+  // slug -> current product photo, so every item in an order shows a
+  // small thumbnail even when the order was saved without one.
+  const productImages = Object.fromEntries(
+    (await getProducts()).filter((p) => p.image).map((p) => [p.slug, p.image])
+  );
+
   // Group active orders under the tracker stage they're at (see
   // effectiveStage). Each icon in the row becomes a tab with a count.
   const byStage = {};
@@ -66,7 +73,7 @@ export default async function AccountPage() {
       key,
       <div key={key} className="space-y-4">
         {list.map((order) => (
-          <AccountOrderCard key={order.id} order={order} proofUrl={proofUrls[order.id]} />
+          <AccountOrderCard key={order.id} order={order} proofUrl={proofUrls[order.id]} productImages={productImages} />
         ))}
       </div>,
     ])
@@ -99,7 +106,7 @@ export default async function AccountPage() {
       {historyOrders.length > 0 && (
         <OrderHistoryToggle count={historyOrders.length}>
           {historyOrders.map((order) => (
-            <AccountOrderCard key={order.id} order={order} showTracker={false} />
+            <AccountOrderCard key={order.id} order={order} showTracker={false} productImages={productImages} />
           ))}
         </OrderHistoryToggle>
       )}
