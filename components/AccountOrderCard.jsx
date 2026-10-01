@@ -4,7 +4,7 @@ import ProductionStageTracker from './ProductionStageTracker';
 // A single order's card on the customer's My Purchases page — shared
 // between the active-orders list and the
 // plain Order History list below it, so both stay visually identical.
-export default function AccountOrderCard({ order, showTracker = true }) {
+export default function AccountOrderCard({ order, showTracker = true, proofUrl }) {
   return (
     <div className="bg-canvas2 border border-white/5 rounded-sm p-6">
       <div className="flex justify-between items-start mb-3">
@@ -91,6 +91,7 @@ export default function AccountOrderCard({ order, showTracker = true }) {
             (['completed', 'picked_up'].includes(order.order_status) ? 'completed' : 'order_received')
           }
           order={order}
+          proofUrl={proofUrl}
         />
       )}
     </div>

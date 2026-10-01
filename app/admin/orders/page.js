@@ -8,6 +8,7 @@ import {
   setDeliveryFee,
   setProductionStage,
   markCodPaid,
+  uploadDesignProof,
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -118,6 +119,7 @@ export default async function AdminOrdersPage({ searchParams }) {
               }
               stageAction={setProductionStage}
               paymentAction={markCodPaid}
+              proofAction={uploadDesignProof}
               actions={
                 <>
                   {order.order_status === 'pending' && (

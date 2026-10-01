@@ -6,7 +6,7 @@ import { after } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
-import { uploadProductImage } from '@/lib/upload';
+import { uploadProductImage, uploadDesignFile } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
@@ -21,6 +21,7 @@ import {
   orderPreparingCustomerEmail,
   orderReadyForPickupCustomerEmail,
   orderPickedUpCustomerEmail,
+  designProofCustomerEmail,
 } from '@/lib/email';
 
 // Every action re-checks admin status server-side against the current
@@ -847,6 +848,76 @@ export async function setProductionStage(formData) {
 
   revalidatePath('/admin/orders');
   revalidatePath('/admin/orders/history');
+  revalidatePath('/account');
+  return { ok: true };
+}
+
+// Staff uploads the digitized embroidery design proof for a customer to
+// review. This moves the order to "Proofing Pending", notifies the
+// customer (in-app + email), and clears any earlier change request. The
+// customer then approves it (or asks for changes) from My Purchases —
+// see app/account/actions.js. Returns { error } instead of throwing so
+// the upload form can show the message.
+export async function uploadDesignProof(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+  const file = formData.get('file');
+
+  if (!file || typeof file === 'string' || file.size === 0) {
+    return { error: 'Choose a proof file to upload.' };
+  }
+
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchError) return { error: fetchError.message };
+  if (existing.order_status === 'pending') {
+    return { error: 'Accept the order first, then upload the proof.' };
+  }
+  if (['canceled', 'completed', 'picked_up'].includes(existing.order_status)) {
+    return { error: 'This order is already closed.' };
+  }
+
+  let uploaded;
+  try {
+    uploaded = await uploadDesignFile(file);
+  } catch (err) {
+    return { error: err.message || 'Upload failed.' };
+  }
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({
+      proof_path: uploaded.path,
+      proof_name: uploaded.name,
+      proof_feedback: null,
+      proof_uploaded_at: new Date().toISOString(),
+      production_stage: 'proofing_pending',
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) return { error: error.message };
+
+  await notifyOrderStatus(admin, order, {
+    title: 'Design proof ready for approval 🎨',
+    body: `Order #${order.id}: your embroidery design is ready. Open My Purchases to review and approve it.`,
+    emailTemplateFn: designProofCustomerEmail,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.upload_proof',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Uploaded a design proof for order #${order.id}`,
+  });
+
+  revalidatePath('/admin/orders');
   revalidatePath('/account');
   return { ok: true };
 }

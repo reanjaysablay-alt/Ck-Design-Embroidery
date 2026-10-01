@@ -712,11 +712,13 @@ exception
   when duplicate_object then null;
 end $$;
 
+
 -- ---------------------------------------------------------------------------
--- Migration: courier tracking on orders — shown to the customer in the
--- production tracker once an order is Ready for Fulfillment (see
--- setTrackingInfo / ProductionStageTracker). Safe to re-run.
+-- Migration: design proofing. Staff uploads a digitized embroidery proof;
+-- the customer approves it (or requests changes) from My Purchases. The
+-- proof file lives in the private design-uploads bucket. Safe to re-run.
 -- ---------------------------------------------------------------------------
-alter table public.orders add column if not exists courier_name text;
-alter table public.orders add column if not exists tracking_number text;
-alter table public.orders add column if not exists tracking_url text;
+alter table public.orders add column if not exists proof_path text;
+alter table public.orders add column if not exists proof_name text;
+alter table public.orders add column if not exists proof_feedback text;
+alter table public.orders add column if not exists proof_uploaded_at timestamptz;

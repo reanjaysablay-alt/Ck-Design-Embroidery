@@ -1,149 +1,249 @@
-import Link from 'next/link';
-import { createAdminClient } from '@/lib/supabase/server';
-import { getDesignDownloadUrl } from '@/lib/upload';
-import {
-  acceptOrder,
-  cancelOrder,
-  setCustomizationFee,
-  setDeliveryFee,
-  setProductionStage,
-  markCodPaid,
-} from '@/app/admin/actions';
-import {
-  AcceptButton,
-  CancelButton,
-} from '@/components/admin/OrderActionButtons';
-import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
+import { redirect } from 'next/navigation';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { isAdminEmail, getStaffEmailList } from '@/lib/admin';
+import { formatDate, formatDateTime } from '@/lib/formatDate';
+import { approveStaffProfile, denyStaffProfile } from '@/app/admin/actions';
+import StaffApprovalButtons from '@/components/admin/StaffApprovalButtons';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
-// Always compute fresh from the database — active orders change
-// constantly and must never show a cached/stale snapshot.
+export const metadata = { title: 'Staff — Stitchhouse Admin' };
+
+// Always compute fresh from the database — the activity log and
+// sign-in times must never show a cached/stale snapshot.
 export const dynamic = 'force-dynamic';
 
-const TABS = [
-  { key: 'all', label: 'All Orders', statuses: ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'] },
-  { key: 'pending', label: 'Pending', statuses: ['pending'] },
-  { key: 'production', label: 'In Production', statuses: ['to_ship', 'preparing'] },
-  { key: 'ready', label: 'Ready', statuses: ['to_receive', 'ready_for_pickup'] },
-];
+const ACTION_LABELS = {
+  'order.accept': 'Accepted an order',
+  'order.ship': 'Marked an order as shipped',
+  'order.complete': 'Marked an order as completed',
+  'order.ready_for_pickup': 'Marked an order as ready for pickup',
+  'order.picked_up': 'Marked an order as picked up',
+  'order.cancel': 'Canceled an order',
+  'order.set_fee': 'Set a customization fee',
+  'order.set_delivery_fee': 'Set a delivery fee',
+  'inquiry.reply': 'Replied to an inquiry',
+  'inquiry.read': 'Marked an inquiry as read',
+  'inquiry.delete': 'Deleted an inquiry',
+  'message.reply': 'Replied to a customer message',
+  'message.delete_thread': 'Deleted a conversation',
+  'order.cod_paid': 'Recorded a cash-on-delivery payment',
+  'order.upload_proof': 'Uploaded a design proof',
+  'order.set_production_stage': 'Updated a production stage',
+};
 
-function StatCard({ label, value, accent }) {
-  const accents = {
-    amber: 'bg-amber-50 text-amber-700',
-    blue: 'bg-blue-50 text-blue-700',
-    indigo: 'bg-indigo-50 text-indigo-700',
-  };
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex-1 min-w-[160px] shadow-sm">
-      <p className="text-slate-500 text-sm mb-2">{label}</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold text-slate-900">{value}</span>
-        <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${accents[accent]}`}>Active</span>
-      </div>
-    </div>
-  );
-}
-
-// Only active, in-progress orders live here. The moment an order is
-// marked Completed, Picked Up, or Canceled it drops off this list
-// automatically (it's simply no longer in this query) and shows up on
-// the History page instead.
-export default async function AdminOrdersPage({ searchParams }) {
-  const params = await searchParams;
-  const activeTab = TABS.find((t) => t.key === params?.tab) || TABS[0];
+export default async function AdminStaffPage() {
+  // Full-admin only — staff shouldn't be able to monitor other staff.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminEmail(user?.email)) redirect('/admin/orders');
 
   const admin = createAdminClient();
-  const { data: orders } = await admin
-    .from('orders')
+  const staffEmails = getStaffEmailList();
+
+  // Cross-reference the STAFF_EMAILS roster with actual Supabase auth
+  // accounts, so we can show who's actually signed up vs. who's been
+  // granted access but hasn't created a login yet.
+  let authUsers = [];
+  try {
+    const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    authUsers = data?.users || [];
+  } catch (err) {
+    console.error('Could not list auth users:', err.message);
+  }
+
+  const staffAccounts = staffEmails.map((email) => {
+    const match = authUsers.find((u) => u.email?.toLowerCase() === email);
+    return {
+      email,
+      signedUp: !!match,
+      createdAt: match?.created_at || null,
+      lastSignInAt: match?.last_sign_in_at || null,
+      nickname: match?.user_metadata?.nickname || null,
+    };
+  });
+
+  const { data: activity } = await admin
+    .from('admin_activity_log')
     .select('*')
-    .in('order_status', ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'])
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(150);
 
-  const designUrls = await buildDesignUrls(orders, getDesignDownloadUrl);
+  // The individual people who've identified themselves on a shared
+  // staff login (see StaffIdentifyGate) — separate from the
+  // STAFF_EMAILS login roster above, since one login can be used by
+  // several different named people. Split into those still waiting
+  // on admin approval (can't get into the dashboard yet) and those
+  // already approved.
+  const { data: staffProfiles } = await admin
+    .from('staff_profiles')
+    .select('id, name, approved, approved_at, created_at, last_used_at')
+    .order('last_used_at', { ascending: false, nullsFirst: false });
 
-  const pendingCount = orders?.filter((o) => o.order_status === 'pending').length || 0;
-  const productionCount = orders?.filter((o) => ['to_ship', 'preparing'].includes(o.order_status)).length || 0;
-  const readyCount = orders?.filter((o) => ['to_receive', 'ready_for_pickup'].includes(o.order_status)).length || 0;
-
-  const visibleOrders = orders?.filter((o) => activeTab.statuses.includes(o.order_status)) || [];
+  const pendingProfiles = (staffProfiles || []).filter((p) => !p.approved);
+  const approvedProfiles = (staffProfiles || []).filter((p) => p.approved);
 
   return (
     <div>
       <AutoRefresh />
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-        <Link
-          href="/admin/orders/history"
-          className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
-        >
-          View History →
-        </Link>
-      </div>
+      <h1 className="text-2xl font-semibold text-slate-900 mb-2">Staff</h1>
+      <p className="text-slate-500 mb-10">
+        Monitor staff accounts and everything they've done in the dashboard.
+      </p>
 
-      {/* Stat cards */}
-      <div className="flex flex-wrap gap-4 mb-8">
-        <StatCard label="Pending Orders" value={pendingCount} accent="amber" />
-        <StatCard label="In Production" value={productionCount} accent="blue" />
-        <StatCard label="Ready to Ship / Pickup" value={readyCount} accent="indigo" />
-      </div>
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Staff Accounts</h2>
+      {staffAccounts.length === 0 && (
+        <p className="text-slate-500 mb-14">
+          No staff emails configured — add addresses to STAFF_EMAILS in your environment variables.
+        </p>
+      )}
+      {staffAccounts.length > 0 && (
+        <div className="space-y-3 mb-14">
+          {staffAccounts.map((s) => (
+            <div
+              key={s.email}
+              className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
+            >
+              <div>
+                <div className="text-slate-900 font-medium">
+                  {s.nickname || s.email}
+                </div>
+                {s.nickname && <div className="text-slate-400 text-xs">{s.email}</div>}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-slate-500">
+                {s.signedUp ? (
+                  <>
+                    <span>
+                      Joined {s.createdAt ? formatDate(s.createdAt) : '—'}
+                    </span>
+                    <span>
+                      Last sign-in{' '}
+                      {s.lastSignInAt
+                        ? formatDateTime(s.lastSignInAt)
+                        : 'never'}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-1 uppercase tracking-widest">
+                    Not signed up yet
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-slate-200 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.key}
-            href={tab.key === 'all' ? '/admin/orders' : `/admin/orders?tab=${tab.key}`}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab.key === tab.key
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </div>
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Pending Approval</h2>
+      <p className="text-slate-500 mb-6">
+        Someone has entered this name for the first time on the identify screen. They're stuck
+        there until you approve them below.
+      </p>
+      {pendingProfiles.length === 0 && (
+        <p className="text-slate-500 mb-14">No one is waiting on approval.</p>
+      )}
+      {pendingProfiles.length > 0 && (
+        <div className="space-y-3 mb-14">
+          {pendingProfiles.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white border border-amber-200 bg-amber-50/40 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
+            >
+              <div>
+                <div className="text-slate-900 font-medium">{p.name}</div>
+                <div className="text-slate-400 text-xs">First seen {formatDate(p.created_at)}</div>
+              </div>
+              <StaffApprovalButtons
+                id={p.id}
+                name={p.name}
+                approveAction={approveStaffProfile}
+                denyAction={denyStaffProfile}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="space-y-4">
-        {visibleOrders.map((order) => {
-          const feeLocked = ['to_receive', 'ready_for_pickup', 'picked_up'].includes(order.order_status);
-          return (
-            <OrderCard
-              key={order.id}
-              order={order}
-              designUrls={designUrls}
-              feeAction={feeLocked ? undefined : setCustomizationFee}
-              deliveryFeeAction={
-                order.payment_method === 'cod' && !feeLocked ? setDeliveryFee : undefined
-              }
-              stageAction={setProductionStage}
-              paymentAction={markCodPaid}
-              actions={
-                <>
-                  {order.order_status === 'pending' && (
-                    <div className="flex flex-wrap gap-3">
-                      <AcceptButton
-                        id={order.id}
-                        action={acceptOrder}
-                        label={order.payment_method === 'walkin' ? 'Accept Order' : 'Accept Order'}
-                      />
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Identified Staff Members</h2>
+      <p className="text-slate-500 mb-6">
+        Approved individual people who've identified themselves by name on a shared staff login
+        (see the name + PIN prompt shown after logging in).
+      </p>
+      {approvedProfiles.length === 0 && (
+        <p className="text-slate-500 mb-14">No one has been approved yet.</p>
+      )}
+      {approvedProfiles.length > 0 && (
+        <div className="space-y-3 mb-14">
+          {approvedProfiles.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
+            >
+              <div className="text-slate-900 font-medium">{p.name}</div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-slate-500">
+                <span>First seen {formatDate(p.created_at)}</span>
+                <span>
+                  Last active {p.last_used_at ? formatDateTime(p.last_used_at) : 'never'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Recent Activity</h2>
+      <p className="text-slate-500 mb-6">
+        The last {activity?.length || 0} actions taken by staff and admin accounts.
+      </p>
+
+      {(!activity || activity.length === 0) && (
+        <p className="text-slate-500">No activity recorded yet.</p>
+      )}
+
+      {activity && activity.length > 0 && (
+        <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+          {activity.map((entry) => (
+            <div
+              key={entry.id}
+              className="flex flex-wrap items-start justify-between gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm"
+            >
+              <div className="min-w-0">
+                <div className="text-slate-800 text-sm">
+                  {ACTION_LABELS[entry.action] || entry.action}
+                </div>
+                {entry.details && (
+                  <div className="text-slate-500 text-xs mt-0.5">{entry.details}</div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={`text-[10px] font-mono uppercase tracking-widest border rounded-full px-1.5 py-0.5 ${
+                    entry.actor_role === 'admin'
+                      ? 'border-indigo-200 text-indigo-600 bg-indigo-50'
+                      : 'border-slate-200 text-slate-500 bg-slate-50'
+                  }`}
+                >
+                  {entry.actor_role}
+                </span>
+                <span className="text-slate-500 text-xs font-mono">
+                  {entry.actor_name ? (
+                    <>
+                      <span className="text-slate-800 font-medium not-italic">{entry.actor_name}</span>{' '}
+                      <span className="text-slate-400">({entry.actor_email})</span>
+                    </>
+                  ) : (
+                    entry.actor_email
                   )}
-                  {order.order_status !== 'pending' && (
-                    <div className="flex flex-wrap gap-3">
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
-                </>
-              }
-            />
-          );
-        })}
-        {visibleOrders.length === 0 && (
-          <p className="text-slate-500">No orders in this view.</p>
-        )}
-      </div>
+                </span>
+                <span className="text-slate-400 text-xs font-mono whitespace-nowrap">
+                  {formatDateTime(entry.created_at)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

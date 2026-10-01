@@ -1,6 +1,7 @@
 import { formatDateTime } from '@/lib/formatDate';
 import { PaymentReceivedButton } from './OrderActionButtons';
 import StageSelect from './StageSelect';
+import ProofUpload from './ProofUpload';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -42,7 +43,7 @@ export function StatusBadge({ status }) {
 // `stageAction`, if passed, adds the embroidery production-stage
 // dropdown (see ProductionStageTracker) for every active order —
 // only wired up on the active orders page.
-export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction }) {
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction, proofAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -203,6 +204,19 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
         />
       )}
 
+      {proofAction &&
+        order.order_status !== 'pending' &&
+        order.items?.some((item) => item.type === 'custom') && (
+          <ProofUpload
+            id={order.id}
+            action={proofAction}
+            proofUrl={order.proof_path ? designUrls?.[order.proof_path] : null}
+            proofName={order.proof_name}
+            stage={order.production_stage}
+            feedback={order.proof_feedback}
+          />
+        )}
+
       {paymentAction &&
         order.payment_method === 'cod' &&
         order.payment_status !== 'paid' &&
@@ -227,17 +241,20 @@ export async function buildDesignUrls(orders, getDesignDownloadUrl) {
   const designUrls = {};
   if (orders?.length) {
     await Promise.all(
-      orders.flatMap((order) =>
-        (order.items || [])
+      orders.flatMap((order) => {
+        const paths = (order.items || [])
           .filter((item) => item.type === 'custom' && item.design?.path)
-          .map(async (item) => {
-            try {
-              designUrls[item.design.path] = await getDesignDownloadUrl(item.design.path);
-            } catch (err) {
-              console.error('Could not sign design URL:', err.message);
-            }
-          })
-      )
+          .map((item) => item.design.path);
+        // The staff-uploaded design proof is signed the same way.
+        if (order.proof_path) paths.push(order.proof_path);
+        return paths.map(async (path) => {
+          try {
+            designUrls[path] = await getDesignDownloadUrl(path);
+          } catch (err) {
+            console.error('Could not sign design URL:', err.message);
+          }
+        });
+      })
     );
   }
   return designUrls;

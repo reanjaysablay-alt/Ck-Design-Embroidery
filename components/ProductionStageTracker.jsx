@@ -1,3 +1,5 @@
+import ProofReview from './ProofReview';
+
 const STAGES = [
   {
     key: 'order_received',
@@ -108,7 +110,7 @@ const PAYMENT_STAGE = {
   ),
 };
 
-export default function ProductionStageTracker({ stage, order }) {
+export default function ProductionStageTracker({ stage, order, proofUrl }) {
   const isCod = order.payment_method === 'cod';
   const stages = isCod ? [...STAGES, PAYMENT_STAGE] : STAGES;
   const isPaid = order.payment_status === 'paid';
@@ -159,6 +161,20 @@ export default function ProductionStageTracker({ stage, order }) {
           ? `Delivered. Please pay $${order.total} in cash to our delivery team — payment is confirmed once the shop records it.`
           : stages[currentIndex].description}
       </p>
+
+      {stage === 'proofing_pending' &&
+        (order.proof_path ? (
+          <ProofReview
+            orderId={order.id}
+            proofUrl={proofUrl}
+            proofName={order.proof_name}
+            feedback={order.proof_feedback}
+          />
+        ) : (
+          <p className="text-thread/50 text-sm mt-2">
+            We&apos;re preparing your embroidery design proof — you&apos;ll be notified when it&apos;s ready to approve.
+          </p>
+        ))}
 
       {stage === 'ready_for_fulfillment' && (
         <p className="text-gold text-sm mt-2">

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 import AccountOrderCard from '@/components/AccountOrderCard';
+import { getDesignDownloadUrl } from '@/lib/upload';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
 export const metadata = { title: 'My Purchases — Stitchhouse' };
@@ -29,6 +30,22 @@ export default async function AccountPage() {
     .order('created_at', { ascending: false });
 
   const activeOrders = orders?.filter((o) => ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'].includes(o.order_status)) || [];
+  // Short-lived signed links for any design proofs waiting on this
+  // customer. Only orders already returned for THIS user (row-level
+  // security) are signed, so no one can reach another customer's proof.
+  const proofUrls = {};
+  await Promise.all(
+    activeOrders
+      .filter((o) => o.proof_path && o.production_stage === 'proofing_pending')
+      .map(async (o) => {
+        try {
+          proofUrls[o.id] = await getDesignDownloadUrl(o.proof_path, 60 * 60);
+        } catch (err) {
+          console.error('Could not sign proof URL:', err.message);
+        }
+      })
+  );
+
   const historyOrders = orders?.filter((o) => ['completed', 'canceled', 'picked_up'].includes(o.order_status)) || [];
 
   return (
@@ -48,7 +65,7 @@ export default async function AccountPage() {
       {activeOrders.length > 0 && (
         <div className="space-y-6 mb-14">
           {activeOrders.map((order) => (
-            <AccountOrderCard key={order.id} order={order} />
+            <AccountOrderCard key={order.id} order={order} proofUrl={proofUrls[order.id]} />
           ))}
         </div>
       )}
