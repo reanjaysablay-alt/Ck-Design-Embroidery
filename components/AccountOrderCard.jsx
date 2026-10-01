@@ -1,5 +1,5 @@
 import { formatDate } from '@/lib/formatDate';
-import ProductionStageTracker from './ProductionStageTracker';
+import ProductionStageTracker, { stageLabel } from './ProductionStageTracker';
 
 // A single order's card on the customer's My Purchases page — shared
 // between the active-orders list and the
@@ -15,7 +15,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl }
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <OrderStatusBadge status={order.order_status} />
+          <OrderStatusBadge order={order} />
           <span className="font-mono text-sm text-gold">${order.total}</span>
         </div>
       </div>
@@ -98,30 +98,27 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl }
   );
 }
 
-export function OrderStatusBadge({ status }) {
-  const styles = {
-    pending: 'text-gold border-gold',
-    to_ship: 'text-blue-400 border-blue-400',
-    to_receive: 'text-blue-400 border-blue-400',
-    completed: 'text-green-400 border-green-400',
-    canceled: 'text-stitchRed border-stitchRed',
-    preparing: 'text-blue-400 border-blue-400',
-    ready_for_pickup: 'text-blue-400 border-blue-400',
-    picked_up: 'text-green-400 border-green-400',
-  };
-  const labels = {
-    pending: 'Pending approval',
-    to_ship: 'To ship',
-    to_receive: 'To receive',
-    completed: 'Completed',
-    canceled: 'Canceled',
-    preparing: 'Preparing',
-    ready_for_pickup: 'Ready for pickup',
-    picked_up: 'Picked up',
-  };
+// The badge uses the SAME wording as the order tracker (Order Received,
+// In Tailoring, In Embroidery, ...), so the customer never sees a second,
+// different set of status names like "To ship" / "To receive". Finished
+// orders read Completed or Canceled.
+export function OrderStatusBadge({ order }) {
+  const status = order.order_status;
+  let label;
+  let style;
+  if (status === 'canceled') {
+    label = 'Canceled';
+    style = 'text-stitchRed border-stitchRed';
+  } else if (status === 'completed' || status === 'picked_up') {
+    label = 'Completed';
+    style = 'text-green-400 border-green-400';
+  } else {
+    label = stageLabel(order.production_stage || 'order_received');
+    style = 'text-gold border-gold';
+  }
   return (
-    <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${styles[status]}`}>
-      {labels[status] || status}
+    <span className={`text-xs uppercase tracking-widest border rounded-sm px-2 py-1 ${style}`}>
+      {label}
     </span>
   );
 }
