@@ -3,7 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 import AccountOrderCard from '@/components/AccountOrderCard';
 import OrderHistoryToggle from '@/components/OrderHistoryToggle';
-import ProductionStageTracker from '@/components/ProductionStageTracker';
+import ProductionStageTracker, { stageLabel } from '@/components/ProductionStageTracker';
+import OrderTrackingPanel from '@/components/OrderTrackingPanel';
+import { formatDate } from '@/lib/formatDate';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
@@ -67,11 +69,32 @@ export default async function AccountPage() {
       )}
 
       {activeOrders.length > 0 && (
-        <div className="space-y-6 mb-14">
-          {activeOrders.map((order) => (
-            <AccountOrderCard key={order.id} order={order} proofUrl={proofUrls[order.id]} />
-          ))}
-        </div>
+        <OrderTrackingPanel
+          summaries={activeOrders.map((order) => ({
+            id: order.id,
+            total: order.total,
+            dateLabel: formatDate(order.created_at),
+            stageLabel: stageLabel(order.production_stage || 'order_received'),
+          }))}
+          trackers={Object.fromEntries(
+            activeOrders.map((order) => [
+              order.id,
+              <ProductionStageTracker
+                key={order.id}
+                bare
+                stage={order.production_stage || 'order_received'}
+                order={order}
+                proofUrl={proofUrls[order.id]}
+              />,
+            ])
+          )}
+          details={Object.fromEntries(
+            activeOrders.map((order) => [
+              order.id,
+              <AccountOrderCard key={order.id} order={order} showTracker={false} />,
+            ])
+          )}
+        />
       )}
 
       <h2 className="text-xs uppercase tracking-widest text-gold mb-4">

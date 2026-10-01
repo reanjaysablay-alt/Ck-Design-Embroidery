@@ -113,7 +113,12 @@ const PAYMENT_STAGE = {
 // `idle` renders the same steps with nothing active — shown at the top
 // of My Purchases when the customer has no active order, so the tracker
 // is always visible and they know what to expect.
-export default function ProductionStageTracker({ stage, order = {}, proofUrl, idle = false }) {
+export function stageLabel(key) {
+  return STAGES.find((s) => s.key === key)?.label || 'Order Received';
+}
+
+// `bare` drops the top divider when the tracker sits inside its own card.
+export default function ProductionStageTracker({ stage, order = {}, proofUrl, idle = false, bare = false }) {
   const isCod = order.payment_method === 'cod';
   const stages = isCod ? [...STAGES, PAYMENT_STAGE] : STAGES;
   const isPaid = order.payment_status === 'paid';
@@ -127,7 +132,7 @@ export default function ProductionStageTracker({ stage, order = {}, proofUrl, id
   if (isCod && delivered) currentIndex = isPaid ? stages.length : stages.length - 1;
 
   return (
-    <div className={idle ? '' : 'mt-4 pt-4 border-t border-white/10'}>
+    <div className={idle || bare ? '' : 'mt-4 pt-4 border-t border-white/10'}>
       <div className="flex overflow-x-auto gap-1 pb-1 -mx-1 px-1">
         {stages.map((s, i) => {
           const done = i < currentIndex;
