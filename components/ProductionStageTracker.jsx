@@ -96,7 +96,8 @@ const STAGES = [
 ];
 
 // Extra final step, Cash on Delivery orders only: the customer pays the
-// courier after the order is delivered, so payment comes AFTER Completed.
+// delivery team when the order arrives, so Payment comes right BEFORE
+// Completed: ... → Ready for Fulfillment → Payment → Completed.
 const PAYMENT_STAGE = {
   key: 'payment',
   label: 'Payment',
@@ -120,16 +121,24 @@ export function stageLabel(key) {
 // `bare` drops the top divider when the tracker sits inside its own card.
 export default function ProductionStageTracker({ stage, order = {}, proofUrl, idle = false, bare = false }) {
   const isCod = order.payment_method === 'cod';
-  const stages = isCod ? [...STAGES, PAYMENT_STAGE] : STAGES;
+  const stages = isCod
+    ? [...STAGES.slice(0, -1), PAYMENT_STAGE, STAGES[STAGES.length - 1]]
+    : STAGES;
   const isPaid = order.payment_status === 'paid';
 
   let currentIndex = idle ? -1 : stages.findIndex((s) => s.key === stage);
   if (!idle && currentIndex === -1) return null;
 
-  // COD: once delivered, the active step becomes Payment; when paid,
-  // every step (including Payment) shows as done.
-  const delivered = stage === 'completed';
-  if (isCod && delivered) currentIndex = isPaid ? stages.length : stages.length - 1;
+  // COD: while the order is out for delivery the active step is Payment
+  // (cash is paid on arrival). Once staff record the payment, the active
+  // step moves on to Completed; when staff complete the order, every
+  // step shows as done.
+  const completedIdx = stages.findIndex((s) => s.key === 'completed');
+  const awaitingPayment = isCod && stage === 'ready_for_fulfillment' && !isPaid;
+  const paidAwaitingComplete = isCod && stage === 'ready_for_fulfillment' && isPaid;
+  if (awaitingPayment) currentIndex = stages.findIndex((s) => s.key === 'payment');
+  if (paidAwaitingComplete) currentIndex = completedIdx;
+  if (isCod && stage === 'completed') currentIndex = stages.length;
 
   return (
     <div className={idle || bare ? '' : 'mt-4 pt-4 border-t border-white/10'}>
@@ -167,8 +176,10 @@ export default function ProductionStageTracker({ stage, order = {}, proofUrl, id
           ? 'No active orders yet — once you place an order, its progress will show here step by step.'
           : currentIndex >= stages.length
           ? 'Delivered and paid. Thank you!'
-          : isCod && delivered
-          ? `Delivered. Please pay $${order.total} in cash to our delivery team — payment is confirmed once the shop records it.`
+          : awaitingPayment
+          ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once the shop records it.`
+          : paidAwaitingComplete
+          ? 'Payment received — thank you! Your order will be marked completed shortly.'
           : stages[currentIndex].description}
       </p>
 
@@ -186,7 +197,7 @@ export default function ProductionStageTracker({ stage, order = {}, proofUrl, id
           </p>
         ))}
 
-      {stage === 'ready_for_fulfillment' && (
+      {stage === 'ready_for_fulfillment' && !isCod && (
         <p className="text-gold text-sm mt-2">
           {order.payment_method === 'walkin'
             ? 'Ready for pickup — visit the shop to claim your order.'

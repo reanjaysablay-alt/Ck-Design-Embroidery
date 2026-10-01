@@ -792,6 +792,16 @@ export async function setProductionStage(formData) {
     return { error: 'Accept the order first before moving it through production.' };
   }
 
+  // Cash on Delivery: payment is collected on arrival, so it must be
+  // recorded (Mark Payment Received) BEFORE the order can be completed.
+  if (
+    stage === 'completed' &&
+    existing.payment_method === 'cod' &&
+    existing.payment_status !== 'paid'
+  ) {
+    return { error: 'Record the cash payment first (Mark Payment Received), then complete the order.' };
+  }
+
   const makeForm = () => {
     const f = new FormData();
     f.set('id', String(id));

@@ -201,6 +201,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           current={order.production_stage}
           action={stageAction}
           locked={order.order_status === 'pending'}
+          cod={order.payment_method === 'cod' && order.payment_status !== 'paid'}
         />
       )}
 
