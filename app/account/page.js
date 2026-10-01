@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 import AccountOrderCard from '@/components/AccountOrderCard';
+import OrderHistoryToggle from '@/components/OrderHistoryToggle';
 import ProductionStageTracker from '@/components/ProductionStageTracker';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import AutoRefresh from '@/components/admin/AutoRefresh';
@@ -83,11 +84,11 @@ export default async function AccountPage() {
       )}
 
       {historyOrders.length > 0 && (
-        <div className="space-y-6">
+        <OrderHistoryToggle count={historyOrders.length}>
           {historyOrders.map((order) => (
             <AccountOrderCard key={order.id} order={order} showTracker={false} />
           ))}
-        </div>
+        </OrderHistoryToggle>
       )}
     </div>
   );
