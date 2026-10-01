@@ -195,7 +195,12 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
       </ul>
 
       {stageAction && (
-        <StageSelect id={order.id} current={order.production_stage} action={stageAction} />
+        <StageSelect
+          id={order.id}
+          current={order.production_stage}
+          action={stageAction}
+          locked={order.order_status === 'pending'}
+        />
       )}
 
       {trackingAction &&

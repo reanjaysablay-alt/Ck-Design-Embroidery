@@ -3,10 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import {
   acceptOrder,
-  markShipped,
-  markCompleted,
-  markReadyForPickup,
-  markPickedUp,
   cancelOrder,
   setCustomizationFee,
   setDeliveryFee,
@@ -16,10 +12,6 @@ import {
 } from '@/app/admin/actions';
 import {
   AcceptButton,
-  ShipButton,
-  ReceivedButton,
-  ReadyForPickupButton,
-  PickedUpButton,
   CancelButton,
 } from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
@@ -135,32 +127,13 @@ export default async function AdminOrdersPage({ searchParams }) {
                       <AcceptButton
                         id={order.id}
                         action={acceptOrder}
-                        label={order.payment_method === 'walkin' ? 'Accept — Prepare Order' : 'Accept — To Ship'}
+                        label={order.payment_method === 'walkin' ? 'Accept Order' : 'Accept Order'}
                       />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>
                   )}
-                  {order.order_status === 'to_ship' && (
+                  {order.order_status !== 'pending' && (
                     <div className="flex flex-wrap gap-3">
-                      <ShipButton id={order.id} action={markShipped} />
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
-                  {order.order_status === 'to_receive' && (
-                    <div className="flex flex-wrap gap-3">
-                      <ReceivedButton id={order.id} action={markCompleted} />
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
-                  {order.order_status === 'preparing' && (
-                    <div className="flex flex-wrap gap-3">
-                      <ReadyForPickupButton id={order.id} action={markReadyForPickup} />
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
-                  {order.order_status === 'ready_for_pickup' && (
-                    <div className="flex flex-wrap gap-3">
-                      <PickedUpButton id={order.id} action={markPickedUp} />
                       <CancelButton id={order.id} action={cancelOrder} />
                     </div>
                   )}
