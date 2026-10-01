@@ -675,7 +675,7 @@ export async function setDeliveryFee(formData) {
   revalidatePath('/admin/orders/history');
 }
 
-// Cash on Delivery: the customer pays the courier AFTER delivery, so
+// Cash on Delivery: the customer pays the delivery team AFTER delivery, so
 // staff records the payment once the cash is collected. Only valid for
 // COD orders that have shipped or been delivered.
 export async function markCodPaid(formData) {
@@ -770,8 +770,10 @@ export async function setProductionStage(formData) {
   const id = formData.get('id');
   const stage = formData.get('stage')?.toString();
 
+  // Validation problems are RETURNED (not thrown) so the dropdown can
+  // show the message — thrown errors get masked in production builds.
   if (!PRODUCTION_STAGES.includes(stage)) {
-    throw new Error('Invalid production stage.');
+    return { error: 'Invalid production stage.' };
   }
 
   const admin = createAdminClient();
@@ -780,13 +782,13 @@ export async function setProductionStage(formData) {
     .select('*')
     .eq('id', id)
     .single();
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) return { error: fetchError.message };
 
   if (['canceled', 'completed', 'picked_up'].includes(existing.order_status)) {
-    throw new Error('This order is already closed.');
+    return { error: 'This order is already closed.' };
   }
   if (existing.order_status === 'pending' && stage !== 'order_received') {
-    throw new Error('Accept the order first before moving it through production.');
+    return { error: 'Accept the order first before moving it through production.' };
   }
 
   const makeForm = () => {
@@ -826,7 +828,7 @@ export async function setProductionStage(formData) {
       .eq('id', id)
       .select('*')
       .single();
-    if (error) throw new Error(error.message);
+    if (error) return { error: error.message };
 
     await notifyOrderStatus(admin, order, {
       title: `Order #${order.id}: ${PRODUCTION_STAGE_LABELS[stage]}`,
@@ -846,65 +848,7 @@ export async function setProductionStage(formData) {
   revalidatePath('/admin/orders');
   revalidatePath('/admin/orders/history');
   revalidatePath('/account');
-}
-
-// Courier name + tracking code (and optional tracking link) for orders
-// that ship — shown to the customer in the tracker once the order is
-// Ready for Fulfillment. Walk-in orders are picked up in store, so
-// they never have tracking.
-export async function setTrackingInfo(formData) {
-  const actor = await requireStaffOrAdmin();
-  const admin = createAdminClient();
-  const id = formData.get('id');
-  const courier = formData.get('courier')?.toString().trim() || null;
-  const number = formData.get('trackingNumber')?.toString().trim() || null;
-  const url = formData.get('trackingUrl')?.toString().trim() || null;
-
-  // The link is shown to customers as a clickable href — only ever
-  // allow real web links, never javascript:/data: URLs.
-  if (url && !/^https?:\/\//i.test(url)) {
-    throw new Error('Tracking link must start with http:// or https://');
-  }
-
-  const { data: existing, error: fetchError } = await admin
-    .from('orders')
-    .select('payment_method, order_status')
-    .eq('id', id)
-    .single();
-  if (fetchError) throw new Error(fetchError.message);
-  if (existing.payment_method === 'walkin') {
-    throw new Error('Walk-in orders are picked up in store — no tracking.');
-  }
-  if (['canceled', 'completed', 'picked_up'].includes(existing.order_status)) {
-    throw new Error('This order is already closed.');
-  }
-
-  const { data: order, error } = await admin
-    .from('orders')
-    .update({ courier_name: courier, tracking_number: number, tracking_url: url })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw new Error(error.message);
-
-  if (number) {
-    await notifyOrderStatus(admin, order, {
-      title: 'Tracking details added 🚚',
-      body: `Order #${order.id}: ${courier || 'Courier'} — tracking #${number}.`,
-    });
-  }
-
-  await logActivity({
-    actorEmail: actor.email,
-    actorRole: getAdminRole(actor.email),
-    action: 'order.set_tracking',
-    targetType: 'order',
-    targetId: order.id,
-    details: `Set tracking on order #${order.id}: ${courier || 'courier'} ${number || '(cleared)'}`,
-  });
-
-  revalidatePath('/admin/orders');
-  revalidatePath('/account');
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------

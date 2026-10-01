@@ -42,7 +42,7 @@ export function StatusBadge({ status }) {
 // `stageAction`, if passed, adds the embroidery production-stage
 // dropdown (see ProductionStageTracker) for every active order —
 // only wired up on the active orders page.
-export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction, trackingAction }) {
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -202,39 +202,6 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           locked={order.order_status === 'pending'}
         />
       )}
-
-      {trackingAction &&
-        order.payment_method !== 'walkin' &&
-        order.production_stage === 'ready_for_fulfillment' && (
-          <form action={trackingAction} className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100">
-            <input type="hidden" name="id" value={order.id} />
-            <label className="text-xs uppercase tracking-widest text-slate-400">Courier tracking</label>
-            <input
-              name="courier"
-              defaultValue={order.courier_name || ''}
-              placeholder="Courier (e.g. LBC)"
-              className="w-36 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
-            />
-            <input
-              name="trackingNumber"
-              defaultValue={order.tracking_number || ''}
-              placeholder="Tracking #"
-              className="w-40 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
-            />
-            <input
-              name="trackingUrl"
-              defaultValue={order.tracking_url || ''}
-              placeholder="Tracking link (optional)"
-              className="w-52 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
-            />
-            <button
-              type="submit"
-              className="text-[10px] uppercase tracking-widest text-indigo-600 hover:text-indigo-800 border border-indigo-200 bg-indigo-50 rounded-full px-3 py-1.5"
-            >
-              Save tracking
-            </button>
-          </form>
-        )}
 
       {paymentAction &&
         order.payment_method === 'cod' &&

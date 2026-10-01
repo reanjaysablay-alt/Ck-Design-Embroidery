@@ -71,7 +71,7 @@ const STAGES = [
   {
     key: 'ready_for_fulfillment',
     label: 'Ready for Fulfillment',
-    description: 'Packed and ready — see your tracking or pickup details below.',
+    description: 'Packed and ready for delivery or pickup.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M3 8l9-5 9 5-9 5-9-5z" strokeLinejoin="round" />
@@ -98,7 +98,7 @@ const STAGES = [
 const PAYMENT_STAGE = {
   key: 'payment',
   label: 'Payment',
-  description: 'Pay the courier in cash when your order is delivered.',
+  description: 'Pay in cash to our delivery team when your order arrives.',
   icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <rect x="3" y="6" width="18" height="13" rx="2" />
@@ -156,30 +156,16 @@ export default function ProductionStageTracker({ stage, order }) {
         {currentIndex >= stages.length
           ? 'Delivered and paid. Thank you!'
           : isCod && delivered
-          ? `Delivered. Please pay $${order.total} in cash to the courier — payment is confirmed once the shop records it.`
+          ? `Delivered. Please pay $${order.total} in cash to our delivery team — payment is confirmed once the shop records it.`
           : stages[currentIndex].description}
       </p>
 
       {stage === 'ready_for_fulfillment' && (
-        <div className="text-sm mt-2">
-          {order.payment_method === 'walkin' ? (
-            <p className="text-gold">Ready for pickup — visit the shop to claim your order.</p>
-          ) : order.tracking_number ? (
-            <p className="text-gold">
-              Courier: {order.courier_name || 'Courier'} — Tracking #{order.tracking_number}
-              {order.tracking_url && (
-                <>
-                  {' — '}
-                  <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="underline">
-                    Track package
-                  </a>
-                </>
-              )}
-            </p>
-          ) : (
-            <p className="text-thread/50">Packed and ready to ship — tracking details coming soon.</p>
-          )}
-        </div>
+        <p className="text-gold text-sm mt-2">
+          {order.payment_method === 'walkin'
+            ? 'Ready for pickup — visit the shop to claim your order.'
+            : 'Packed and with our delivery team — it will be delivered to you soon.'}
+        </p>
       )}
     </div>
   );
