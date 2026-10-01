@@ -10,7 +10,7 @@ import { uploadProductImage } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
-import { restoreStock } from '@/lib/cartVerify';
+import { restoreStock, verifyCartItems, deductStock } from '@/lib/cartVerify';
 import {
   sendMail,
   orderToShipCustomerEmail,
@@ -53,6 +53,7 @@ async function requireStaffOrAdmin() {
   return user;
 }
 
+// Reads and normalizes the product form fields (shared by create + update).
 function parseProductForm(formData) {
   const sizesRaw = formData.get('sizes')?.toString().trim();
   const threadsRaw = formData.get('threads')?.toString().trim();
@@ -259,7 +260,7 @@ export async function resetStaffPin(formData) {
 // and the email goes out a moment later in the background instead of
 // making the person wait on it).
 async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn }) {
-  if (order.customer_email) {
+  if (order.customer_email && emailTemplateFn) {
     after(async () => {
       try {
         const { subject, html } = emailTemplateFn(order);
@@ -292,7 +293,7 @@ export async function acceptOrder(formData) {
 
   const { data: existing, error: fetchError } = await admin
     .from('orders')
-    .select('payment_method')
+    .select('payment_method, production_stage')
     .eq('id', id)
     .single();
   if (fetchError) throw new Error(fetchError.message);
@@ -302,7 +303,7 @@ export async function acceptOrder(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: nextStatus })
+    .update({ order_status: nextStatus, production_stage: existing.production_stage || 'order_received' })
     .eq('id', id)
     .select('*')
     .single();
@@ -341,7 +342,7 @@ export async function markShipped(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'to_receive' })
+    .update({ order_status: 'to_receive', production_stage: 'ready_for_fulfillment' })
     .eq('id', id)
     .select('*')
     .single();
@@ -376,7 +377,7 @@ export async function markCompleted(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'completed' })
+    .update({ order_status: 'completed', production_stage: 'completed' })
     .eq('id', id)
     .select('*')
     .single();
@@ -410,7 +411,7 @@ export async function markReadyForPickup(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'ready_for_pickup' })
+    .update({ order_status: 'ready_for_pickup', production_stage: 'ready_for_fulfillment' })
     .eq('id', id)
     .select('*')
     .single();
@@ -444,7 +445,7 @@ export async function markPickedUp(formData) {
 
   const { data: order, error } = await admin
     .from('orders')
-    .update({ order_status: 'picked_up' })
+    .update({ order_status: 'picked_up', production_stage: 'completed' })
     .eq('id', id)
     .select('*')
     .single();
@@ -672,6 +673,238 @@ export async function setDeliveryFee(formData) {
 
   revalidatePath('/admin/orders');
   revalidatePath('/admin/orders/history');
+}
+
+// Cash on Delivery: the customer pays the courier AFTER delivery, so
+// staff records the payment once the cash is collected. Only valid for
+// COD orders that have shipped or been delivered.
+export async function markCodPaid(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (existing.payment_method !== 'cod') {
+    throw new Error('Only Cash on Delivery orders are paid after delivery.');
+  }
+  if (!['to_receive', 'completed'].includes(existing.order_status)) {
+    throw new Error('This order has not been shipped yet.');
+  }
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ payment_status: 'paid' })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  await notifyOrderStatus(admin, order, {
+    title: 'Payment received 💵',
+    body: `We received your cash payment of $${Number(order.total).toFixed(2)} for order #${order.id}. Thank you!`,
+  });
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.cod_paid',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Recorded cash payment on delivery for order #${order.id} ($${Number(order.total).toFixed(2)})`,
+  });
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/admin/orders/history');
+}
+
+const PRODUCTION_STAGES = [
+  'order_received',
+  'proofing_pending',
+  'design_approved',
+  'in_tailoring',
+  'in_embroidery',
+  'quality_check',
+  'ready_for_fulfillment',
+  'completed',
+];
+
+const PRODUCTION_STAGE_LABELS = {
+  order_received: 'Order Received',
+  proofing_pending: 'Proofing Pending',
+  design_approved: 'Design Approved',
+  in_tailoring: 'In Tailoring',
+  in_embroidery: 'In Embroidery',
+  quality_check: 'Quality Check',
+  ready_for_fulfillment: 'Ready for Fulfillment',
+  completed: 'Completed',
+};
+
+// What the customer is told when staff moves their order to a stage.
+const PRODUCTION_STAGE_MESSAGES = {
+  order_received: 'Your order details & measurements are being verified.',
+  proofing_pending: 'Your digitized embroidery design is ready — please review and approve it.',
+  design_approved: 'Your design is approved and queued for production.',
+  in_tailoring: 'Fabric cutting and garment tailoring is in progress.',
+  in_embroidery: 'Machine hooping and thread stitching is in progress.',
+  quality_check: 'Thread trimming, ironing, and quality inspection are underway.',
+  ready_for_fulfillment: 'Your order is packed and ready.',
+  completed: 'Your order is complete. Thank you!',
+};
+
+// Moves an order through the customer-facing production tracker shown
+// on My Purchases (ProductionStageTracker), and keeps it CONNECTED to
+// the order status: reaching "Ready for Fulfillment" ships the order
+// (or marks it ready for pickup), and "Completed" marks it
+// delivered/picked up — reusing the same actions as the Ship / Ready /
+// Completed buttons so the customer gets the same notification + email
+// either way. Every other stage sends the customer an in-app
+// notification, so the tracker never changes silently.
+export async function setProductionStage(formData) {
+  const actor = await requireStaffOrAdmin();
+  const id = formData.get('id');
+  const stage = formData.get('stage')?.toString();
+
+  if (!PRODUCTION_STAGES.includes(stage)) {
+    throw new Error('Invalid production stage.');
+  }
+
+  const admin = createAdminClient();
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (['canceled', 'completed', 'picked_up'].includes(existing.order_status)) {
+    throw new Error('This order is already closed.');
+  }
+  if (existing.order_status === 'pending' && stage !== 'order_received') {
+    throw new Error('Accept the order first before moving it through production.');
+  }
+
+  const makeForm = () => {
+    const f = new FormData();
+    f.set('id', String(id));
+    return f;
+  };
+
+  let status = existing.order_status;
+  let handled = false;
+
+  if (stage === 'ready_for_fulfillment' || stage === 'completed') {
+    if (status === 'to_ship') {
+      await markShipped(makeForm());
+      status = 'to_receive';
+      handled = true;
+    } else if (status === 'preparing') {
+      await markReadyForPickup(makeForm());
+      status = 'ready_for_pickup';
+      handled = true;
+    }
+    if (stage === 'completed') {
+      if (status === 'to_receive') {
+        await markCompleted(makeForm());
+        handled = true;
+      } else if (status === 'ready_for_pickup') {
+        await markPickedUp(makeForm());
+        handled = true;
+      }
+    }
+  }
+
+  if (!handled) {
+    const { data: order, error } = await admin
+      .from('orders')
+      .update({ production_stage: stage })
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+
+    await notifyOrderStatus(admin, order, {
+      title: `Order #${order.id}: ${PRODUCTION_STAGE_LABELS[stage]}`,
+      body: PRODUCTION_STAGE_MESSAGES[stage],
+    });
+
+    await logActivity({
+      actorEmail: actor.email,
+      actorRole: getAdminRole(actor.email),
+      action: 'order.set_production_stage',
+      targetType: 'order',
+      targetId: order.id,
+      details: `Moved order #${order.id} to production stage "${PRODUCTION_STAGE_LABELS[stage]}"`,
+    });
+  }
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/admin/orders/history');
+  revalidatePath('/account');
+}
+
+// Courier name + tracking code (and optional tracking link) for orders
+// that ship — shown to the customer in the tracker once the order is
+// Ready for Fulfillment. Walk-in orders are picked up in store, so
+// they never have tracking.
+export async function setTrackingInfo(formData) {
+  const actor = await requireStaffOrAdmin();
+  const admin = createAdminClient();
+  const id = formData.get('id');
+  const courier = formData.get('courier')?.toString().trim() || null;
+  const number = formData.get('trackingNumber')?.toString().trim() || null;
+  const url = formData.get('trackingUrl')?.toString().trim() || null;
+
+  // The link is shown to customers as a clickable href — only ever
+  // allow real web links, never javascript:/data: URLs.
+  if (url && !/^https?:\/\//i.test(url)) {
+    throw new Error('Tracking link must start with http:// or https://');
+  }
+
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('payment_method, order_status')
+    .eq('id', id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+  if (existing.payment_method === 'walkin') {
+    throw new Error('Walk-in orders are picked up in store — no tracking.');
+  }
+  if (['canceled', 'completed', 'picked_up'].includes(existing.order_status)) {
+    throw new Error('This order is already closed.');
+  }
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({ courier_name: courier, tracking_number: number, tracking_url: url })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  if (number) {
+    await notifyOrderStatus(admin, order, {
+      title: 'Tracking details added 🚚',
+      body: `Order #${order.id}: ${courier || 'Courier'} — tracking #${number}.`,
+    });
+  }
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: getAdminRole(actor.email),
+    action: 'order.set_tracking',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Set tracking on order #${order.id}: ${courier || 'courier'} ${number || '(cleared)'}`,
+  });
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/account');
 }
 
 // ---------------------------------------------------------------------------

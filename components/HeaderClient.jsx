@@ -12,7 +12,7 @@ import logo from '@/logo/ck-logo-transparent.png';
 
 const NAV = [
   { href: '/shop', label: 'Shop' },
-  { href: '/account#orders', label: 'Track Order' },
+  { href: '/account#orders', label: 'My Purchases' },
   { href: '/account/messages', label: 'Messages' },
   { href: '/services', label: 'For Your Business' },
   { href: '/about', label: 'About' },

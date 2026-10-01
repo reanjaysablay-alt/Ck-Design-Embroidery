@@ -10,6 +10,9 @@ import {
   cancelOrder,
   setCustomizationFee,
   setDeliveryFee,
+  setProductionStage,
+  markCodPaid,
+  setTrackingInfo,
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -122,6 +125,9 @@ export default async function AdminOrdersPage({ searchParams }) {
               deliveryFeeAction={
                 order.payment_method === 'cod' && !feeLocked ? setDeliveryFee : undefined
               }
+              stageAction={setProductionStage}
+              paymentAction={markCodPaid}
+              trackingAction={setTrackingInfo}
               actions={
                 <>
                   {order.order_status === 'pending' && (

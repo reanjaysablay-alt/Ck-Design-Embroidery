@@ -77,6 +77,17 @@ create table if not exists public.orders (
   -- is prepaid at checkout, Walk-in has no delivery). Set by staff
   -- before the order ships — see setDeliveryFee.
   delivery_fee numeric(10, 2) not null default 0,
+  -- Finer-grained embroidery production stage, shown to the customer
+  -- as an icon tracker on My Purchases (see ProductionStageTracker).
+  -- Separate from order_status (which drives the admin workflow
+  -- buttons and what counts as a sale) — this just tells the customer
+  -- what's physically happening to a custom order right now. Null for
+  -- orders with no custom items, since this is specifically about the
+  -- embroidery/tailoring pipeline. Set by staff via setProductionStage.
+  production_stage text check (production_stage in (
+    'order_received', 'proofing_pending', 'design_approved', 'in_tailoring',
+    'in_embroidery', 'quality_check', 'ready_for_fulfillment', 'completed'
+  )),
   created_at timestamptz not null default now()
 );
 
@@ -557,6 +568,18 @@ alter table public.orders add column if not exists stock_deductions jsonb;
 alter table public.orders add column if not exists delivery_fee numeric(10, 2) not null default 0;
 
 -- ---------------------------------------------------------------------------
+-- Migration: add production_stage to orders — the finer embroidery
+-- pipeline stage shown to customers as an icon tracker (see
+-- ProductionStageTracker / setProductionStage). Safe to re-run.
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists production_stage text;
+alter table public.orders drop constraint if exists orders_production_stage_check;
+alter table public.orders add constraint orders_production_stage_check check (production_stage in (
+  'order_received', 'proofing_pending', 'design_approved', 'in_tailoring',
+  'in_embroidery', 'quality_check', 'ready_for_fulfillment', 'completed'
+));
+
+-- ---------------------------------------------------------------------------
 -- Staff identity layer: a shared "staff" login (from STAFF_EMAILS) may
 -- actually be used by more than one physical person. This lets each
 -- person identify themselves by name + a short PIN right after
@@ -688,3 +711,12 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Migration: courier tracking on orders — shown to the customer in the
+-- production tracker once an order is Ready for Fulfillment (see
+-- setTrackingInfo / ProductionStageTracker). Safe to re-run.
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists courier_name text;
+alter table public.orders add column if not exists tracking_number text;
+alter table public.orders add column if not exists tracking_url text;

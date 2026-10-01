@@ -26,6 +26,9 @@ const ACTION_LABELS = {
   'inquiry.delete': 'Deleted an inquiry',
   'message.reply': 'Replied to a customer message',
   'message.delete_thread': 'Deleted a conversation',
+  'order.cod_paid': 'Recorded a cash-on-delivery payment',
+  'order.set_tracking': 'Set courier tracking',
+  'order.set_production_stage': 'Updated a production stage',
 };
 
 export default async function AdminStaffPage() {

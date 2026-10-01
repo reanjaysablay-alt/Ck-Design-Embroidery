@@ -90,3 +90,17 @@ export function CancelButton({ id, action }) {
     </form>
   );
 }
+
+export function PaymentReceivedButton({ id, action }) {
+  return (
+    <form action={action}>
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        className="bg-emerald-600 text-white font-medium text-xs px-5 py-2.5 rounded-full hover:bg-emerald-700 transition-colors"
+      >
+        Mark Payment Received
+      </button>
+    </form>
+  );
+}

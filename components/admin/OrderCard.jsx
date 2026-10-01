@@ -1,4 +1,5 @@
 import { formatDateTime } from '@/lib/formatDate';
+import { PaymentReceivedButton } from './OrderActionButtons';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -37,7 +38,10 @@ export function StatusBadge({ status }) {
 // this up, so completed/canceled orders in history stay read-only.
 // `deliveryFeeAction`, if passed, adds an order-level delivery fee
 // field — only ever wired up for Cash on Delivery orders.
-export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction }) {
+// `stageAction`, if passed, adds the embroidery production-stage
+// dropdown (see ProductionStageTracker) for orders with custom items —
+// only wired up on the active orders page.
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction, trackingAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -188,6 +192,73 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           </li>
         ))}
       </ul>
+
+      {stageAction && (
+        <form action={stageAction} className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100">
+          <input type="hidden" name="id" value={order.id} />
+          <label className="text-xs uppercase tracking-widest text-slate-400">Production stage</label>
+          <select
+            name="stage"
+            defaultValue={order.production_stage || 'order_received'}
+            onChange={(e) => e.target.form.requestSubmit()}
+            className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700"
+          >
+            <option value="order_received">Order Received</option>
+            <option value="proofing_pending">Proofing Pending</option>
+            <option value="design_approved">Design Approved</option>
+            <option value="in_tailoring">In Tailoring</option>
+            <option value="in_embroidery">In Embroidery</option>
+            <option value="quality_check">Quality Check</option>
+            <option value="ready_for_fulfillment">Ready for Fulfillment</option>
+            <option value="completed">Completed</option>
+          </select>
+        </form>
+      )}
+
+      {trackingAction &&
+        order.payment_method !== 'walkin' &&
+        order.production_stage === 'ready_for_fulfillment' && (
+          <form action={trackingAction} className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100">
+            <input type="hidden" name="id" value={order.id} />
+            <label className="text-xs uppercase tracking-widest text-slate-400">Courier tracking</label>
+            <input
+              name="courier"
+              defaultValue={order.courier_name || ''}
+              placeholder="Courier (e.g. LBC)"
+              className="w-36 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
+            />
+            <input
+              name="trackingNumber"
+              defaultValue={order.tracking_number || ''}
+              placeholder="Tracking #"
+              className="w-40 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
+            />
+            <input
+              name="trackingUrl"
+              defaultValue={order.tracking_url || ''}
+              placeholder="Tracking link (optional)"
+              className="w-52 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
+            />
+            <button
+              type="submit"
+              className="text-[10px] uppercase tracking-widest text-indigo-600 hover:text-indigo-800 border border-indigo-200 bg-indigo-50 rounded-full px-3 py-1.5"
+            >
+              Save tracking
+            </button>
+          </form>
+        )}
+
+      {paymentAction &&
+        order.payment_method === 'cod' &&
+        order.payment_status !== 'paid' &&
+        ['to_receive', 'completed'].includes(order.order_status) && (
+          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+            <span className="text-xs uppercase tracking-widest text-slate-400">
+              Cash on delivery — unpaid
+            </span>
+            <PaymentReceivedButton id={order.id} action={paymentAction} />
+          </div>
+        )}
 
       {actions}
     </div>
