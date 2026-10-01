@@ -1,5 +1,6 @@
 import { formatDateTime } from '@/lib/formatDate';
 import { PaymentReceivedButton } from './OrderActionButtons';
+import StageSelect from './StageSelect';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -39,7 +40,7 @@ export function StatusBadge({ status }) {
 // `deliveryFeeAction`, if passed, adds an order-level delivery fee
 // field — only ever wired up for Cash on Delivery orders.
 // `stageAction`, if passed, adds the embroidery production-stage
-// dropdown (see ProductionStageTracker) for orders with custom items —
+// dropdown (see ProductionStageTracker) for every active order —
 // only wired up on the active orders page.
 export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction, trackingAction }) {
   return (
@@ -194,25 +195,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
       </ul>
 
       {stageAction && (
-        <form action={stageAction} className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100">
-          <input type="hidden" name="id" value={order.id} />
-          <label className="text-xs uppercase tracking-widest text-slate-400">Production stage</label>
-          <select
-            name="stage"
-            defaultValue={order.production_stage || 'order_received'}
-            onChange={(e) => e.target.form.requestSubmit()}
-            className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700"
-          >
-            <option value="order_received">Order Received</option>
-            <option value="proofing_pending">Proofing Pending</option>
-            <option value="design_approved">Design Approved</option>
-            <option value="in_tailoring">In Tailoring</option>
-            <option value="in_embroidery">In Embroidery</option>
-            <option value="quality_check">Quality Check</option>
-            <option value="ready_for_fulfillment">Ready for Fulfillment</option>
-            <option value="completed">Completed</option>
-          </select>
-        </form>
+        <StageSelect id={order.id} current={order.production_stage} action={stageAction} />
       )}
 
       {trackingAction &&
