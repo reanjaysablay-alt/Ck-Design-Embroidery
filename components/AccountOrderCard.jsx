@@ -1,5 +1,5 @@
 import { formatDate } from '@/lib/formatDate';
-import ProductionStageTracker, { stageLabel } from './ProductionStageTracker';
+import OrderStageDetail, { stageLabel, effectiveStage } from './ProductionStageTracker';
 
 // A single order's card on the customer's My Purchases page — shared
 // between the active-orders list and the
@@ -85,14 +85,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl }
       </ul>
 
       {showTracker && order.order_status !== 'canceled' && (
-        <ProductionStageTracker
-          stage={
-            order.production_stage ||
-            (['completed', 'picked_up'].includes(order.order_status) ? 'completed' : 'order_received')
-          }
-          order={order}
-          proofUrl={proofUrl}
-        />
+        <OrderStageDetail order={order} proofUrl={proofUrl} />
       )}
     </div>
   );
@@ -113,7 +106,7 @@ export function OrderStatusBadge({ order }) {
     label = 'Completed';
     style = 'text-green-400 border-green-400';
   } else {
-    label = stageLabel(order.production_stage || 'order_received');
+    label = stageLabel(effectiveStage(order));
     style = 'text-gold border-gold';
   }
   return (

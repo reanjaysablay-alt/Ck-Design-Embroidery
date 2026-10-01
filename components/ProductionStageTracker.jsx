@@ -95,9 +95,9 @@ const STAGES = [
   },
 ];
 
-// Extra final step, Cash on Delivery orders only: the customer pays the
-// delivery team when the order arrives, so Payment comes right BEFORE
-// Completed: ... → Ready for Fulfillment → Payment → Completed.
+// Cash on Delivery: the customer pays the delivery team when the order
+// arrives, so Payment sits right BEFORE Completed in the icon row:
+// ... → Ready for Fulfillment → Payment → Completed.
 const PAYMENT_STAGE = {
   key: 'payment',
   label: 'Payment',
@@ -111,77 +111,46 @@ const PAYMENT_STAGE = {
   ),
 };
 
-// `idle` renders the same steps with nothing active — shown at the top
-// of My Purchases when the customer has no active order, so the tracker
-// is always visible and they know what to expect.
-export function stageLabel(key) {
-  return STAGES.find((s) => s.key === key)?.label || 'Order Received';
+// The icon row shown on My Purchases (each icon is a clickable tab).
+export const TRACKER_STAGES = [
+  ...STAGES.slice(0, -1),
+  PAYMENT_STAGE,
+  STAGES[STAGES.length - 1],
+];
+
+// Which tab an order sits under from the customer's point of view.
+// A COD order that is out for delivery is waiting on PAYMENT; once the
+// shop records the cash it moves on to COMPLETED (awaiting final close).
+export function effectiveStage(order) {
+  const base = order.production_stage || 'order_received';
+  if (order.payment_method === 'cod' && base === 'ready_for_fulfillment') {
+    return order.payment_status === 'paid' ? 'completed' : 'payment';
+  }
+  return base;
 }
 
-// `bare` drops the top divider when the tracker sits inside its own card.
-export default function ProductionStageTracker({ stage, order = {}, proofUrl, idle = false, bare = false }) {
+export function stageLabel(key) {
+  return TRACKER_STAGES.find((s) => s.key === key)?.label || 'Order Received';
+}
+
+// What's happening with this order right now: the stage description,
+// the design-proof review (Approve / Request changes) and delivery notes.
+// Rendered inside the order card shown under the selected stage tab.
+export default function OrderStageDetail({ order, proofUrl }) {
+  const stage = order.production_stage || 'order_received';
+  const eff = effectiveStage(order);
   const isCod = order.payment_method === 'cod';
-  const stages = isCod
-    ? [...STAGES.slice(0, -1), PAYMENT_STAGE, STAGES[STAGES.length - 1]]
-    : STAGES;
-  const isPaid = order.payment_status === 'paid';
 
-  let currentIndex = idle ? -1 : stages.findIndex((s) => s.key === stage);
-  if (!idle && currentIndex === -1) return null;
-
-  // COD: while the order is out for delivery the active step is Payment
-  // (cash is paid on arrival). Once staff record the payment, the active
-  // step moves on to Completed; when staff complete the order, every
-  // step shows as done.
-  const completedIdx = stages.findIndex((s) => s.key === 'completed');
-  const awaitingPayment = isCod && stage === 'ready_for_fulfillment' && !isPaid;
-  const paidAwaitingComplete = isCod && stage === 'ready_for_fulfillment' && isPaid;
-  if (awaitingPayment) currentIndex = stages.findIndex((s) => s.key === 'payment');
-  if (paidAwaitingComplete) currentIndex = completedIdx;
-  if (isCod && stage === 'completed') currentIndex = stages.length;
+  const message =
+    eff === 'payment'
+      ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once the shop records it.`
+      : isCod && eff === 'completed' && stage === 'ready_for_fulfillment'
+      ? 'Payment received — thank you! Your order will be marked completed shortly.'
+      : TRACKER_STAGES.find((s) => s.key === eff)?.description;
 
   return (
-    <div className={idle || bare ? '' : 'mt-4 pt-4 border-t border-white/10'}>
-      <div className="flex overflow-x-auto gap-1 pb-1 -mx-1 px-1">
-        {stages.map((s, i) => {
-          const done = i < currentIndex;
-          const current = i === currentIndex;
-          return (
-            <div key={s.key} className="flex flex-col items-center flex-shrink-0 w-[88px]">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
-                  current
-                    ? 'border-gold text-gold bg-gold/10'
-                    : done
-                    ? 'border-gold/60 text-gold/60'
-                    : 'border-white/15 text-thread/30'
-                }`}
-              >
-                {s.icon}
-              </div>
-              <span
-                className={`text-[10px] uppercase tracking-wide text-center mt-1.5 leading-tight ${
-                  current ? 'text-gold' : done ? 'text-thread/60' : 'text-thread/30'
-                }`}
-              >
-                {s.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="text-thread/60 text-sm mt-3">
-        {idle
-          ? 'No active orders yet — once you place an order, its progress will show here step by step.'
-          : currentIndex >= stages.length
-          ? 'Delivered and paid. Thank you!'
-          : awaitingPayment
-          ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once the shop records it.`
-          : paidAwaitingComplete
-          ? 'Payment received — thank you! Your order will be marked completed shortly.'
-          : stages[currentIndex].description}
-      </p>
+    <div className="mt-4 pt-4 border-t border-white/10">
+      <p className="text-thread/60 text-sm">{message}</p>
 
       {stage === 'proofing_pending' &&
         (order.proof_path ? (

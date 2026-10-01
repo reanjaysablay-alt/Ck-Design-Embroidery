@@ -3,9 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 import AccountOrderCard from '@/components/AccountOrderCard';
 import OrderHistoryToggle from '@/components/OrderHistoryToggle';
-import ProductionStageTracker, { stageLabel } from '@/components/ProductionStageTracker';
-import OrderTrackingPanel from '@/components/OrderTrackingPanel';
-import { formatDate } from '@/lib/formatDate';
+import { TRACKER_STAGES, effectiveStage } from '@/components/ProductionStageTracker';
+import OrderTrackingTabs from '@/components/OrderTrackingTabs';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
@@ -50,6 +49,30 @@ export default async function AccountPage() {
       })
   );
 
+  // Group active orders under the tracker stage they're at (see
+  // effectiveStage). Each icon in the row becomes a tab with a count.
+  const byStage = {};
+  for (const order of activeOrders) {
+    (byStage[effectiveStage(order)] ||= []).push(order);
+  }
+  const tabs = TRACKER_STAGES.map((s) => ({
+    key: s.key,
+    label: s.label,
+    icon: s.icon,
+    count: byStage[s.key]?.length || 0,
+  }));
+  const panels = Object.fromEntries(
+    Object.entries(byStage).map(([key, list]) => [
+      key,
+      <div key={key} className="space-y-4">
+        {list.map((order) => (
+          <AccountOrderCard key={order.id} order={order} proofUrl={proofUrls[order.id]} />
+        ))}
+      </div>,
+    ])
+  );
+  const defaultKey = activeOrders.length ? effectiveStage(activeOrders[0]) : TRACKER_STAGES[0].key;
+
   const historyOrders = orders?.filter((o) => ['completed', 'canceled', 'picked_up'].includes(o.order_status)) || [];
 
   return (
@@ -62,40 +85,7 @@ export default async function AccountPage() {
         Order Tracking
       </h2>
 
-      {activeOrders.length === 0 && (
-        <div className="bg-canvas2 border border-white/5 rounded-sm p-6 mb-14">
-          <ProductionStageTracker idle />
-        </div>
-      )}
-
-      {activeOrders.length > 0 && (
-        <OrderTrackingPanel
-          summaries={activeOrders.map((order) => ({
-            id: order.id,
-            total: order.total,
-            dateLabel: formatDate(order.created_at),
-            stageLabel: stageLabel(order.production_stage || 'order_received'),
-          }))}
-          trackers={Object.fromEntries(
-            activeOrders.map((order) => [
-              order.id,
-              <ProductionStageTracker
-                key={order.id}
-                bare
-                stage={order.production_stage || 'order_received'}
-                order={order}
-                proofUrl={proofUrls[order.id]}
-              />,
-            ])
-          )}
-          details={Object.fromEntries(
-            activeOrders.map((order) => [
-              order.id,
-              <AccountOrderCard key={order.id} order={order} showTracker={false} />,
-            ])
-          )}
-        />
-      )}
+      <OrderTrackingTabs tabs={tabs} panels={panels} defaultKey={defaultKey} />
 
       <h2 className="text-xs uppercase tracking-widest text-gold mb-4">
         Order History
