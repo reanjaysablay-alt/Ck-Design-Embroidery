@@ -110,13 +110,16 @@ const PAYMENT_STAGE = {
   ),
 };
 
-export default function ProductionStageTracker({ stage, order, proofUrl }) {
+// `idle` renders the same steps with nothing active — shown at the top
+// of My Purchases when the customer has no active order, so the tracker
+// is always visible and they know what to expect.
+export default function ProductionStageTracker({ stage, order = {}, proofUrl, idle = false }) {
   const isCod = order.payment_method === 'cod';
   const stages = isCod ? [...STAGES, PAYMENT_STAGE] : STAGES;
   const isPaid = order.payment_status === 'paid';
 
-  let currentIndex = stages.findIndex((s) => s.key === stage);
-  if (currentIndex === -1) return null;
+  let currentIndex = idle ? -1 : stages.findIndex((s) => s.key === stage);
+  if (!idle && currentIndex === -1) return null;
 
   // COD: once delivered, the active step becomes Payment; when paid,
   // every step (including Payment) shows as done.
@@ -124,7 +127,7 @@ export default function ProductionStageTracker({ stage, order, proofUrl }) {
   if (isCod && delivered) currentIndex = isPaid ? stages.length : stages.length - 1;
 
   return (
-    <div className="mt-4 pt-4 border-t border-white/10">
+    <div className={idle ? '' : 'mt-4 pt-4 border-t border-white/10'}>
       <div className="flex overflow-x-auto gap-1 pb-1 -mx-1 px-1">
         {stages.map((s, i) => {
           const done = i < currentIndex;
@@ -155,7 +158,9 @@ export default function ProductionStageTracker({ stage, order, proofUrl }) {
       </div>
 
       <p className="text-thread/60 text-sm mt-3">
-        {currentIndex >= stages.length
+        {idle
+          ? 'No active orders yet — once you place an order, its progress will show here step by step.'
+          : currentIndex >= stages.length
           ? 'Delivered and paid. Thank you!'
           : isCod && delivered
           ? `Delivered. Please pay $${order.total} in cash to our delivery team — payment is confirmed once the shop records it.`

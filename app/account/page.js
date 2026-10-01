@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
 import AccountOrderCard from '@/components/AccountOrderCard';
+import ProductionStageTracker from '@/components/ProductionStageTracker';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
@@ -55,11 +56,13 @@ export default async function AccountPage() {
       <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">My Purchases</p>
 
       <h2 id="orders" className="text-xs uppercase tracking-widest text-gold mb-4 scroll-mt-24">
-        Active Orders
+        Order Tracking
       </h2>
 
       {activeOrders.length === 0 && (
-        <p className="text-thread/60 mb-14">No active orders right now.</p>
+        <div className="bg-canvas2 border border-white/5 rounded-sm p-6 mb-14">
+          <ProductionStageTracker idle />
+        </div>
       )}
 
       {activeOrders.length > 0 && (
