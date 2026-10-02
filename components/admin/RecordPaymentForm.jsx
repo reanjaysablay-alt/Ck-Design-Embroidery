@@ -44,32 +44,32 @@ export default function RecordPaymentForm({ orderId, total, isCod, action }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-slate-100">
-      <div className="flex flex-wrap items-end gap-3">
+    <form onSubmit={handleSubmit} className="mt-2 pt-2 border-t border-slate-100">
+      <div className="flex flex-wrap items-end gap-2">
         <label className="text-xs text-slate-500">
-          <span className="block uppercase tracking-widest text-[10px] text-slate-400 mb-1">Amount received</span>
+          <span className="block uppercase tracking-wider text-[9px] text-slate-400 mb-0.5">Amount received</span>
           <input
             type="number"
             step="0.01"
             min="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-32 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
+            className="w-24 bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-xs text-slate-800"
           />
         </label>
 
         {isCod ? (
           <div className="text-xs text-slate-500">
-            <span className="block uppercase tracking-widest text-[10px] text-slate-400 mb-1">Paid by</span>
-            <span className="inline-block py-1.5 text-sm text-slate-700">Cash</span>
+            <span className="block uppercase tracking-wider text-[9px] text-slate-400 mb-0.5">Paid by</span>
+            <span className="inline-block py-1 text-xs text-slate-700">Cash</span>
           </div>
         ) : (
           <label className="text-xs text-slate-500">
-            <span className="block uppercase tracking-widest text-[10px] text-slate-400 mb-1">Paid by</span>
+            <span className="block uppercase tracking-wider text-[9px] text-slate-400 mb-0.5">Paid by</span>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800"
+              className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-xs text-slate-800"
             >
               {PAYMENT_MODES.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -80,9 +80,9 @@ export default function RecordPaymentForm({ orderId, total, isCod, action }) {
           </label>
         )}
 
-        <label className="text-xs text-slate-500 flex-1 min-w-[10rem]">
-          <span className="block uppercase tracking-widest text-[10px] text-slate-400 mb-1">
-            Note {differs ? '(required — amount differs)' : '(optional)'}
+        <label className="text-xs text-slate-500 flex-1 min-w-[9rem]">
+          <span className="block uppercase tracking-wider text-[9px] text-slate-400 mb-0.5">
+            Note {differs ? '(required — differs)' : '(optional)'}
           </span>
           <input
             type="text"
@@ -90,7 +90,7 @@ export default function RecordPaymentForm({ orderId, total, isCod, action }) {
             maxLength={300}
             onChange={(e) => setNote(e.target.value)}
             placeholder={differs ? 'Why does the amount differ?' : 'Reference no., remarks…'}
-            className={`w-full bg-slate-50 border rounded-lg px-2 py-1.5 text-sm text-slate-800 ${
+            className={`w-full bg-slate-50 border rounded-md px-2 py-1 text-xs text-slate-800 ${
               differs && !note ? 'border-amber-400' : 'border-slate-200'
             }`}
           />
@@ -99,12 +99,12 @@ export default function RecordPaymentForm({ orderId, total, isCod, action }) {
         <button
           type="submit"
           disabled={pending}
-          className="bg-indigo-600 text-white font-medium text-xs px-5 py-2.5 rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="bg-indigo-600 text-white font-medium text-[11px] px-4 py-1.5 rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-colors"
         >
           {pending ? 'Recording…' : 'Record payment'}
         </button>
       </div>
-      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+      {error && <p className="text-[11px] text-red-600 mt-1">{error}</p>}
     </form>
   );
 }

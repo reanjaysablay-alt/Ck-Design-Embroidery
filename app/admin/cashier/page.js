@@ -31,24 +31,24 @@ function startOfShopDay() {
 function OrderRow({ order, action, children }) {
   const isCod = order.payment_method === 'cod';
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-slate-900 font-medium">
+          <div className="text-slate-900 text-sm font-medium">
             Order #{order.id}{' '}
             <span className="text-slate-400 font-normal">· {customerLabel(order)}</span>
           </div>
-          <div className="text-slate-500 text-xs mt-0.5">{itemsSummary(order)}</div>
+          <div className="text-slate-500 text-[11px] mt-0.5">{itemsSummary(order)}</div>
           {isCod && order.cod_collected_at && (
-            <div className="text-xs text-amber-700 mt-1.5">
+            <div className="text-[11px] text-amber-700 mt-1">
               Collected by <strong>{order.cod_collected_by || 'delivery staff'}</strong> ·{' '}
               {formatDateTime(order.cod_collected_at)}
             </div>
           )}
         </div>
         <div className="text-right">
-          <div className="text-xs uppercase tracking-widest text-slate-400">Amount due</div>
-          <div className="text-xl font-semibold text-slate-900">{money(order.total)}</div>
+          <div className="text-[9px] uppercase tracking-widest text-slate-400">Amount due</div>
+          <div className="text-base font-semibold text-slate-900 leading-tight">{money(order.total)}</div>
         </div>
       </div>
       {children || <RecordPaymentForm orderId={order.id} total={order.total} isCod={isCod} action={action} />}
@@ -119,8 +119,8 @@ export default async function CashierPage({ searchParams }) {
   return (
     <div>
       <AutoRefresh />
-      <h1 className="text-2xl font-semibold text-slate-900 mb-1">Cashier</h1>
-      <p className="text-slate-500 mb-6">
+      <h1 className="text-xl font-semibold text-slate-900 mb-0.5">Cashier</h1>
+      <p className="text-slate-500 text-xs mb-3">
         {ctx.isCashier
           ? `Signed in as ${ctx.staffName}. Record COD and walk-in payments here.`
           : cashier
@@ -128,26 +128,26 @@ export default async function CashierPage({ searchParams }) {
           : 'Viewing as admin. No cashier is assigned yet — assign one under Staff.'}
       </p>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         {[
           ["Today's collections", money(todayTotal)],
           ['COD today', money(todayCod)],
           ['Walk-in today', money(todayWalkin)],
           ['To record now', codReady.length + walkin.length],
         ].map(([label, value]) => (
-          <div key={label} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-            <div className="text-[10px] uppercase tracking-widest text-slate-400">{label}</div>
-            <div className="text-xl font-semibold text-slate-900 mt-1">{value}</div>
+          <div key={label} className="bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+            <div className="text-[9px] uppercase tracking-wider text-slate-400 leading-tight">{label}</div>
+            <div className="text-sm sm:text-base font-semibold text-slate-900 leading-tight mt-0.5">{value}</div>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-1.5 mb-4">
         {TABS.map((t) => (
           <Link
             key={t.key}
             href={`/admin/cashier?tab=${t.key}`}
-            className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
               tab === t.key
                 ? 'bg-indigo-600 text-white border-indigo-600'
                 : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
@@ -169,37 +169,37 @@ export default async function CashierPage({ searchParams }) {
 
       {tab === 'cod' && (
         <div>
-          <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3">
+          <h2 className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">
             Cash handed over — ready to record
           </h2>
           {codReady.length === 0 ? (
-            <p className="text-slate-500 mb-10">
+            <p className="text-slate-500 text-xs mb-5">
               Nothing to record. When a delivery staff member reports cash collected, it appears here.
             </p>
           ) : (
-            <div className="space-y-3 mb-10">
+            <div className="space-y-2 mb-5">
               {codReady.map((order) => (
                 <OrderRow key={order.id} order={order} action={recordPayment} />
               ))}
             </div>
           )}
 
-          <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3">
+          <h2 className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">
             Out for delivery — cash not reported yet
           </h2>
           {codWaiting.length === 0 ? (
-            <p className="text-slate-500">No COD orders are waiting on a delivery.</p>
+            <p className="text-slate-500 text-xs">No COD orders are waiting on a delivery.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {codWaiting.map((order) => (
                 <div
                   key={order.id}
-                  className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5"
                 >
-                  <div className="text-sm text-slate-700">
+                  <div className="text-xs text-slate-700">
                     Order #{order.id} <span className="text-slate-400">· {customerLabel(order)}</span>
                   </div>
-                  <div className="text-sm text-slate-500">
+                  <div className="text-[11px] text-slate-500">
                     {money(order.total)} · waiting for the delivery staff to report the cash
                   </div>
                 </div>
@@ -211,13 +211,13 @@ export default async function CashierPage({ searchParams }) {
 
       {tab === 'walkin' && (
         <div>
-          <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3">
+          <h2 className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">
             Walk-in orders awaiting payment
           </h2>
           {walkin.length === 0 ? (
-            <p className="text-slate-500">No walk-in payments are waiting.</p>
+            <p className="text-slate-500 text-xs">No walk-in payments are waiting.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {walkin.map((order) => (
                 <OrderRow key={order.id} order={order} action={recordPayment} />
               ))}
@@ -228,24 +228,24 @@ export default async function CashierPage({ searchParams }) {
 
       {tab === 'records' && (
         <div>
-          <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3">
+          <h2 className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">
             Payment records — latest {records?.length || 0}
           </h2>
           {(!records || records.length === 0) ? (
-            <p className="text-slate-500">No payments have been recorded yet.</p>
+            <p className="text-slate-500 text-xs">No payments have been recorded yet.</p>
           ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
+              <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                    <th className="px-4 py-3">Receipt</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Order</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Collected by</th>
-                    <th className="px-4 py-3">Recorded by</th>
-                    <th className="px-4 py-3">Note</th>
+                  <tr className="text-left text-[9px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                    <th className="px-3 py-1.5">Receipt</th>
+                    <th className="px-3 py-1.5">Date</th>
+                    <th className="px-3 py-1.5">Order</th>
+                    <th className="px-3 py-1.5">Type</th>
+                    <th className="px-3 py-1.5 text-right">Amount</th>
+                    <th className="px-3 py-1.5">Collected by</th>
+                    <th className="px-3 py-1.5">Recorded by</th>
+                    <th className="px-3 py-1.5">Note</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -254,20 +254,20 @@ export default async function CashierPage({ searchParams }) {
                     const variance = Number(r.amount_received) - Number(r.amount_expected);
                     return (
                       <tr key={r.id} className="border-b border-slate-50 last:border-0 align-top">
-                        <td className="px-4 py-3 font-mono">
+                        <td className="px-3 py-1.5 font-mono">
                           <Link href={`/admin/cashier/receipt/${r.id}`} className="text-indigo-600 hover:underline">
                             {formatReceiptNo(r.id)}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDateTime(r.created_at)}</td>
-                        <td className="px-4 py-3 text-slate-700">
+                        <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{formatDateTime(r.created_at)}</td>
+                        <td className="px-3 py-1.5 text-slate-700">
                           #{r.order_id}
-                          <div className="text-xs text-slate-400">{order ? customerLabel(order) : ''}</div>
+                          <div className="text-[10px] text-slate-400">{order ? customerLabel(order) : ''}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-600">
+                        <td className="px-3 py-1.5 text-slate-600">
                           {r.method === 'cod' ? 'COD' : 'Walk-in'} · {paymentModeLabel(r.payment_mode)}
                         </td>
-                        <td className="px-4 py-3 text-right font-medium text-slate-900">
+                        <td className="px-3 py-1.5 text-right font-medium text-slate-900">
                           {money(r.amount_received)}
                           {Math.abs(variance) > 0.009 && (
                             <div className="text-[10px] text-amber-600 font-normal">
@@ -276,9 +276,9 @@ export default async function CashierPage({ searchParams }) {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{r.collected_by || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600">{r.recorded_by}</td>
-                        <td className="px-4 py-3 text-slate-500 max-w-[14rem]">{r.note || '—'}</td>
+                        <td className="px-3 py-1.5 text-slate-600">{r.collected_by || '—'}</td>
+                        <td className="px-3 py-1.5 text-slate-600">{r.recorded_by}</td>
+                        <td className="px-3 py-1.5 text-slate-500 max-w-[14rem]">{r.note || '—'}</td>
                       </tr>
                     );
                   })}
