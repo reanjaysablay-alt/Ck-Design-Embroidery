@@ -33,6 +33,7 @@ export async function POST(request) {
 
   const admin = createAdminClient();
   const pinHash = hashPin(trimmedPin);
+  let canonicalName = trimmedName;
 
   const { data: existing } = await admin
     .from('staff_profiles')
@@ -47,6 +48,7 @@ export async function POST(request) {
     if (!existing.approved) {
       return NextResponse.json({ pending: true, name: trimmedName });
     }
+    canonicalName = existing.name;
     await admin
       .from('staff_profiles')
       .update({ last_used_at: new Date().toISOString() })
@@ -61,8 +63,10 @@ export async function POST(request) {
     return NextResponse.json({ pending: true, name: trimmedName });
   }
 
-  await setStaffIdentityCookie(trimmedName);
-  return NextResponse.json({ ok: true, name: trimmedName });
+  // Store the name exactly as registered (the lookup above is
+  // case-insensitive), so the identity always matches the profile.
+  await setStaffIdentityCookie(canonicalName);
+  return NextResponse.json({ ok: true, name: canonicalName });
 }
 
 // "Not you?" — clears the identity so the next person on this shared

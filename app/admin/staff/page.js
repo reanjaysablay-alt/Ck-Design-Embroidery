@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, getStaffEmailList } from '@/lib/admin';
 import { formatDate, formatDateTime } from '@/lib/formatDate';
-import { approveStaffProfile, denyStaffProfile } from '@/app/admin/actions';
+import { approveStaffProfile, denyStaffProfile, assignCashier } from '@/app/admin/actions';
+import CashierAssignForm from '@/components/admin/CashierAssignForm';
 import StaffApprovalButtons from '@/components/admin/StaffApprovalButtons';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
@@ -27,6 +28,9 @@ const ACTION_LABELS = {
   'message.reply': 'Replied to a customer message',
   'message.delete_thread': 'Deleted a conversation',
   'order.cod_paid': 'Recorded a cash-on-delivery payment',
+  'order.cod_collected': 'Reported COD cash collected (sent to cashier)',
+  'payment.record': 'Recorded a payment',
+  'cashier.assign': 'Assigned the cashier',
   'order.upload_proof': 'Uploaded a design proof',
   'order.set_production_stage': 'Updated a production stage',
 };
@@ -76,13 +80,24 @@ export default async function AdminStaffPage() {
   // several different named people. Split into those still waiting
   // on admin approval (can't get into the dashboard yet) and those
   // already approved.
-  const { data: staffProfiles } = await admin
+  // is_cashier only exists after the cashier migration — fall back to
+  // the old column list so this page never breaks before it's run.
+  let cashierMigrationMissing = false;
+  let { data: staffProfiles, error: profilesError } = await admin
     .from('staff_profiles')
-    .select('id, name, approved, approved_at, created_at, last_used_at')
+    .select('id, name, approved, approved_at, created_at, last_used_at, is_cashier')
     .order('last_used_at', { ascending: false, nullsFirst: false });
+  if (profilesError) {
+    cashierMigrationMissing = true;
+    ({ data: staffProfiles } = await admin
+      .from('staff_profiles')
+      .select('id, name, approved, approved_at, created_at, last_used_at')
+      .order('last_used_at', { ascending: false, nullsFirst: false }));
+  }
 
   const pendingProfiles = (staffProfiles || []).filter((p) => !p.approved);
   const approvedProfiles = (staffProfiles || []).filter((p) => p.approved);
+  const currentCashier = approvedProfiles.find((p) => p.is_cashier) || null;
 
   return (
     <div>
@@ -91,6 +106,31 @@ export default async function AdminStaffPage() {
       <p className="text-slate-500 mb-10">
         Monitor staff accounts and everything they've done in the dashboard.
       </p>
+
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Cashier</h2>
+      <p className="text-slate-500 mb-4">
+        Choose <strong>one</strong> staff member to be the cashier. Their dashboard shows only
+        payments: COD cash handed over by delivery staff, walk-in payments and the payment
+        records. Delivery staff report the cash they collect; only the cashier records it.
+      </p>
+      {cashierMigrationMissing && (
+        <p className="mb-4 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3">
+          Run the latest migration at the bottom of <code>db/schema.sql</code> in the Supabase SQL
+          Editor to enable the cashier role.
+        </p>
+      )}
+      {!cashierMigrationMissing && !currentCashier && (
+        <p className="mb-4 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3">
+          No cashier is assigned yet. Until you choose one, only you (admin) can record payments.
+        </p>
+      )}
+      <div className="mb-14">
+        <CashierAssignForm
+          profiles={approvedProfiles.map((p) => ({ id: p.id, name: p.name }))}
+          currentId={currentCashier?.id || null}
+          action={assignCashier}
+        />
+      </div>
 
       <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Staff Accounts</h2>
       {staffAccounts.length === 0 && (
@@ -180,7 +220,14 @@ export default async function AdminStaffPage() {
               key={p.id}
               className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
             >
-              <div className="text-slate-900 font-medium">{p.name}</div>
+              <div className="text-slate-900 font-medium">
+                {p.name}
+                {p.is_cashier && (
+                  <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-indigo-600 bg-indigo-100 rounded-full px-2 py-0.5 align-middle">
+                    Cashier
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-slate-500">
                 <span>First seen {formatDate(p.created_at)}</span>
                 <span>

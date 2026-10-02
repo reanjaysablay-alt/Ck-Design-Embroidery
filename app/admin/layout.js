@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
+import { getAccessContext } from '@/lib/cashier';
 import { getAdminBadgeCounts } from '@/lib/adminCounts';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import StaffIdentifyGate from '@/components/admin/StaffIdentifyGate';
@@ -32,6 +33,9 @@ export default async function AdminLayout({ children }) {
     }
   }
 
+  // The assigned cashier gets a payments-only dashboard.
+  const { isCashier } = await getAccessContext();
+
   // Just the first paint — AdminSidebar polls /api/admin/badge-counts
   // itself from here on, so the Orders/Inquiries/Ratings/Messages/Staff
   // badges update live instead of only refreshing on navigation.
@@ -39,7 +43,7 @@ export default async function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      <AdminSidebar isAdmin={isAdmin} userEmail={user.email} initialCounts={initialCounts} />
+      <AdminSidebar isAdmin={isAdmin} isCashier={isCashier} userEmail={user.email} initialCounts={initialCounts} />
       <div className="flex-1 min-w-0 px-4 md:px-10 py-6 md:py-8">{children}</div>
     </div>
   );

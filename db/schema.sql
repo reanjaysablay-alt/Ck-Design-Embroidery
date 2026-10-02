@@ -722,3 +722,60 @@ alter table public.orders add column if not exists proof_path text;
 alter table public.orders add column if not exists proof_name text;
 alter table public.orders add column if not exists proof_feedback text;
 alter table public.orders add column if not exists proof_uploaded_at timestamptz;
+
+-- ---------------------------------------------------------------------------
+-- Migration: Cashier role + payment records.
+--
+-- The admin assigns exactly ONE approved staff member as the cashier
+-- (staff_profiles.is_cashier — a partial unique index makes a second
+-- cashier impossible). The cashier's dashboard is limited to payments:
+-- COD cash handed over by delivery staff, walk-in payments, and the
+-- payment records. Every payment is written to payment_records (one per
+-- order, never edited) and gets a receipt number (OR-000123).
+-- Safe to re-run.
+-- ---------------------------------------------------------------------------
+alter table public.staff_profiles add column if not exists is_cashier boolean not null default false;
+create unique index if not exists staff_profiles_one_cashier
+  on public.staff_profiles ((true)) where is_cashier;
+
+-- Swaps the cashier in ONE transaction so there is never zero or two.
+create or replace function public.assign_cashier(p_profile_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.staff_profiles where id = p_profile_id and approved) then
+    raise exception 'Staff member not found or not approved';
+  end if;
+  update public.staff_profiles set is_cashier = false where is_cashier;
+  update public.staff_profiles set is_cashier = true where id = p_profile_id;
+end;
+$$;
+revoke all on function public.assign_cashier(bigint) from public, anon, authenticated;
+grant execute on function public.assign_cashier(bigint) to service_role;
+
+-- Delivery staff report the cash they collected on a COD delivery; that
+-- is what puts the order in the cashier's queue.
+alter table public.orders add column if not exists cod_collected_at timestamptz;
+alter table public.orders add column if not exists cod_collected_by text;
+
+create table if not exists public.payment_records (
+  id bigint generated always as identity primary key,
+  order_id bigint not null unique references public.orders(id) on delete restrict,
+  method text not null check (method in ('cod', 'walkin')),
+  payment_mode text not null default 'cash' check (payment_mode in ('cash', 'gcash', 'card', 'other')),
+  amount_expected numeric(10, 2) not null,
+  amount_received numeric(10, 2) not null,
+  collected_by text,
+  recorded_by text not null,
+  recorded_by_email text,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.payment_records enable row level security;
+-- No policies on purpose: internal financial records, only ever read
+-- and written through server code using the service role key.
+create index if not exists payment_records_created_at_idx on public.payment_records(created_at desc);

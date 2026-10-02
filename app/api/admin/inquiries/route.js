@@ -1,3 +1,4 @@
+import { getAccessContext } from '@/lib/cashier';
 import { NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
@@ -14,6 +15,10 @@ async function requireStaffOrAdmin() {
   } = await supabase.auth.getUser();
 
   if (!user || !canAccessAdmin(user.email)) {
+    throw new Error('Not authorized');
+  }
+  // The assigned cashier's dashboard is payments-only.
+  if ((await getAccessContext()).isCashier) {
     throw new Error('Not authorized');
   }
   return user;

@@ -1,3 +1,4 @@
+import { redirectIfCashier } from '@/lib/cashier';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
@@ -7,7 +8,7 @@ import {
   setCustomizationFee,
   setDeliveryFee,
   setProductionStage,
-  markCodPaid,
+  reportCodCollected,
   uploadDesignProof,
 } from '@/app/admin/actions';
 import {
@@ -50,6 +51,7 @@ function StatCard({ label, value, accent }) {
 // automatically (it's simply no longer in this query) and shows up on
 // the History page instead.
 export default async function AdminOrdersPage({ searchParams }) {
+  await redirectIfCashier();
   const params = await searchParams;
   const activeTab = TABS.find((t) => t.key === params?.tab) || TABS[0];
 
@@ -118,7 +120,7 @@ export default async function AdminOrdersPage({ searchParams }) {
                 order.payment_method === 'cod' && !feeLocked ? setDeliveryFee : undefined
               }
               stageAction={setProductionStage}
-              paymentAction={markCodPaid}
+              collectAction={reportCodCollected}
               proofAction={uploadDesignProof}
               actions={
                 <>

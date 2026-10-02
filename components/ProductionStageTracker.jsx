@@ -123,7 +123,8 @@ export const TRACKER_STAGES = [
 // shop records the cash it moves on to COMPLETED (awaiting final close).
 export function effectiveStage(order) {
   const base = order.production_stage || 'order_received';
-  if (order.payment_method === 'cod' && base === 'ready_for_fulfillment') {
+  const paysOnHandover = order.payment_method === 'cod' || order.payment_method === 'walkin';
+  if (paysOnHandover && base === 'ready_for_fulfillment') {
     return order.payment_status === 'paid' ? 'completed' : 'payment';
   }
   return base;
@@ -140,11 +141,15 @@ export default function OrderStageDetail({ order, proofUrl }) {
   const stage = order.production_stage || 'order_received';
   const eff = effectiveStage(order);
   const isCod = order.payment_method === 'cod';
+  const isWalkin = order.payment_method === 'walkin';
+  const paysOnHandover = isCod || isWalkin;
 
   const message =
-    eff === 'payment'
-      ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once the shop records it.`
-      : isCod && eff === 'completed' && stage === 'ready_for_fulfillment'
+    eff === 'payment' && isWalkin
+      ? `Ready for pickup. Please pay $${order.total} at the shop counter — payment is confirmed once our cashier records it.`
+      : eff === 'payment'
+      ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once our cashier records it.`
+      : paysOnHandover && eff === 'completed' && stage === 'ready_for_fulfillment'
       ? 'Payment received — thank you! Your order will be marked completed shortly.'
       : TRACKER_STAGES.find((s) => s.key === eff)?.description;
 
@@ -166,7 +171,7 @@ export default function OrderStageDetail({ order, proofUrl }) {
           </p>
         ))}
 
-      {stage === 'ready_for_fulfillment' && !isCod && (
+      {stage === 'ready_for_fulfillment' && !paysOnHandover && (
         <p className="text-gold text-sm mt-2">
           {order.payment_method === 'walkin'
             ? 'Ready for pickup — visit the shop to claim your order.'

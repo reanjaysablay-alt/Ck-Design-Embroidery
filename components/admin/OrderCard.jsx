@@ -1,5 +1,5 @@
 import { formatDateTime } from '@/lib/formatDate';
-import { PaymentReceivedButton } from './OrderActionButtons';
+import { CollectCashButton } from './OrderActionButtons';
 import StageSelect from './StageSelect';
 import ProofUpload from './ProofUpload';
 
@@ -43,7 +43,7 @@ export function StatusBadge({ status }) {
 // `stageAction`, if passed, adds the embroidery production-stage
 // dropdown (see ProductionStageTracker) for every active order —
 // only wired up on the active orders page.
-export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, paymentAction, proofAction }) {
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, collectAction, proofAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -201,7 +201,15 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           current={order.production_stage}
           action={stageAction}
           locked={order.order_status === 'pending'}
-          cod={order.payment_method === 'cod' && order.payment_status !== 'paid'}
+          payNote={
+            order.payment_status === 'paid'
+              ? null
+              : order.payment_method === 'cod'
+              ? 'Ready for Fulfillment sends the order out for delivery. After delivery press "I collected the cash"; once the cashier records it, choose Completed.'
+              : order.payment_method === 'walkin'
+              ? 'Ready for Fulfillment marks it ready for pickup. The cashier records the payment at the counter, then choose Completed.'
+              : null
+          }
         />
       )}
 
@@ -218,17 +226,33 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           />
         )}
 
-      {paymentAction &&
-        order.payment_method === 'cod' &&
-        order.payment_status !== 'paid' &&
-        ['to_receive', 'completed'].includes(order.order_status) && (
-          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100">
-            <span className="text-xs uppercase tracking-widest text-slate-400">
-              Cash on delivery — unpaid
+      {/* Payment — COD and walk-in orders are paid at hand-over. Delivery
+          staff only REPORT the cash they collected; the cashier is the one
+          who records it (see /admin/cashier). */}
+      {['cod', 'walkin'].includes(order.payment_method) && order.order_status !== 'canceled' && (
+        <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+          <span className="text-xs uppercase tracking-widest text-slate-400">Payment</span>
+          {order.payment_status === 'paid' ? (
+            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+              Paid — recorded by the cashier
             </span>
-            <PaymentReceivedButton id={order.id} action={paymentAction} />
-          </div>
-        )}
+          ) : order.payment_method === 'walkin' ? (
+            <span className="text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
+              Unpaid — the cashier records walk-in payments at the counter
+            </span>
+          ) : order.cod_collected_at ? (
+            <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+              Cash collected by {order.cod_collected_by || 'delivery staff'} — waiting for the cashier to record it
+            </span>
+          ) : order.order_status === 'to_receive' && collectAction ? (
+            <CollectCashButton id={order.id} action={collectAction} amount={Number(order.total).toFixed(2)} />
+          ) : (
+            <span className="text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
+              Cash on delivery — collect ${Number(order.total).toFixed(2)} when delivered
+            </span>
+          )}
+        </div>
+      )}
 
       {actions}
     </div>

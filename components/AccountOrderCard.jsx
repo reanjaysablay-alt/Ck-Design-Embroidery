@@ -31,6 +31,8 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl, 
         <span className="capitalize">
           {order.payment_method === 'cod' && order.payment_status !== 'paid'
             ? 'Pay after delivery'
+            : order.payment_method === 'walkin' && order.payment_status !== 'paid'
+            ? 'Pay at the shop counter'
             : order.payment_status.replace('_', ' ')}
         </span>
       </div>

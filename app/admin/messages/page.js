@@ -1,3 +1,4 @@
+import { redirectIfCashier } from '@/lib/cashier';
 import { createAdminClient } from '@/lib/supabase/server';
 import AdminMessagesPanel from '@/components/admin/AdminMessagesPanel';
 import { sendStaffMessage, markMessagesReadByStaff, deleteConversation } from '@/app/admin/actions';
@@ -10,6 +11,7 @@ export const metadata = { title: 'Messages — Admin — Stitchhouse' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminMessagesPage({ searchParams }) {
+  await redirectIfCashier();
   const params = await searchParams;
   const initialSelectedUserId = params?.user || null;
 

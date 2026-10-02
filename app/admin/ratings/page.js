@@ -1,3 +1,4 @@
+import { redirectIfCashier } from '@/lib/cashier';
 import { createAdminClient } from '@/lib/supabase/server';
 import { MarkInquiryReadButton, DeleteInquiryButton } from '../inquiries/client';
 import { formatDateTime } from '@/lib/formatDate';
@@ -11,6 +12,7 @@ export const dynamic = 'force-dynamic';
 // inquiries at /admin/inquiries. Ratings don't get a reply feature;
 // they're a public star rating + optional comment, not a conversation.
 export default async function AdminRatingsPage() {
+  await redirectIfCashier();
   const admin = createAdminClient();
   const { data: ratings } = await admin
     .from('contact_inquiries')

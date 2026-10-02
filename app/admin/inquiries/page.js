@@ -1,3 +1,4 @@
+import { redirectIfCashier } from '@/lib/cashier';
 import { createAdminClient } from '@/lib/supabase/server';
 import { MarkInquiryReadButton, DeleteInquiryButton, ReplyForm } from './client';
 import { formatDateTime } from '@/lib/formatDate';
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic';
 // Messages, feedback, and quote requests only — ratings have their own
 // page at /admin/ratings.
 export default async function AdminInquiriesPage() {
+  await redirectIfCashier();
   const admin = createAdminClient();
   const { data: inquiries } = await admin
     .from('contact_inquiries')

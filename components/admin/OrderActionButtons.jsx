@@ -91,15 +91,22 @@ export function CancelButton({ id, action }) {
   );
 }
 
-export function PaymentReceivedButton({ id, action }) {
+export function CollectCashButton({ id, action, amount }) {
   return (
-    <form action={action}>
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!window.confirm(`Confirm you collected $${amount} in cash from the customer? The cashier will be notified to record it.`)) {
+          e.preventDefault();
+        }
+      }}
+    >
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
         className="bg-emerald-600 text-white font-medium text-xs px-5 py-2.5 rounded-full hover:bg-emerald-700 transition-colors"
       >
-        Mark Payment Received
+        I collected the cash (${amount})
       </button>
     </form>
   );

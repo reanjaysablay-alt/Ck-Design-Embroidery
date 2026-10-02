@@ -6,6 +6,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const ICONS = {
+  cashier: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="2.5" y="6" width="19" height="13" rx="2" />
+      <path d="M2.5 10h19" />
+      <circle cx="12" cy="14.5" r="1.8" />
+    </svg>
+  ),
   dashboard: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <rect x="3" y="3" width="7" height="9" rx="1.5" />
@@ -122,7 +129,17 @@ function NavItem({ href, icon, label, active, onClick, badge }) {
   );
 }
 
-function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
+function NavLinks({ isAdmin, isCashier, pathname, onNavigate, counts }) {
+  // The assigned cashier only ever sees payments.
+  if (isCashier) {
+    return (
+      <nav className="flex flex-col gap-1 flex-1">
+        <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Cashier</p>
+        <NavItem href="/admin/cashier" icon={ICONS.cashier} label="Payments" active={pathname.startsWith('/admin/cashier')} onClick={onNavigate} badge={counts.cashierQueue} />
+      </nav>
+    );
+  }
+
   return (
     <nav className="flex flex-col gap-1 flex-1">
       <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Menu</p>
@@ -138,6 +155,7 @@ function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
         <>
           <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">Manage</p>
           <NavItem href="/admin/products" icon={ICONS.products} label="Products" active={pathname.startsWith('/admin/products')} onClick={onNavigate} />
+          <NavItem href="/admin/cashier" icon={ICONS.cashier} label="Cashier" active={pathname.startsWith('/admin/cashier')} onClick={onNavigate} badge={counts.cashierQueue} />
           <NavItem href="/admin/staff" icon={ICONS.staff} label="Staff" active={pathname === '/admin/staff'} onClick={onNavigate} badge={counts.pendingStaffCount} />
           <NavItem href="/admin/settings" icon={ICONS.settings} label="Settings" active={pathname === '/admin/settings'} onClick={onNavigate} />
         </>
@@ -146,10 +164,10 @@ function NavLinks({ isAdmin, pathname, onNavigate, counts }) {
   );
 }
 
-const EMPTY_COUNTS = { pendingOrders: 0, unreadInquiries: 0, unreadRatings: 0, unreadMessages: 0, pendingStaffCount: 0 };
+const EMPTY_COUNTS = { pendingOrders: 0, unreadInquiries: 0, unreadRatings: 0, unreadMessages: 0, pendingStaffCount: 0, cashierQueue: 0 };
 const COUNTS_POLL_MS = 8000;
 
-export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
+export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, initialCounts }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -219,12 +237,12 @@ export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
   }
 
   const Brand = (
-    <Link href="/admin" className="flex items-center gap-2 px-2" onClick={() => setMobileOpen(false)}>
+    <Link href={isCashier ? '/admin/cashier' : '/admin'} className="flex items-center gap-2 px-2" onClick={() => setMobileOpen(false)}>
       <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-display italic text-sm flex-shrink-0">
         CK
       </span>
       <span className="font-display text-lg text-slate-900 dark:text-slate-100 leading-tight">
-        {isAdmin ? 'Admin' : 'Staff'}
+        {isAdmin ? 'Admin' : isCashier ? 'Cashier' : 'Staff'}
       </span>
     </Link>
   );
@@ -273,7 +291,7 @@ export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
       {/* Mobile top bar — replaces the full sidebar below md, opens a
           slide-down panel with the same nav instead of squeezing a
           fixed-width column onto a phone screen. */}
-      <div className="md:hidden sticky top-0 z-40 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 h-14">
+      <div className="print:hidden md:hidden sticky top-0 z-40 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 h-14">
         {Brand}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -287,7 +305,7 @@ export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
 
       {mobileOpen && (
         <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
-          <NavLinks isAdmin={isAdmin} pathname={pathname} onNavigate={() => setMobileOpen(false)} counts={counts} />
+          <NavLinks isAdmin={isAdmin} isCashier={isCashier} pathname={pathname} onNavigate={() => setMobileOpen(false)} counts={counts} />
           <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
             <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
             {DarkModeToggle}
@@ -300,9 +318,9 @@ export default function AdminSidebar({ isAdmin, userEmail, initialCounts }) {
       {/* Desktop sidebar — pinned to the viewport (sticky, full height,
           scrolls internally if needed) so Log Out stays reachable no
           matter how long the page next to it gets. */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 h-screen overflow-y-auto flex-col py-6 px-4 self-start">
+      <aside className="print:hidden hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 h-screen overflow-y-auto flex-col py-6 px-4 self-start">
         <div className="mb-8">{Brand}</div>
-        <NavLinks isAdmin={isAdmin} pathname={pathname} counts={counts} />
+        <NavLinks isAdmin={isAdmin} isCashier={isCashier} pathname={pathname} counts={counts} />
         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 space-y-1">
           <p className="text-slate-400 text-xs font-mono px-4 mb-2 truncate">{userEmail}</p>
           {DarkModeToggle}

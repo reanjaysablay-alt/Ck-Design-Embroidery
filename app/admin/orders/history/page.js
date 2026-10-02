@@ -1,8 +1,8 @@
+import { redirectIfCashier } from '@/lib/cashier';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
-import { markCodPaid } from '@/app/admin/actions';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
 // Always compute fresh from the database — a newly canceled/completed
@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 // the active Orders page — read-only, no action buttons, since there's
 // nothing left to do on them.
 export default async function AdminOrderHistoryPage() {
+  await redirectIfCashier();
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')
@@ -37,7 +38,7 @@ export default async function AdminOrderHistoryPage() {
 
       <div className="space-y-4">
         {orders?.map((order) => (
-          <OrderCard key={order.id} order={order} designUrls={designUrls} paymentAction={markCodPaid} />
+          <OrderCard key={order.id} order={order} designUrls={designUrls} />
         ))}
         {(!orders || orders.length === 0) && (
           <p className="text-slate-500">No completed or canceled orders yet.</p>

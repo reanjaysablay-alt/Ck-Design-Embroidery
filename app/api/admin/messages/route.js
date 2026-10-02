@@ -1,3 +1,4 @@
+import { getAccessContext } from '@/lib/cashier';
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { canAccessAdmin } from '@/lib/admin';
@@ -10,6 +11,9 @@ export async function GET() {
 
   if (!user || !canAccessAdmin(user.email)) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+  }
+  if ((await getAccessContext()).isCashier) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
   }
 
   const admin = createAdminClient();

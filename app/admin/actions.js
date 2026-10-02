@@ -10,6 +10,8 @@ import { uploadProductImage, uploadDesignFile } from '@/lib/upload';
 import { saveSiteSettings } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
+import { getAccessContext } from '@/lib/cashier';
+import { formatReceiptNo } from '@/lib/receipt';
 import { restoreStock, verifyCartItems, deductStock } from '@/lib/cartVerify';
 import {
   sendMail,
@@ -51,7 +53,24 @@ async function requireStaffOrAdmin() {
   if (!user || !canAccessAdmin(user.email)) {
     throw new Error('Not authorized');
   }
+
+  // The assigned cashier's dashboard is payments-only — they can't run
+  // order, inquiry or message actions even by calling them directly.
+  const ctx = await getAccessContext();
+  if (ctx.isCashier) {
+    throw new Error('The cashier account can only manage payments.');
+  }
   return user;
+}
+
+// Payment recording: the assigned cashier, or a full admin (the owner).
+// Everyone else — including delivery staff — is refused.
+async function requireCashierOrAdmin() {
+  const ctx = await getAccessContext();
+  if (!ctx.user || !(ctx.isAdmin || ctx.isCashier)) {
+    throw new Error('Only the cashier can record payments.');
+  }
+  return ctx;
 }
 
 // Reads and normalizes the product form fields (shared by create + update).
@@ -676,11 +695,18 @@ export async function setDeliveryFee(formData) {
   revalidatePath('/admin/orders/history');
 }
 
-// Cash on Delivery: the customer pays the delivery team AFTER delivery, so
-// staff records the payment once the cash is collected. Only valid for
-// COD orders that have shipped or been delivered.
-export async function markCodPaid(formData) {
+// ---------------------------------------------------------------------------
+// Payments — COD hand-over, cashier recording, cashier assignment
+// ---------------------------------------------------------------------------
+
+// Delivery staff: "I collected the cash from the customer." This does
+// NOT mark the order paid — it puts the order in the cashier's queue
+// (with who collected it and when) so the cashier can count the money
+// and record it properly. Separation of duties: the person holding the
+// cash is never the person who closes the payment.
+export async function reportCodCollected(formData) {
   const actor = await requireStaffOrAdmin();
+  const ctx = await getAccessContext();
   const admin = createAdminClient();
   const id = formData.get('id');
 
@@ -691,37 +717,174 @@ export async function markCodPaid(formData) {
     .single();
   if (fetchError) throw new Error(fetchError.message);
 
-  if (existing.payment_method !== 'cod') {
-    throw new Error('Only Cash on Delivery orders are paid after delivery.');
-  }
-  if (!['to_receive', 'completed'].includes(existing.order_status)) {
-    throw new Error('This order has not been shipped yet.');
-  }
+  if (existing.payment_method !== 'cod') throw new Error('This is not a Cash on Delivery order.');
+  if (existing.order_status !== 'to_receive') throw new Error('This order is not out for delivery.');
+  if (existing.payment_status === 'paid') throw new Error('This order is already paid.');
+  if (existing.cod_collected_at) throw new Error('The cash for this order was already reported.');
 
-  const { data: order, error } = await admin
+  const collector = ctx.staffName || actor.email;
+  const { error } = await admin
     .from('orders')
-    .update({ payment_status: 'paid' })
-    .eq('id', id)
-    .select('*')
-    .single();
+    .update({ cod_collected_at: new Date().toISOString(), cod_collected_by: collector })
+    .eq('id', id);
   if (error) throw new Error(error.message);
-
-  await notifyOrderStatus(admin, order, {
-    title: 'Payment received 💵',
-    body: `We received your cash payment of $${Number(order.total).toFixed(2)} for order #${order.id}. Thank you!`,
-  });
 
   await logActivity({
     actorEmail: actor.email,
     actorRole: getAdminRole(actor.email),
-    action: 'order.cod_paid',
+    action: 'order.cod_collected',
     targetType: 'order',
-    targetId: order.id,
-    details: `Recorded cash payment on delivery for order #${order.id} ($${Number(order.total).toFixed(2)})`,
+    targetId: id,
+    details: `Reported $${Number(existing.total).toFixed(2)} cash collected on delivery for order #${id} — sent to the cashier`,
   });
 
   revalidatePath('/admin/orders');
+  revalidatePath('/admin/cashier');
+}
+
+// Cashier (or admin): records a COD or walk-in payment. Creates a
+// payment record with a receipt number, marks the order paid and
+// notifies the customer. Returns { error } instead of throwing so the
+// form can show the message. Guards against double-recording (unique
+// order_id) and amount mismatches (a note is required to explain them).
+export async function recordPayment(formData) {
+  let ctx;
+  try {
+    ctx = await requireCashierOrAdmin();
+  } catch {
+    return { error: 'Only the cashier can record payments.' };
+  }
+
+  const admin = createAdminClient();
+  const orderId = Number(formData.get('orderId'));
+  const mode = formData.get('mode')?.toString() || 'cash';
+  const note = formData.get('note')?.toString().trim().slice(0, 300) || null;
+  const amountRaw = Number(formData.get('amount'));
+
+  if (!Number.isInteger(orderId)) return { error: 'Invalid order.' };
+  if (!['cash', 'gcash', 'card', 'other'].includes(mode)) return { error: 'Choose how it was paid.' };
+  if (!Number.isFinite(amountRaw) || amountRaw <= 0) return { error: 'Enter the amount received.' };
+  const amount = Math.round(amountRaw * 100) / 100;
+
+  const { data: order, error: fetchError } = await admin
+    .from('orders')
+    .select('*')
+    .eq('id', orderId)
+    .single();
+  if (fetchError || !order) return { error: 'Order not found.' };
+
+  if (!['cod', 'walkin'].includes(order.payment_method)) {
+    return { error: 'This order is not paid through the cashier.' };
+  }
+  if (order.payment_status === 'paid') return { error: 'This order is already paid.' };
+  if (order.order_status === 'canceled') return { error: 'This order was canceled.' };
+  if (order.order_status === 'pending') return { error: 'The order has not been accepted yet.' };
+
+  const isCod = order.payment_method === 'cod';
+  if (isCod && !order.cod_collected_at && order.order_status !== 'completed') {
+    return { error: 'The delivery staff has not reported collecting the cash yet.' };
+  }
+
+  const expected = Number(order.total);
+  if (Math.abs(amount - expected) > 0.009 && !note) {
+    return { error: 'The amount differs from the order total — add a note explaining why.' };
+  }
+
+  const recordedBy = ctx.staffName || ctx.user.email;
+  const { data: record, error: insertError } = await admin
+    .from('payment_records')
+    .insert({
+      order_id: order.id,
+      method: order.payment_method,
+      payment_mode: isCod ? 'cash' : mode,
+      amount_expected: expected,
+      amount_received: amount,
+      collected_by: order.cod_collected_by || null,
+      recorded_by: recordedBy,
+      recorded_by_email: ctx.user.email,
+      note,
+    })
+    .select('*')
+    .single();
+  if (insertError) {
+    if (insertError.code === '23505') return { error: 'A payment is already recorded for this order.' };
+    console.error('payment_records insert failed:', insertError.message);
+    return { error: 'Could not save the payment record.' };
+  }
+
+  const { data: updated, error: updateError } = await admin
+    .from('orders')
+    .update({ payment_status: 'paid' })
+    .eq('id', order.id)
+    .select('*')
+    .single();
+  if (updateError) {
+    // Keep the books consistent: no record without a paid order.
+    await admin.from('payment_records').delete().eq('id', record.id);
+    return { error: 'Could not update the order — nothing was recorded.' };
+  }
+
+  const receiptNo = formatReceiptNo(record.id);
+  await notifyOrderStatus(admin, updated, {
+    title: 'Payment received 💵',
+    body: `We received your payment of $${amount.toFixed(2)} for order #${order.id}. Receipt ${receiptNo}. Thank you!`,
+  });
+
+  await logActivity({
+    actorEmail: ctx.user.email,
+    actorRole: getAdminRole(ctx.user.email),
+    action: 'payment.record',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Recorded ${isCod ? 'COD' : 'walk-in'} payment $${amount.toFixed(2)} for order #${order.id} (${receiptNo})`,
+  });
+
+  revalidatePath('/admin/cashier');
+  revalidatePath('/admin/orders');
   revalidatePath('/admin/orders/history');
+  revalidatePath('/account');
+  return { ok: true, receiptNo, recordId: record.id };
+}
+
+// Admin only: choose THE cashier. Exactly one at a time — the database
+// swaps the previous cashier out in the same transaction.
+export async function assignCashier(formData) {
+  let user;
+  try {
+    user = await requireAdmin();
+  } catch {
+    return { error: 'Not authorized.' };
+  }
+
+  const id = Number(formData.get('profileId'));
+  if (!Number.isInteger(id)) return { error: 'Choose a staff member to assign.' };
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from('staff_profiles')
+    .select('id, name, approved')
+    .eq('id', id)
+    .maybeSingle();
+  if (!profile || !profile.approved) return { error: 'That staff member is not approved.' };
+
+  const { error } = await admin.rpc('assign_cashier', { p_profile_id: id });
+  if (error) {
+    console.error('assign_cashier failed:', error.message);
+    return { error: 'Could not assign the cashier — make sure the latest database migration was run.' };
+  }
+
+  await logActivity({
+    actorEmail: user.email,
+    actorRole: 'admin',
+    action: 'cashier.assign',
+    targetType: 'staff',
+    targetId: id,
+    details: `Assigned ${profile.name} as the cashier`,
+  });
+
+  revalidatePath('/admin/staff');
+  revalidatePath('/admin/cashier');
+  return { ok: true };
 }
 
 const PRODUCTION_STAGES = [
@@ -792,14 +955,15 @@ export async function setProductionStage(formData) {
     return { error: 'Accept the order first before moving it through production.' };
   }
 
-  // Cash on Delivery: payment is collected on arrival, so it must be
-  // recorded (Mark Payment Received) BEFORE the order can be completed.
+  // COD and walk-in orders are paid at hand-over, and only the cashier
+  // records that — so the cashier must record the payment BEFORE the
+  // order can be completed.
   if (
     stage === 'completed' &&
-    existing.payment_method === 'cod' &&
+    ['cod', 'walkin'].includes(existing.payment_method) &&
     existing.payment_status !== 'paid'
   ) {
-    return { error: 'Record the cash payment first (Mark Payment Received), then complete the order.' };
+    return { error: 'The cashier must record the payment first, then you can complete this order.' };
   }
 
   const makeForm = () => {

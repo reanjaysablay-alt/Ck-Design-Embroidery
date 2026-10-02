@@ -23,7 +23,7 @@ const STAGE_OPTIONS = [
   ['completed', 'Completed'],
 ];
 
-export default function StageSelect({ id, current, action, locked = false, cod = false }) {
+export default function StageSelect({ id, current, action, locked = false, payNote = null }) {
   const saved = current || 'order_received';
   const [value, setValue] = useState(saved);
   const [error, setError] = useState('');
@@ -78,9 +78,8 @@ export default function StageSelect({ id, current, action, locked = false, cod =
       <p className="w-full text-xs text-slate-400">
         {locked
           ? 'Accept the order first, then update its progress here — the customer sees every change.'
-          : cod
-          ? 'Ready for Fulfillment sends the order out for delivery. After delivery press Mark Payment Received, then choose Completed.'
-          : 'Ready for Fulfillment sends the order out for delivery (or marks it ready for pickup). Completed marks it delivered / picked up.'}
+          : payNote ||
+            'Ready for Fulfillment sends the order out for delivery (or marks it ready for pickup). Completed marks it delivered / picked up.'}
       </p>
     </div>
   );
