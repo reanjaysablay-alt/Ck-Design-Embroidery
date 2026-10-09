@@ -145,6 +145,13 @@ export default function StaffIdentifyGate() {
             {loading ? 'Checking…' : 'Continue'}
           </button>
         </form>
+        <button
+          type="button"
+          onClick={handleBackToLogin}
+          className="w-full text-slate-500 text-sm mt-4 hover:text-slate-800 hover:underline"
+        >
+          Back to log in
+        </button>
       </div>
     </div>
   );
