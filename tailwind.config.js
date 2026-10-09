@@ -6,13 +6,11 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // Every "transition-*" utility used across the site (buttons, icons,
-      // links — transition-colors, transition-all, transition-transform,
-      // etc.) shares this one default duration. Bumping it here makes
-      // every clickable element in the app animate over 1 second, without
-      // having to touch each component individually.
+      // No animations: every transition-* utility is instant (the global
+      // rule at the bottom of app/globals.css also switches off all CSS
+      // animations and transitions site-wide, on desktop and mobile).
       transitionDuration: {
-        DEFAULT: '1000ms',
+        DEFAULT: '0ms',
       },
       colors: {
         canvas: 'var(--color-canvas)',   // raw denim / indigo twill

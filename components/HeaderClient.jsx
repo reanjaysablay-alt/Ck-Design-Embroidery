@@ -25,25 +25,15 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const router = useRouter();
 
-  // Opening a dropdown/panel waits 1 second, then fades in (see
-  // .animate-dropdown-fade-in in globals.css). Closing stays instant —
-  // a delay there would make the UI feel stuck when dismissing.
+  // Menus open and close instantly — no delay, no fade.
   function toggleHamburger() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
     setProfileOpen(false);
-    setTimeout(() => setOpen(true), 1000);
+    setOpen((v) => !v);
   }
 
   function toggleProfile() {
-    if (profileOpen) {
-      setProfileOpen(false);
-      return;
-    }
     setOpen(false);
-    setTimeout(() => setProfileOpen(true), 1000);
+    setProfileOpen((v) => !v);
   }
 
   async function handleSignOut() {
@@ -133,7 +123,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
                     aria-hidden="true"
                     tabIndex={-1}
                   />
-                  <div className="absolute right-0 top-full mt-3 w-56 bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden animate-dropdown-fade-in">
+                  <div className="absolute right-0 top-full mt-3 w-56 bg-canvas2 border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden">
                     <div className="px-4 py-3 border-b border-white/10">
                       <p className="text-thread text-sm truncate">{displayName}</p>
                       <p className="text-thread/40 text-xs truncate">{user.email}</p>
@@ -222,7 +212,7 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
       </div>
 
       {open && user && (
-        <nav className="border-t border-white/10 px-5 py-4 flex flex-col gap-4 font-body text-sm uppercase tracking-widest animate-dropdown-fade-in">
+        <nav className="border-t border-white/10 px-5 py-4 flex flex-col gap-4 font-body text-sm uppercase tracking-widest">
           {NAV.map((item) => (
             <Link key={item.href} href={item.href} className="text-thread/80 hover:text-gold" onClick={() => setOpen(false)}>
               {item.label}

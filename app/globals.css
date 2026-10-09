@@ -17,7 +17,7 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
@@ -185,10 +185,7 @@ select:focus-visible {
   background-color: rgba(212, 165, 55, 0.03);
 }
 
-/* Fade-in used by header dropdowns/panels (hamburger nav, profile menu,
-   notifications) — they mount 1 second after the click that opens them
-   (see HeaderClient.jsx / NotificationsBell.jsx), then fade in over 1s
-   via this animation rather than popping in instantly. */
+/* (Header dropdowns/panels now open instantly — no delay, no fade.) */
 @keyframes dropdownFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -198,3 +195,20 @@ select:focus-visible {
 }
 
 
+/* ---------------------------------------------------------------------------
+   NO ANIMATIONS — site-wide, desktop and mobile.
+   Everything responds instantly: no transitions, no keyframe animations,
+   no smooth scrolling. Kept last so it wins over every rule above and
+   every Tailwind transition-* / animate-* class.
+   --------------------------------------------------------------------------- */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* The stitch line starts hidden and relied on its animation to draw in —
+   show it fully drawn instead. */
+.stitch-draw {
+  stroke-dashoffset: 0 !important;
+}
