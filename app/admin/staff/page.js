@@ -5,6 +5,7 @@ import { formatDate, formatDateTime } from '@/lib/formatDate';
 import { approveStaffProfile, denyStaffProfile, assignCashier } from '@/app/admin/actions';
 import CashierAssignForm from '@/components/admin/CashierAssignForm';
 import StaffApprovalButtons from '@/components/admin/StaffApprovalButtons';
+import DeliveryAccountForm from '@/components/admin/DeliveryAccountForm';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 
 export const metadata = { title: 'Staff — Stitchhouse Admin' };
@@ -33,6 +34,8 @@ const ACTION_LABELS = {
   'cashier.assign': 'Assigned the cashier',
   'order.upload_proof': 'Uploaded a design proof',
   'order.set_production_stage': 'Updated a production stage',
+  'delivery.assign': 'Assigned an order to a delivery person',
+  'delivery.create': 'Created a delivery account',
 };
 
 export default async function AdminStaffPage() {
@@ -67,6 +70,27 @@ export default async function AdminStaffPage() {
       nickname: match?.user_metadata?.nickname || null,
     };
   });
+
+  // Delivery accounts: created from this page (app_metadata.role =
+  // 'delivery') or listed in the DELIVERY_EMAILS env var.
+  const deliveryEnvEmails = (process.env.DELIVERY_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const deliveryAccounts = authUsers
+    .filter(
+      (u) =>
+        u.app_metadata?.role === 'delivery' ||
+        (u.email && deliveryEnvEmails.includes(u.email.toLowerCase()))
+    )
+    .map((u) => ({
+      id: u.id,
+      email: u.email,
+      name: u.user_metadata?.nickname || u.user_metadata?.full_name || null,
+      createdAt: u.created_at || null,
+      lastSignInAt: u.last_sign_in_at || null,
+    }));
 
   const { data: activity } = await admin
     .from('admin_activity_log')
@@ -169,6 +193,39 @@ export default async function AdminStaffPage() {
                     Not signed up yet
                   </span>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Delivery Accounts</h2>
+      <p className="text-slate-500 mb-6">
+        Riders who can sign in to the delivery dashboard. Add a new one below — it works right
+        away, no environment variable or redeploy needed.
+      </p>
+      <div className="mb-6">
+        <DeliveryAccountForm />
+      </div>
+      {deliveryAccounts.length === 0 && (
+        <p className="text-slate-500 mb-14">No delivery accounts yet.</p>
+      )}
+      {deliveryAccounts.length > 0 && (
+        <div className="space-y-3 mb-14">
+          {deliveryAccounts.map((d) => (
+            <div
+              key={d.id}
+              className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm"
+            >
+              <div>
+                <div className="text-slate-900 font-medium">{d.name || d.email}</div>
+                {d.name && <div className="text-slate-400 text-xs">{d.email}</div>}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-slate-500">
+                <span>Joined {d.createdAt ? formatDate(d.createdAt) : '—'}</span>
+                <span>
+                  Last sign-in {d.lastSignInAt ? formatDateTime(d.lastSignInAt) : 'never'}
+                </span>
               </div>
             </div>
           ))}

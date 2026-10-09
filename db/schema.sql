@@ -779,3 +779,443 @@ alter table public.payment_records enable row level security;
 -- No policies on purpose: internal financial records, only ever read
 -- and written through server code using the service role key.
 create index if not exists payment_records_created_at_idx on public.payment_records(created_at desc);
+
+
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  nickname text,
+  role text not null default 'customer',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Make sure delivery is an allowed role.
+alter table public.profiles
+drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+add constraint profiles_role_check
+check (
+  role in (
+    'customer',
+    'staff',
+    'admin',
+    'delivery'
+  )
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "Users can view own profile"
+on public.profiles;
+
+create policy "Users can view own profile"
+on public.profiles
+for select
+to authenticated
+using (
+  auth.uid() = id
+);
+
+
+-- ============================================================
+-- DELIVERY PROFILES
+-- ============================================================
+
+-- Delivery setup (clean, idempotent)
+
+
+-- =====================================================================
+-- Delivery setup (clean, idempotent) - paste the WHOLE file into the
+-- Supabase SQL Editor and press Run. Safe to run more than once.
+-- =====================================================================
+
+begin;
+
+-- ---------------------------------------------------------------------
+-- 1. Delivery profiles (one row per rider)
+-- ---------------------------------------------------------------------
+create table if not exists public.delivery_profiles (
+  id            bigint generated always as identity primary key,
+  user_id       uuid not null unique references auth.users(id) on delete cascade,
+  display_name  text not null,
+  phone         text,
+  vehicle_type  text,
+  vehicle_plate text,
+  active        boolean not null default true,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists delivery_profiles_active_idx
+  on public.delivery_profiles(active);
+
+alter table public.delivery_profiles enable row level security;
+
+drop policy if exists "Delivery can view own profile" on public.delivery_profiles;
+create policy "Delivery can view own profile"
+  on public.delivery_profiles
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists delivery_profiles_set_updated_at on public.delivery_profiles;
+create trigger delivery_profiles_set_updated_at
+  before update on public.delivery_profiles
+  for each row execute function public.set_updated_at();
+
+
+-- ---------------------------------------------------------------------
+-- 2. Order columns used by the delivery flow
+-- ---------------------------------------------------------------------
+alter table public.orders
+  add column if not exists delivery_user_id        uuid references auth.users(id) on delete set null,
+  add column if not exists delivery_stage          text,
+  add column if not exists delivery_accepted_at    timestamptz,
+  add column if not exists delivery_picked_up_at   timestamptz,
+  add column if not exists delivery_out_at         timestamptz,
+  add column if not exists delivery_arrived_at     timestamptz,
+  add column if not exists delivered_at            timestamptz,
+  add column if not exists delivery_proof_path     text,
+  add column if not exists delivery_recipient_name text,
+  add column if not exists delivery_notes          text,
+  add column if not exists delivery_failed_reason  text,
+  add column if not exists cod_amount              numeric(12,2),
+  add column if not exists cod_collected_amount    numeric(12,2),
+  add column if not exists cod_change              numeric(12,2),
+  add column if not exists cod_remitted_at         timestamptz,
+  add column if not exists cod_remitted_by         uuid references auth.users(id) on delete set null,
+  add column if not exists shipping_lat            double precision,
+  add column if not exists shipping_lng            double precision;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'orders_delivery_stage_check'
+      and conrelid = 'public.orders'::regclass
+  ) then
+    alter table public.orders
+      add constraint orders_delivery_stage_check
+      check (delivery_stage is null or delivery_stage in
+        ('accepted','picked_up','out_for_delivery','arrived','delivered','failed'));
+  end if;
+end $$;
+
+create index if not exists orders_delivery_user_id_idx
+  on public.orders(delivery_user_id);
+
+create index if not exists orders_available_for_delivery_idx
+  on public.orders(production_stage)
+  where delivery_user_id is null;
+
+
+-- ---------------------------------------------------------------------
+-- 3. Helper: is the caller an active rider?
+--    A rider = auth user whose app_metadata.role is 'delivery' AND who
+--    has an active row in delivery_profiles.
+-- ---------------------------------------------------------------------
+create or replace function public.is_active_rider()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'delivery'
+    and exists (
+      select 1 from public.delivery_profiles dp
+      where dp.user_id = auth.uid() and dp.active
+    );
+$$;
+
+revoke all on function public.is_active_rider() from public, anon;
+grant execute on function public.is_active_rider() to authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 4. Orders RLS - riders can READ only. They change orders exclusively
+--    through the functions in section 5.
+-- ---------------------------------------------------------------------
+drop policy if exists "Delivery users can view assigned orders" on public.orders;
+create policy "Delivery users can view assigned orders"
+  on public.orders
+  for select to authenticated
+  using (delivery_user_id = auth.uid());
+
+drop policy if exists "Delivery users can view available deliveries" on public.orders;
+create policy "Delivery users can view available deliveries"
+  on public.orders
+  for select to authenticated
+  using (
+    public.is_active_rider()
+    and production_stage = 'ready_for_fulfillment'
+    and delivery_user_id is null
+    and payment_method is distinct from 'walkin'
+  );
+
+
+-- ---------------------------------------------------------------------
+-- 5. Rider actions (security definer: they run with elevated rights but
+--    check that the caller is an active rider and, after accepting, that
+--    the order is assigned to THAT rider).
+-- ---------------------------------------------------------------------
+
+-- 5a. Accept an available delivery
+create or replace function public.delivery_accept_order(p_order_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  update public.orders
+     set delivery_user_id     = auth.uid(),
+         delivery_stage       = 'accepted',
+         delivery_accepted_at = now()
+   where id = p_order_id
+     and delivery_user_id is null
+     and production_stage = 'ready_for_fulfillment'
+     and payment_method is distinct from 'walkin';
+
+  if not found then
+    raise exception 'Order is no longer available' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- 5b. accepted -> picked_up
+create or replace function public.delivery_mark_picked_up(p_order_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  update public.orders
+     set delivery_stage         = 'picked_up',
+         delivery_picked_up_at  = now()
+   where id = p_order_id
+     and delivery_user_id = auth.uid()
+     and delivery_stage = 'accepted';
+
+  if not found then
+    raise exception 'Order is not ready to be marked picked up' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- 5c. picked_up -> out_for_delivery
+create or replace function public.delivery_mark_out_for_delivery(p_order_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  update public.orders
+     set delivery_stage  = 'out_for_delivery',
+         delivery_out_at = now()
+   where id = p_order_id
+     and delivery_user_id = auth.uid()
+     and delivery_stage = 'picked_up';
+
+  if not found then
+    raise exception 'Order is not ready to go out for delivery' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- 5d. out_for_delivery -> arrived
+create or replace function public.delivery_mark_arrived(p_order_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  update public.orders
+     set delivery_stage      = 'arrived',
+         delivery_arrived_at = now()
+   where id = p_order_id
+     and delivery_user_id = auth.uid()
+     and delivery_stage = 'out_for_delivery';
+
+  if not found then
+    raise exception 'Order is not out for delivery' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- 5e. out_for_delivery / arrived -> delivered
+--     COD orders must record the cash collected (at least the total);
+--     the change given back is calculated automatically.
+create or replace function public.delivery_mark_delivered(
+  p_order_id       bigint,
+  p_recipient_name text,
+  p_proof_path     text default null,
+  p_notes          text default null,
+  p_cod_collected  numeric default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order public.orders%rowtype;
+  v_is_cod boolean;
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  select * into v_order
+    from public.orders
+   where id = p_order_id
+     and delivery_user_id = auth.uid()
+   for update;
+
+  if not found then
+    raise exception 'Order not found or not assigned to you' using errcode = '42501';
+  end if;
+
+  if v_order.delivery_stage not in ('out_for_delivery', 'arrived') then
+    raise exception 'Order is not out for delivery' using errcode = 'P0001';
+  end if;
+
+  if p_recipient_name is null or length(trim(p_recipient_name)) = 0 then
+    raise exception 'Recipient name is required' using errcode = 'P0001';
+  end if;
+
+  v_is_cod := (v_order.payment_method = 'cod');
+
+  if v_is_cod and (p_cod_collected is null or p_cod_collected < v_order.total) then
+    raise exception 'Cash collected must be at least the order total' using errcode = 'P0001';
+  end if;
+
+  update public.orders
+     set delivery_stage          = 'delivered',
+         delivered_at            = now(),
+         delivery_recipient_name = trim(p_recipient_name),
+         delivery_proof_path     = p_proof_path,
+         delivery_notes          = nullif(trim(coalesce(p_notes, '')), ''),
+         cod_amount              = case when v_is_cod then v_order.total end,
+         cod_collected_amount    = case when v_is_cod then p_cod_collected end,
+         cod_change              = case when v_is_cod then p_cod_collected - v_order.total end
+   where id = p_order_id;
+end;
+$$;
+
+-- 5f. any active stage -> failed (reason required)
+create or replace function public.delivery_mark_failed(
+  p_order_id bigint,
+  p_reason   text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_active_rider() then
+    raise exception 'Not an active delivery rider' using errcode = '42501';
+  end if;
+
+  if p_reason is null or length(trim(p_reason)) < 3 then
+    raise exception 'Please give a reason for the failed delivery' using errcode = 'P0001';
+  end if;
+
+  update public.orders
+     set delivery_stage         = 'failed',
+         delivery_failed_reason = trim(p_reason)
+   where id = p_order_id
+     and delivery_user_id = auth.uid()
+     and delivery_stage in ('accepted', 'picked_up', 'out_for_delivery', 'arrived');
+
+  if not found then
+    raise exception 'Order cannot be marked as failed' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- Only signed-in riders may call these (the checks above enforce the rest).
+revoke all on function public.delivery_accept_order(bigint)                                  from public, anon;
+revoke all on function public.delivery_mark_picked_up(bigint)                                from public, anon;
+revoke all on function public.delivery_mark_out_for_delivery(bigint)                         from public, anon;
+revoke all on function public.delivery_mark_arrived(bigint)                                  from public, anon;
+revoke all on function public.delivery_mark_delivered(bigint, text, text, text, numeric)     from public, anon;
+revoke all on function public.delivery_mark_failed(bigint, text)                             from public, anon;
+
+grant execute on function public.delivery_accept_order(bigint)                               to authenticated;
+grant execute on function public.delivery_mark_picked_up(bigint)                             to authenticated;
+grant execute on function public.delivery_mark_out_for_delivery(bigint)                      to authenticated;
+grant execute on function public.delivery_mark_arrived(bigint)                               to authenticated;
+grant execute on function public.delivery_mark_delivered(bigint, text, text, text, numeric)  to authenticated;
+grant execute on function public.delivery_mark_failed(bigint, text)                          to authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 6. Private storage bucket for proof-of-delivery photos.
+--    No policies on purpose (same as design-uploads): uploads and
+--    signed links go through server code using the service role key.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('delivery-proofs', 'delivery-proofs', false)
+on conflict (id) do nothing;
+
+commit;
+
+
+-- =====================================================================
+-- HOW TO MAKE SOMEONE A RIDER (run separately, AFTER the script above)
+--
+-- 1) Create the user in Supabase: Authentication -> Users -> Add user
+--    (or let them sign up), then use their email below.
+-- 2) Give them the 'delivery' role and a profile:
+--
+--   update auth.users
+--      set raw_app_meta_data =
+--            coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"delivery"}'::jsonb
+--    where email = 'rider@example.com';
+--
+--   insert into public.delivery_profiles (user_id, display_name, phone, vehicle_type, vehicle_plate)
+--   select id, 'Juan Dela Cruz', '09171234567', 'Motorcycle', 'ABC 1234'
+--     from auth.users
+--    where email = 'rider@example.com'
+--   on conflict (user_id) do update
+--     set display_name = excluded.display_name, active = true;
+--
+-- The rider must sign out and back in once so the new role is in their
+-- login token.
+-- =====================================================================
+
+

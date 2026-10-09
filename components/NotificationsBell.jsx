@@ -10,6 +10,11 @@ import { formatDateTime } from '@/lib/formatDate';
 // show up under the Messages bell, never here.
 const isMessageNotification = (n) => n.title?.startsWith('New message from our team');
 
+// Delivery-complete notifications carry the order id, so they can link
+// to the proof-of-delivery photo.
+const isDeliveredNotification = (n) =>
+  Boolean(n.order_id) && n.title === 'Your order was delivered';
+
 // Bell icon in the customer header. Opens a dropdown of the user's
 // recent notifications — notifications only, no account/profile info,
 // that lives in the separate profile menu instead. Subscribes to
@@ -159,6 +164,18 @@ export default function NotificationsBell({ userId }) {
                       {!n.read && <span className="w-2 h-2 rounded-full bg-gold mt-1.5 flex-shrink-0" />}
                     </div>
                     <p className="text-thread/60 text-xs mt-1 leading-relaxed">{n.body}</p>
+
+                    {isDeliveredNotification(n) && (
+                      <a
+                        href={`/api/orders/${n.order_id}/delivery-proof`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block mt-2 text-gold text-xs uppercase tracking-widest hover:underline"
+                      >
+                        View proof of delivery
+                      </a>
+                    )}
+
                     <div className="text-thread/30 text-[10px] font-mono mt-1.5">
                       {formatDateTime(n.created_at)}
                     </div>

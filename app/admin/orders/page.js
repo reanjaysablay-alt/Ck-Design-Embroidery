@@ -1,6 +1,7 @@
 import { redirectIfCashier } from '@/lib/cashier';
 import Link from 'next/link';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 import { getDesignDownloadUrl } from '@/lib/upload';
 import {
   acceptOrder,
@@ -10,6 +11,8 @@ import {
   setProductionStage,
   reportCodCollected,
   uploadDesignProof,
+  getDeliveryUsers,
+  assignDeliveryUser,
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -17,31 +20,68 @@ import {
 } from '@/components/admin/OrderActionButtons';
 import OrderCard, { buildDesignUrls } from '@/components/admin/OrderCard';
 import AutoRefresh from '@/components/admin/AutoRefresh';
+import AssignRider from '@/components/admin/AssignRider';
 
 // Always compute fresh from the database — active orders change
 // constantly and must never show a cached/stale snapshot.
 export const dynamic = 'force-dynamic';
 
+const ACTIVE_STATUSES = ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'];
+const FEE_LOCKED_STATUSES = ['to_receive', 'ready_for_pickup', 'picked_up'];
+
 const TABS = [
-  { key: 'all', label: 'All Orders', statuses: ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'] },
+  { key: 'all', label: 'All Orders', statuses: ACTIVE_STATUSES },
   { key: 'pending', label: 'Pending', statuses: ['pending'] },
   { key: 'production', label: 'In Production', statuses: ['to_ship', 'preparing'] },
   { key: 'ready', label: 'Ready', statuses: ['to_receive', 'ready_for_pickup'] },
 ];
 
+const STAT_ACCENTS = {
+  amber: 'bg-amber-50 text-amber-700',
+  blue: 'bg-blue-50 text-blue-700',
+  indigo: 'bg-indigo-50 text-indigo-700',
+};
+
 function StatCard({ label, value, accent }) {
-  const accents = {
-    amber: 'bg-amber-50 text-amber-700',
-    blue: 'bg-blue-50 text-blue-700',
-    indigo: 'bg-indigo-50 text-indigo-700',
-  };
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 flex-1 min-w-[160px] shadow-sm">
       <p className="text-slate-500 text-sm mb-2">{label}</p>
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-semibold text-slate-900">{value}</span>
-        <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${accents[accent]}`}>Active</span>
+        <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${STAT_ACCENTS[accent]}`}>
+          Active
+        </span>
       </div>
+    </div>
+  );
+}
+
+// Delivery fee status for COD orders. Shown on the card so staff can see
+// at a glance whether the fee is settled before the order goes out.
+function DeliveryFeeStatus({ order, feeLocked }) {
+  if (order.payment_method !== 'cod') return null;
+
+  const fee = Number(order.delivery_fee || 0);
+
+  if (fee > 0) {
+    return (
+      <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+        Delivery fee OK — ${fee.toFixed(2)}
+      </div>
+    );
+  }
+
+  if (feeLocked) {
+    return (
+      <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
+        No delivery fee was added
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+      Delivery fee not set — add it above before this order goes out for delivery
     </div>
   );
 }
@@ -55,20 +95,38 @@ export default async function AdminOrdersPage({ searchParams }) {
   const params = await searchParams;
   const activeTab = TABS.find((t) => t.key === params?.tab) || TABS[0];
 
+  // Only full admins can assign riders (assignDeliveryUser requires admin).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const canAssign = isAdminEmail(user?.email);
+
+  let riders = [];
+  if (canAssign) {
+    try {
+      riders = await getDeliveryUsers();
+    } catch (err) {
+      console.error('getDeliveryUsers:', err.message);
+    }
+  }
+  const riderEmailById = Object.fromEntries(riders.map((r) => [r.id, r.email]));
+
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')
     .select('*')
-    .in('order_status', ['pending', 'to_ship', 'to_receive', 'preparing', 'ready_for_pickup'])
+    .in('order_status', ACTIVE_STATUSES)
     .order('created_at', { ascending: false });
 
   const designUrls = await buildDesignUrls(orders, getDesignDownloadUrl);
 
-  const pendingCount = orders?.filter((o) => o.order_status === 'pending').length || 0;
-  const productionCount = orders?.filter((o) => ['to_ship', 'preparing'].includes(o.order_status)).length || 0;
-  const readyCount = orders?.filter((o) => ['to_receive', 'ready_for_pickup'].includes(o.order_status)).length || 0;
+  const list = orders || [];
+  const pendingCount = list.filter((o) => o.order_status === 'pending').length;
+  const productionCount = list.filter((o) => ['to_ship', 'preparing'].includes(o.order_status)).length;
+  const readyCount = list.filter((o) => ['to_receive', 'ready_for_pickup'].includes(o.order_status)).length;
 
-  const visibleOrders = orders?.filter((o) => activeTab.statuses.includes(o.order_status)) || [];
+  const visibleOrders = list.filter((o) => activeTab.statuses.includes(o.order_status));
 
   return (
     <div>
@@ -109,7 +167,9 @@ export default async function AdminOrdersPage({ searchParams }) {
 
       <div className="space-y-4">
         {visibleOrders.map((order) => {
-          const feeLocked = ['to_receive', 'ready_for_pickup', 'picked_up'].includes(order.order_status);
+          const feeLocked = FEE_LOCKED_STATUSES.includes(order.order_status);
+          const hasRider = Boolean(order.delivery_user_id);
+
           return (
             <OrderCard
               key={order.id}
@@ -124,21 +184,32 @@ export default async function AdminOrdersPage({ searchParams }) {
               proofAction={uploadDesignProof}
               actions={
                 <>
-                  {order.order_status === 'pending' && (
-                    <div className="flex flex-wrap gap-3">
-                      <AcceptButton
+                  <DeliveryFeeStatus order={order} feeLocked={feeLocked} />
+
+                  {hasRider && (
+                    <div className="mt-4 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1 w-fit">
+                      Rider: {riderEmailById[order.delivery_user_id] || 'assigned'}
+                      {order.delivery_stage ? ` — ${order.delivery_stage.replace(/_/g, ' ')}` : ''}
+                    </div>
+                  )}
+
+                  {canAssign &&
+                    !hasRider &&
+                    order.production_stage === 'ready_for_fulfillment' &&
+                    order.payment_method !== 'walkin' && (
+                      <AssignRider
                         id={order.id}
-                        action={acceptOrder}
-                        label={order.payment_method === 'walkin' ? 'Accept Order' : 'Accept Order'}
+                        riders={riders}
+                        action={assignDeliveryUser}
                       />
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
-                  {order.order_status !== 'pending' && (
-                    <div className="flex flex-wrap gap-3">
-                      <CancelButton id={order.id} action={cancelOrder} />
-                    </div>
-                  )}
+                    )}
+
+                  <div className="flex flex-wrap gap-3 mt-4">
+                    {order.order_status === 'pending' && (
+                      <AcceptButton id={order.id} action={acceptOrder} label="Accept Order" />
+                    )}
+                    <CancelButton id={order.id} action={cancelOrder} />
+                  </div>
                 </>
               }
             />

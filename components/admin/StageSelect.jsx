@@ -1,86 +1,177 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 
-// Production-stage dropdown for the admin order card. Lives in its own
-// client component (the onChange handler can't be attached from a
-// Server Component).
-//
-// It is CONTROLLED on purpose: an uncontrolled <select> inside a form
-// gets reset by React after the server action finishes, which made the
-// stage jump back to "Order Received" even though it had saved. Here
-// the chosen stage stays on screen, is re-synced from the database
-// value whenever the page refreshes, and rolls back with a message if
-// the update is rejected.
-const STAGE_OPTIONS = [
-  ['order_received', 'Order Received'],
-  ['proofing_pending', 'Proofing Pending'],
-  ['design_approved', 'Design Approved'],
-  ['in_tailoring', 'In Tailoring'],
-  ['in_embroidery', 'In Embroidery'],
-  ['quality_check', 'Quality Check'],
-  ['ready_for_fulfillment', 'Ready for Fulfillment'],
-  ['completed', 'Completed'],
+const STAGES = [
+  {
+    value: 'order_received',
+    label: 'Order Received',
+    description: 'Order details and measurements are pending verification.',
+  },
+  {
+    value: 'proofing_pending',
+    label: 'Proofing Pending',
+    description: 'The design proof is waiting for customer approval.',
+  },
+  {
+    value: 'design_approved',
+    label: 'Design Approved',
+    description: 'The customer approved the design and production can begin.',
+  },
+  {
+    value: 'in_tailoring',
+    label: 'In Tailoring',
+    description: 'Fabric cutting and garment tailoring are in progress.',
+  },
+  {
+    value: 'in_embroidery',
+    label: 'In Embroidery',
+    description: 'Embroidery and thread stitching are in progress.',
+  },
+  {
+    value: 'quality_check',
+    label: 'Quality Check',
+    description: 'The finished order is being inspected and prepared for handoff.',
+  },
+  {
+    value: 'ready_for_fulfillment',
+    label: 'Ready for Fulfillment',
+    description: 'The order is packed and ready for delivery or customer pickup.',
+  },
 ];
 
-export default function StageSelect({ id, current, action, locked = false, payNote = null }) {
-  const saved = current || 'order_received';
-  const [value, setValue] = useState(saved);
-  const [error, setError] = useState('');
-  const [pending, startTransition] = useTransition();
-
-  // Follow the database value whenever the page re-renders with a new one.
-  useEffect(() => {
-    setValue(saved);
-  }, [saved]);
-
-  function handleChange(e) {
-    const next = e.target.value;
-    const previous = value;
-    setValue(next);
-    setError('');
-
-    const formData = new FormData();
-    formData.set('id', String(id));
-    formData.set('stage', next);
-
-    startTransition(async () => {
-      try {
-        const result = await action(formData);
-        if (result?.error) {
-          setValue(previous);
-          setError(result.error);
-        }
-      } catch (err) {
-        setValue(previous);
-        setError('Could not update the stage — please try again.');
-      }
-    });
-  }
+function SubmitButton({ current }) {
+  const { pending } = useFormStatus();
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100">
-      <label className="text-xs uppercase tracking-widest text-slate-400">Production stage</label>
-      <select
-        value={value}
-        disabled={locked || pending}
-        onChange={handleChange}
-        className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 disabled:opacity-60"
-      >
-        {STAGE_OPTIONS.map(([optValue, label]) => (
-          <option key={optValue} value={optValue}>
-            {label}
-          </option>
-        ))}
-      </select>
-      {pending && <span className="text-xs text-slate-400">Saving…</span>}
-      {error && <span className="text-xs text-red-600">{error}</span>}
-      <p className="w-full text-xs text-slate-400">
-        {locked
-          ? 'Accept the order first, then update its progress here — the customer sees every change.'
-          : payNote ||
-            'Ready for Fulfillment sends the order out for delivery (or marks it ready for pickup). Completed marks it delivered / picked up.'}
-      </p>
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {pending
+        ? 'Saving...'
+        : current === 'ready_for_fulfillment'
+          ? 'Saved'
+          : 'Update Stage'}
+    </button>
+  );
+}
+
+export default function StageSelect({
+  id,
+  current,
+  action,
+  locked = false,
+  payNote,
+}) {
+  const currentStage =
+    STAGES.find((stage) => stage.value === current) || STAGES[0];
+
+  const isReadyForFulfillment = current === 'ready_for_fulfillment';
+
+  // The server action RETURNS { error } instead of throwing. A plain
+  // <form action={action}> throws that result away, so wrap it and keep
+  // the result to show under the dropdown.
+  const [state, formAction] = useActionState(
+    async (_previous, formData) => (await action(formData)) ?? null,
+    null
+  );
+
+  return (
+    <div className="mt-5 border-t border-slate-100 pt-5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Production Stage
+          </div>
+
+          <div className="mt-1 text-sm font-semibold text-slate-900">
+            {currentStage.label}
+          </div>
+
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+            {currentStage.description}
+          </p>
+        </div>
+
+        {isReadyForFulfillment && (
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+            Ready for handoff
+          </span>
+        )}
+      </div>
+
+      <form action={formAction} className="space-y-3">
+        {/* The server action reads id (older actions) and orderId (newer ones). */}
+        <input type="hidden" name="orderId" value={id} />
+        <input type="hidden" name="id" value={id} />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1">
+            <label
+              htmlFor={`production-stage-${id}`}
+              className="mb-1.5 block text-xs font-medium text-slate-600"
+            >
+              Change production stage
+            </label>
+
+            {/* key={current} resets the select when the saved stage changes. */}
+            <select
+              key={current}
+              id={`production-stage-${id}`}
+              name="stage"
+              defaultValue={current || 'order_received'}
+              disabled={locked}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {STAGES.map((stage) => (
+                <option key={stage.value} value={stage.value}>
+                  {stage.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {!locked && <SubmitButton current={current} />}
+        </div>
+
+        {state?.error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+          >
+            <p className="text-xs leading-5 text-red-700">{state.error}</p>
+          </div>
+        )}
+
+        {locked && (
+          <p className="text-xs text-slate-400">
+            Production stage changes are unavailable while this order is
+            pending acceptance.
+          </p>
+        )}
+
+        {isReadyForFulfillment && (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+            <p className="text-xs font-semibold text-emerald-800">
+              Ready for fulfillment
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-emerald-700">
+              This order has completed production and packing. Delivery
+              orders can now be claimed by an available rider.
+            </p>
+          </div>
+        )}
+
+        {payNote && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs leading-5 text-slate-600">{payNote}</p>
+          </div>
+        )}
+      </form>
     </div>
   );
 }

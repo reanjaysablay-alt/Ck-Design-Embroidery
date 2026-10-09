@@ -2,91 +2,106 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { sendMail } from '@/lib/email';
 
-// Loads the order ONLY if it belongs to the signed-in customer (the
-// regular client is subject to row-level security, so someone else's
-// order id simply comes back empty), and only while it's actually
-// waiting on a proof review. Everything below the ownership check then
-// uses the admin client, because customers have no UPDATE permission
-// on orders by design.
-async function loadOrderAwaitingProof(orderId) {
+// Customer design-proof actions used by components/ProofReview.jsx.
+// Both return { error } on a problem (never throw, so the message
+// reaches the page in production) and { ok: true } on success.
+
+async function loadOwnOrder(formData) {
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: 'Please sign in again.' };
 
-  const { data: order } = await supabase
+  if (!user) return { error: 'Please sign in.' };
+
+  const orderId = String(formData.get('orderId') || '').trim();
+
+  if (!orderId) return { error: 'Missing order.' };
+
+  const admin = createAdminClient();
+
+  const { data: order, error } = await admin
     .from('orders')
-    .select('*')
+    .select('id, user_id, order_status, production_stage, proof_path')
     .eq('id', orderId)
-    .single();
+    .maybeSingle();
 
-  if (!order || order.user_id !== user.id) return { error: 'Order not found.' };
+  if (error) return { error: error.message };
+
+  // Only the customer who owns the order can respond to its proof.
+  if (!order || order.user_id !== user.id) {
+    return { error: 'Order not found.' };
+  }
+
+  if (!order.proof_path) {
+    return { error: 'There is no design proof to review yet.' };
+  }
+
   if (['canceled', 'completed', 'picked_up'].includes(order.order_status)) {
     return { error: 'This order is already closed.' };
   }
-  if (order.production_stage !== 'proofing_pending' || !order.proof_path) {
-    return { error: 'There is no design proof waiting for your approval.' };
-  }
-  return { order, user };
+
+  return { admin, order };
 }
 
-async function emailShopOwner(subject, html) {
-  const to = (process.env.ADMIN_EMAILS || '').split(',')[0]?.trim();
-  if (!to) return;
-  await sendMail({ to, subject, html });
-}
-
-// Customer approves the digitized design — production can begin.
 export async function approveDesign(formData) {
-  const orderId = formData.get('orderId');
-  const { order, error } = await loadOrderAwaitingProof(orderId);
-  if (error) return { error };
+  try {
+    const result = await loadOwnOrder(formData);
 
-  const admin = createAdminClient();
-  const { error: updateError } = await admin
-    .from('orders')
-    .update({ production_stage: 'design_approved', proof_feedback: null })
-    .eq('id', order.id);
-  if (updateError) return { error: 'Could not save your approval — please try again.' };
+    if (result.error) return { error: result.error };
 
-  await emailShopOwner(
-    `✅ Design approved — order #${order.id}`,
-    `<p>${order.customer_email || 'The customer'} approved the design proof for order #${order.id}.</p><p>It is now <strong>Design Approved</strong> and ready for production.</p>`
-  );
+    const { admin, order } = result;
 
-  revalidatePath('/account');
-  revalidatePath('/admin/orders');
-  return { ok: true };
+    const { error } = await admin
+      .from('orders')
+      .update({
+        production_stage: 'design_approved',
+        proof_feedback: null,
+      })
+      .eq('id', order.id)
+      .eq('user_id', order.user_id);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/account');
+    revalidatePath('/admin/orders');
+
+    return { ok: true };
+  } catch (err) {
+    return { error: err?.message || 'Could not approve the design.' };
+  }
 }
 
-// Customer asks for changes. The order stays at Proofing Pending and
-// the note is shown to staff on the order card, who upload a new proof.
 export async function requestDesignChanges(formData) {
-  const orderId = formData.get('orderId');
-  const note = formData.get('note')?.toString().trim() || '';
-  if (!note) return { error: 'Please describe what you would like changed.' };
-  if (note.length > 600) return { error: 'Please keep the note under 600 characters.' };
+  try {
+    const note = String(formData.get('note') || '').trim().slice(0, 600);
 
-  const { order, error } = await loadOrderAwaitingProof(orderId);
-  if (error) return { error };
+    if (!note) return { error: 'Tell us what you would like changed.' };
 
-  const admin = createAdminClient();
-  const { error: updateError } = await admin
-    .from('orders')
-    .update({ proof_feedback: note })
-    .eq('id', order.id);
-  if (updateError) return { error: 'Could not send your request — please try again.' };
+    const result = await loadOwnOrder(formData);
 
-  const safeNote = note.replace(/</g, '&lt;');
-  await emailShopOwner(
-    `✏️ Design changes requested — order #${order.id}`,
-    `<p>${order.customer_email || 'The customer'} requested changes to the design proof for order #${order.id}:</p><blockquote>${safeNote}</blockquote><p>Upload a new proof from Admin → Orders.</p>`
-  );
+    if (result.error) return { error: result.error };
 
-  revalidatePath('/account');
-  revalidatePath('/admin/orders');
-  return { ok: true };
+    const { admin, order } = result;
+
+    const { error } = await admin
+      .from('orders')
+      .update({
+        production_stage: 'proofing_pending',
+        proof_feedback: note,
+      })
+      .eq('id', order.id)
+      .eq('user_id', order.user_id);
+
+    if (error) return { error: error.message };
+
+    revalidatePath('/account');
+    revalidatePath('/admin/orders');
+
+    return { ok: true };
+  } catch (err) {
+    return { error: err?.message || 'Could not send your request.' };
+  }
 }

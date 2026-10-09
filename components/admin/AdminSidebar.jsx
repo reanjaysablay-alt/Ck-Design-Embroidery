@@ -129,36 +129,151 @@ function NavItem({ href, icon, label, active, onClick, badge }) {
   );
 }
 
-function NavLinks({ isAdmin, isCashier, pathname, onNavigate, counts }) {
-  // The assigned cashier only ever sees payments.
+function NavLinks({
+  isAdmin,
+  isCashier,
+  pathname,
+  onNavigate,
+  counts,
+}) {
+  // Cashier accounts only see Payments.
   if (isCashier) {
     return (
       <nav className="flex flex-col gap-1 flex-1">
-        <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Cashier</p>
-        <NavItem href="/admin/cashier" icon={ICONS.cashier} label="Payments" active={pathname.startsWith('/admin/cashier')} onClick={onNavigate} badge={counts.cashierQueue} />
+        <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+          Cashier
+        </p>
+
+        <NavItem
+          href="/admin/cashier"
+          icon={ICONS.cashier}
+          label="Payments"
+          active={pathname.startsWith('/admin/cashier')}
+          onClick={onNavigate}
+          badge={counts.cashierQueue}
+        />
       </nav>
     );
   }
 
   return (
     <nav className="flex flex-col gap-1 flex-1">
-      <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Menu</p>
+      <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">
+        Menu
+      </p>
+
       {isAdmin && (
-        <NavItem href="/admin" icon={ICONS.dashboard} label="Dashboard" active={pathname === '/admin'} onClick={onNavigate} />
+        <NavItem
+          href="/admin"
+          icon={ICONS.dashboard}
+          label="Dashboard"
+          active={pathname === '/admin'}
+          onClick={onNavigate}
+        />
       )}
-      <NavItem href="/admin/orders" icon={ICONS.orders} label="Orders" active={pathname === '/admin/orders'} onClick={onNavigate} badge={counts.pendingOrders} />
-      <NavItem href="/admin/orders/history" icon={ICONS.history} label="Order History" active={pathname === '/admin/orders/history'} onClick={onNavigate} />
-      <NavItem href="/admin/inquiries" icon={ICONS.inquiries} label="Inquiries" active={pathname === '/admin/inquiries'} onClick={onNavigate} badge={counts.unreadInquiries} />
-      <NavItem href="/admin/messages" icon={ICONS.messages} label="Messages" active={pathname.startsWith('/admin/messages')} onClick={onNavigate} badge={counts.unreadMessages} />
-      <NavItem href="/admin/ratings" icon={ICONS.ratings} label="Ratings" active={pathname === '/admin/ratings'} onClick={onNavigate} badge={counts.unreadRatings} />
+
+      <NavItem
+        href="/admin/orders"
+        icon={ICONS.orders}
+        label="Orders"
+        active={pathname === '/admin/orders'}
+        onClick={onNavigate}
+        badge={counts.pendingOrders}
+      />
+
+      <NavItem
+        href="/admin/orders/history"
+        icon={ICONS.history}
+        label="Order History"
+        active={pathname === '/admin/orders/history'}
+        onClick={onNavigate}
+      />
+
+      <NavItem
+        href="/admin/inquiries"
+        icon={ICONS.inquiries}
+        label="Inquiries"
+        active={pathname === '/admin/inquiries'}
+        onClick={onNavigate}
+        badge={counts.unreadInquiries}
+      />
+
+      <NavItem
+        href="/admin/messages"
+        icon={ICONS.messages}
+        label="Messages"
+        active={pathname.startsWith('/admin/messages')}
+        onClick={onNavigate}
+        badge={counts.unreadMessages}
+      />
+
+      <NavItem
+        href="/admin/ratings"
+        icon={ICONS.ratings}
+        label="Ratings"
+        active={pathname === '/admin/ratings'}
+        onClick={onNavigate}
+        badge={counts.unreadRatings}
+      />
+
+      {/* Admin-only management */}
       {isAdmin && (
         <>
-          <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">Manage</p>
-          <NavItem href="/admin/products" icon={ICONS.products} label="Products" active={pathname.startsWith('/admin/products')} onClick={onNavigate} />
-          <NavItem href="/admin/cashier" icon={ICONS.cashier} label="Cashier" active={pathname.startsWith('/admin/cashier')} onClick={onNavigate} badge={counts.cashierQueue} />
-          <NavItem href="/admin/staff" icon={ICONS.staff} label="Staff" active={pathname === '/admin/staff'} onClick={onNavigate} badge={counts.pendingStaffCount} />
-          <NavItem href="/admin/settings" icon={ICONS.settings} label="Settings" active={pathname === '/admin/settings'} onClick={onNavigate} />
+          <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">
+            Manage
+          </p>
+
+          <NavItem
+            href="/admin/products"
+            icon={ICONS.products}
+            label="Products"
+            active={pathname.startsWith('/admin/products')}
+            onClick={onNavigate}
+          />
+
+          <NavItem
+            href="/admin/cashier"
+            icon={ICONS.cashier}
+            label="Cashier"
+            active={pathname.startsWith('/admin/cashier')}
+            onClick={onNavigate}
+            badge={counts.cashierQueue}
+          />
+
+          <NavItem
+            href="/admin/staff"
+            icon={ICONS.staff}
+            label="Staff"
+            active={pathname === '/admin/staff'}
+            onClick={onNavigate}
+            badge={counts.pendingStaffCount}
+          />
         </>
+      )}
+
+      {/* Available to Admin and Staff */}
+      <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">
+        Finance
+      </p>
+
+      <NavItem
+        href="/admin/cod-remittance"
+        icon={ICONS.codRemittance}
+        label="COD Remittance"
+        active={pathname.startsWith('/admin/cod-remittance')}
+        onClick={onNavigate}
+        badge={counts.pendingCodRemittances}
+      />
+
+      {/* Settings remains Admin-only */}
+      {isAdmin && (
+        <NavItem
+          href="/admin/settings"
+          icon={ICONS.settings}
+          label="Settings"
+          active={pathname === '/admin/settings'}
+          onClick={onNavigate}
+        />
       )}
     </nav>
   );

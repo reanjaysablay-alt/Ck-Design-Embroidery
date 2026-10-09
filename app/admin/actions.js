@@ -193,7 +193,7 @@ export async function updateSiteSettings(formData) {
     color_thread: formData.get('color_thread')?.toString().trim() || '#F4EFE3',
     color_gold: formData.get('color_gold')?.toString().trim() || '#D4A537',
     color_linen: formData.get('color_linen')?.toString().trim() || '#EFE7D8',
-color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
+    color_linen2: formData.get('color_linen2')?.toString().trim() || '#E4D9C4',
     color_ink: formData.get('color_ink')?.toString().trim() || '#1C1811',
     color_stitchRed: formData.get('color_stitchRed')?.toString().trim() || '#A73B3B',
     title_font: formData.get('title_font')?.toString().trim() || 'fraunces',
@@ -266,11 +266,6 @@ export async function resetStaffPin(formData) {
   revalidatePath('/admin/staff');
 }
 
-// Shared by every order-status transition below: sends the customer's
-// Gmail notification FIRST (so it can never be blocked by anything
-// after it), then writes the in-app notification (wrapped in its own
-// try/catch so a problem there never blocks the email or the status
-// update that already happened).
 // Notifies a customer that their order's status changed: an in-app
 // notification (fast, drives the notification bell — kept synchronous
 // so it's there the instant the page refreshes) and an email (slow —
@@ -278,7 +273,9 @@ export async function resetStaffPin(formData) {
 // staff/admin button click used to feel like it hung. Deferred via
 // after() so the status change and page refresh happen immediately,
 // and the email goes out a moment later in the background instead of
-// making the person wait on it).
+// making the person wait on it). The in-app insert is wrapped in its
+// own try/catch so a problem there never blocks the email or the
+// status update that already happened.
 async function notifyOrderStatus(admin, order, { title, body, emailTemplateFn }) {
   if (order.customer_email && emailTemplateFn) {
     after(async () => {
@@ -844,6 +841,216 @@ export async function recordPayment(formData) {
   revalidatePath('/admin/orders/history');
   revalidatePath('/account');
   return { ok: true, receiptNo, recordId: record.id };
+}
+
+// ---------------------------------------------------------------------------
+// Delivery accounts — create riders, list them, assign orders to them
+// ---------------------------------------------------------------------------
+
+// Emails listed in the DELIVERY_EMAILS env var. Still supported so
+// riders set up the old way keep working, but no longer required.
+function getDeliveryEnvEmails() {
+  return (process.env.DELIVERY_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+// A delivery account is anyone with app_metadata.role = 'delivery'
+// (accounts created from the Staff page) OR listed in DELIVERY_EMAILS.
+function isDeliveryAuthUser(user, envEmails) {
+  if (!user) return false;
+  if (user.app_metadata?.role === 'delivery') return true;
+  return !!user.email && envEmails.includes(user.email.toLowerCase());
+}
+
+// Lists every delivery account (used by the assign-delivery dropdown).
+export async function getDeliveryUsers() {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const envEmails = getDeliveryEnvEmails();
+
+  const results = [];
+
+  // Supabase listUsers is paginated.
+  let page = 1;
+  const perPage = 1000;
+
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) {
+      throw new Error(`Could not load delivery users: ${error.message}`);
+    }
+
+    const users = data?.users || [];
+    for (const u of users) {
+      if (isDeliveryAuthUser(u, envEmails)) {
+        results.push({
+          id: u.id,
+          email: u.email,
+          name: u.user_metadata?.nickname || u.user_metadata?.full_name || null,
+        });
+      }
+    }
+
+    if (users.length < perPage) break;
+    page += 1;
+  }
+
+  return results;
+}
+
+export async function createDeliveryAccount(...args) {
+  // Works with both action(formData) and action(prevState, formData).
+  const formData = args.find((a) => a instanceof FormData);
+  if (!formData) return { error: 'No form data was received.' };
+
+  let actor;
+  try {
+    actor = await requireAdmin();
+  } catch {
+    return { error: 'Not authorized.' };
+  }
+
+  
+  const name = formData.get('name')?.toString().trim();
+  const email = formData.get('email')?.toString().trim().toLowerCase();
+  const password = formData.get('password')?.toString() || '';
+  const phone = formData.get('phone')?.toString().trim() || null;
+
+  if (!name) return { error: 'Enter the rider’s name.' };
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return { error: 'Enter a valid email.' };
+  if (password.length < 8) return { error: 'Password must be at least 8 characters.' };
+
+  const admin = createAdminClient();
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { role: 'delivery' },
+    user_metadata: { nickname: name, full_name: name },
+  });
+  if (error) return { error: error.message };
+
+  const userId = data.user.id;
+
+  const { error: profileError } = await admin.from('delivery_profiles').insert({
+    user_id: userId,
+    display_name: name,
+    phone,
+    active: true,
+  });
+  if (profileError) {
+    // Don't leave a half-created rider behind.
+    await admin.auth.admin.deleteUser(userId);
+    console.error('delivery_profiles insert failed:', profileError.message);
+    return { error: 'Could not create the delivery profile — run the delivery SQL migration first.' };
+  }
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: 'admin',
+    action: 'delivery.create',
+    targetType: 'user',
+    targetId: userId,
+    details: `Created delivery account for ${name} (${email})`,
+  });
+
+  revalidatePath('/admin/staff');
+  revalidatePath('/admin/orders');
+  return { ok: true, email };
+}
+
+// Admin assigns a specific delivery account to an order.
+export async function assignDeliveryUser(formData) {
+  const actor = await requireAdmin();
+
+  const orderId = formData.get('id')?.toString().trim();
+  const deliveryUserId = formData.get('deliveryUserId')?.toString().trim();
+
+  if (!orderId) {
+    return { error: 'Missing order ID.' };
+  }
+
+  if (!deliveryUserId) {
+    return { error: 'Choose a delivery person.' };
+  }
+
+  const admin = createAdminClient();
+
+  // Confirm the selected Auth account really is a delivery account:
+  // either it has the 'delivery' role or it's listed in DELIVERY_EMAILS.
+  const { data: authUser, error: authError } =
+    await admin.auth.admin.getUserById(deliveryUserId);
+
+  if (authError || !authUser?.user) {
+    return { error: 'Delivery account was not found.' };
+  }
+
+  const deliveryEmail = authUser.user.email?.toLowerCase();
+
+  if (!deliveryEmail || !isDeliveryAuthUser(authUser.user, getDeliveryEnvEmails())) {
+    return { error: 'That account is not configured as delivery staff.' };
+  }
+
+  // Only assign orders that are actually in the delivery pipeline.
+  const { data: existing, error: fetchError } = await admin
+    .from('orders')
+    .select('id, order_status, customer_email, delivery_user_id, delivery_stage')
+    .eq('id', orderId)
+    .single();
+
+  if (fetchError || !existing) {
+    return { error: 'Order not found.' };
+  }
+
+  if (!['to_ship', 'to_receive'].includes(existing.order_status)) {
+    return { error: 'This order is not currently in the delivery pipeline.' };
+  }
+
+  // A freshly assigned order starts at 'accepted' so the rider can move
+  // it through picked up -> out for delivery -> delivered. A
+  // reassignment must not reset an order that is already further along.
+  const stageUpdate = existing.delivery_stage
+    ? {}
+    : {
+        delivery_stage: 'accepted',
+        delivery_accepted_at: new Date().toISOString(),
+      };
+
+  const { data: order, error } = await admin
+    .from('orders')
+    .update({
+      delivery_user_id: deliveryUserId,
+      ...stageUpdate,
+    })
+    .eq('id', orderId)
+    .select('*')
+    .single();
+
+  if (error) {
+    return { error: `Could not assign delivery person: ${error.message}` };
+  }
+
+  await logActivity({
+    actorEmail: actor.email,
+    actorRole: 'admin',
+    action: 'delivery.assign',
+    targetType: 'order',
+    targetId: order.id,
+    details: `Assigned order #${order.id} to delivery staff ${deliveryEmail}`,
+  });
+
+  revalidatePath('/admin/orders');
+  revalidatePath('/delivery');
+  revalidatePath('/delivery/orders');
+
+  return {
+    ok: true,
+    deliveryUserId,
+    deliveryEmail,
+  };
 }
 
 // Admin only: choose THE cashier. Exactly one at a time — the database
