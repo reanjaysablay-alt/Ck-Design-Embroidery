@@ -28,6 +28,11 @@ const ICONS = {
       <circle cx="17.5" cy="21" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   ),
+  revenue: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   history: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="9" />
@@ -255,6 +260,14 @@ function NavLinks({
       <p className="px-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-4 mb-1">
         Finance
       </p>
+
+      <NavItem
+        href="/admin/revenue"
+        icon={ICONS.revenue}
+        label="Revenue Report"
+        active={pathname.startsWith('/admin/revenue')}
+        onClick={onNavigate}
+      />
 
       <NavItem
         href="/admin/cod-remittance"
