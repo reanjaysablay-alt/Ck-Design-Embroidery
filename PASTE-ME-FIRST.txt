@@ -8,4 +8,4 @@ Nothing here deletes your other files.
 3. Delete these old files if they exist in your project:
      lib/supabase/delivery-migration.sql, TODO.md, jsconfig.json.bak, build-log.txt
 4. Do NOT upload .env.local to GitHub.
-5. git add . ; git commit ; git push
+6. git add . ; git commit ; git push

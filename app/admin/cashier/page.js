@@ -7,6 +7,7 @@ import { formatReceiptNo, paymentModeLabel, customerLabel } from '@/lib/receipt'
 import { recordPayment } from '@/app/admin/actions';
 import RecordPaymentForm from '@/components/admin/RecordPaymentForm';
 import AutoRefresh from '@/components/admin/AutoRefresh';
+import CodRemittanceQueue from '@/components/admin/CodRemittanceQueue';
 
 export const metadata = { title: 'Cashier — Stitchhouse Admin' };
 export const dynamic = 'force-dynamic';
@@ -68,36 +69,54 @@ export default async function CashierPage({ searchParams }) {
   const admin = createAdminClient();
   const cashier = await getCashierProfile();
 
-  const [{ data: codOrders }, { data: walkinOrders }, { data: records }, { data: todayRecords }] =
-    await Promise.all([
-      admin
-        .from('orders')
-        .select('*')
-        .eq('payment_method', 'cod')
-        .neq('payment_status', 'paid')
-        .in('order_status', ['to_receive', 'completed'])
-        .order('created_at', { ascending: true }),
-      admin
-        .from('orders')
-        .select('*')
-        .eq('payment_method', 'walkin')
-        .neq('payment_status', 'paid')
-        .not('order_status', 'in', '(pending,canceled)')
-        .order('created_at', { ascending: true }),
-      admin.from('payment_records').select('*').order('created_at', { ascending: false }).limit(100),
-      admin
-        .from('payment_records')
-        .select('method, amount_received')
-        .gte('created_at', startOfShopDay().toISOString()),
-    ]);
+  const [
+    { data: codOrders },
+    { data: walkinOrders },
+    { data: records },
+    { data: todayRecords },
+    { count: remitCount },
+  ] = await Promise.all([
+    admin
+      .from('orders')
+      .select('*')
+      .eq('payment_method', 'cod')
+      .neq('payment_status', 'paid')
+      .in('order_status', ['to_receive', 'completed'])
+      .order('created_at', { ascending: true }),
+    admin
+      .from('orders')
+      .select('*')
+      .eq('payment_method', 'walkin')
+      .neq('payment_status', 'paid')
+      .not('order_status', 'in', '(pending,canceled)')
+      .order('created_at', { ascending: true }),
+    admin.from('payment_records').select('*').order('created_at', { ascending: false }).limit(100),
+    admin
+      .from('payment_records')
+      .select('method, amount_received')
+      .gte('created_at', startOfShopDay().toISOString()),
+    // Delivered COD orders waiting for the rider's cash (shown by <CodRemittanceQueue />).
+    admin
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('payment_method', 'cod')
+      .eq('delivery_stage', 'delivered')
+      .neq('payment_status', 'paid')
+      .neq('order_status', 'canceled'),
+  ]);
+
+  // Orders delivered through the rider app are handled by the COD remittance
+  // section below, so they are left out of the older lists to avoid duplicates.
+  const legacyCod = (codOrders || []).filter((o) => o.delivery_stage !== 'delivered');
 
   // COD: "ready to record" = delivery staff reported the cash (or an old
   // delivered order that never was). The rest are still out for delivery.
-  const codReady = (codOrders || [])
+  const codReady = legacyCod
     .filter((o) => o.cod_collected_at || o.order_status === 'completed')
     .sort((a, b) => new Date(a.cod_collected_at || a.created_at) - new Date(b.cod_collected_at || b.created_at));
-  const codWaiting = (codOrders || []).filter((o) => !o.cod_collected_at && o.order_status === 'to_receive');
+  const codWaiting = legacyCod.filter((o) => !o.cod_collected_at && o.order_status === 'to_receive');
   const walkin = walkinOrders || [];
+  const remitWaiting = remitCount || 0;
 
   // Order details for the records table.
   const recordOrderIds = [...new Set((records || []).map((r) => r.order_id))];
@@ -111,7 +130,7 @@ export default async function CashierPage({ searchParams }) {
   const todayWalkin = (todayRecords || []).filter((r) => r.method === 'walkin').reduce((s, r) => s + Number(r.amount_received), 0);
 
   const TABS = [
-    { key: 'cod', label: 'COD payments', count: codReady.length },
+    { key: 'cod', label: 'COD payments', count: codReady.length + remitWaiting },
     { key: 'walkin', label: 'Walk-in payments', count: walkin.length },
     { key: 'records', label: 'Payment records', count: null },
   ];
@@ -133,7 +152,7 @@ export default async function CashierPage({ searchParams }) {
           ["Today's collections", money(todayTotal)],
           ['COD today', money(todayCod)],
           ['Walk-in today', money(todayWalkin)],
-          ['To record now', codReady.length + walkin.length],
+          ['To record now', codReady.length + remitWaiting + walkin.length],
         ].map(([label, value]) => (
           <div key={label} className="bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
             <div className="text-[9px] uppercase tracking-wider text-slate-400 leading-tight">{label}</div>
@@ -169,6 +188,8 @@ export default async function CashierPage({ searchParams }) {
 
       {tab === 'cod' && (
         <div>
+          <CodRemittanceQueue />
+
           <h2 className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">
             Cash handed over — ready to record
           </h2>
