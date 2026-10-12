@@ -49,8 +49,11 @@ export async function assignRiderToOrder(formData) {
     .from('orders')
     .update({
       delivery_user_id: riderUserId,
-      delivery_stage: 'accepted',
-      delivery_accepted_at: new Date().toISOString(),
+      // Assigning must NOT accept the delivery for the rider. The order
+      // shows up in their account as "New assignment" (no stage yet) and
+      // only becomes 'accepted' when the rider taps Accept.
+      delivery_stage: null,
+      delivery_accepted_at: null,
       delivery_failed_reason: null,
     })
     .eq('id', orderId);
@@ -70,5 +73,6 @@ export async function assignRiderToOrder(formData) {
   });
 
   revalidatePath('/admin/orders');
+  revalidatePath('/delivery');
   return { ok: true };
 }
