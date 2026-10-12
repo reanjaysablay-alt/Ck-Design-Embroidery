@@ -20,6 +20,32 @@ import {
 
 const supabase = createClient();
 
+// Shrinks phone photos before upload. Raw camera photos are often 4-8 MB,
+// which is over the server's 4 MB request limit and made "Confirm delivered"
+// fail. A 1280px JPEG is usually 200-400 KB.
+async function compressImage(file, maxSize = 1280, quality = 0.75) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', quality)
+    );
+    if (!blob) return file;
+
+    return new File([blob], 'proof.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 const AFTER_LOGOUT_PATH = '/';
 const THEME_KEY = 'rider-theme';
 
@@ -647,6 +673,7 @@ function ActiveDeliveryCard({
   order,
   onChanged,
   onReleased,
+  onAccepted,
 }) {
   const [isPending, startTransition] =
     useTransition();
@@ -672,8 +699,17 @@ function ActiveDeliveryCard({
     setError('');
 
     startTransition(async () => {
-      const result =
-        await action(formData);
+      let result;
+
+      try {
+        result = await action(formData);
+      } catch (err) {
+        console.error('Delivery action failed:', err);
+        setError(
+          'Could not reach the server. Check your connection and try again.'
+        );
+        return;
+      }
 
       if (!result?.ok) {
         setError(
@@ -725,7 +761,7 @@ function ActiveDeliveryCard({
     run(
       acceptDelivery,
       baseForm(),
-      onChanged
+      onAccepted || onChanged
     );
   }
 
@@ -737,7 +773,7 @@ function ActiveDeliveryCard({
     );
   }
 
-  function handleComplete(event) {
+  async function handleComplete(event) {
     event.preventDefault();
 
     const formData =
@@ -747,6 +783,11 @@ function ActiveDeliveryCard({
       'orderId',
       String(order.id)
     );
+
+    const photo = formData.get('photo');
+    if (photo && photo.size) {
+      formData.set('photo', await compressImage(photo));
+    }
 
     run(
       completeDelivery,
@@ -1760,15 +1801,36 @@ export default function DeliveryDashboard() {
       clearInterval(id);
   }, [load]);
 
-  const activeOrders = useMemo(
+  // Orders the admin assigned to this rider that the rider has not
+  // accepted yet. They wait in "Available deliveries" (with Accept /
+  // Decline) and only move to "My deliveries" once accepted.
+  const assignedOrders = useMemo(
     () =>
       myOrders.filter(
         (order) =>
-          getOrderState(order) !==
-          'delivered'
+          getOrderState(order) ===
+          'assigned'
       ),
     [myOrders]
   );
+
+  const activeOrders = useMemo(
+    () =>
+      myOrders.filter((order) => {
+        const state =
+          getOrderState(order);
+
+        return (
+          state !== 'delivered' &&
+          state !== 'assigned'
+        );
+      }),
+    [myOrders]
+  );
+
+  const availableCount =
+    availableOrders.length +
+    assignedOrders.length;
 
   const deliveredOrders = useMemo(
     () =>
@@ -1926,9 +1988,9 @@ export default function DeliveryDashboard() {
       label: 'Available',
       Icon: PackageIcon,
       badgeText: String(
-        availableOrders.length
+        availableCount
       ),
-      badgeCount: availableOrders.length,
+      badgeCount: availableCount,
     },
     {
       key: 'active',
@@ -2172,7 +2234,7 @@ export default function DeliveryDashboard() {
               <SummaryCard
                 label="Available"
                 value={
-                  availableOrders.length
+                  availableCount
                 }
                 detail="Ready for rider acceptance"
               />
@@ -2219,13 +2281,13 @@ export default function DeliveryDashboard() {
                 <SectionHeader
                   eyebrow="Fulfillment queue"
                   title="Available deliveries"
-                  description="Orders that production has completed and released for delivery acceptance."
+                  description="Orders released for delivery, including ones the admin assigned to you. Tap Accept to take a delivery."
                   count={
-                    availableOrders.length
+                    availableCount
                   }
                 />
 
-                {availableOrders.length ===
+                {availableCount ===
                 0 ? (
                   <EmptyState
                     title="No deliveries available"
@@ -2233,6 +2295,22 @@ export default function DeliveryDashboard() {
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
+                    {assignedOrders.map(
+                      (order) => (
+                        <ActiveDeliveryCard
+                          key={order.id}
+                          order={order}
+                          onChanged={load}
+                          onAccepted={
+                            goToActive
+                          }
+                          onReleased={
+                            goToAvailable
+                          }
+                        />
+                      )
+                    )}
+
                     {availableOrders.map(
                       (order) => (
                         <AvailableCard
