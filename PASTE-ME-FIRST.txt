@@ -1,0 +1,11 @@
+Paste this whole "stitchhouse" folder over C:\stitchhouse (choose "Replace the files").
+Nothing here deletes your other files.
+
+1. Supabase > SQL Editor: run db/cod-remittance-migration.sql
+2. Open app/admin/cashier/page.js (your own file, not included) and add:
+     import CodRemittanceQueue from '@/components/admin/CodRemittanceQueue';
+   and put   <CodRemittanceQueue />   near the top of the page content.
+3. Delete these old files if they exist in your project:
+     lib/supabase/delivery-migration.sql, TODO.md, jsconfig.json.bak, build-log.txt
+4. Do NOT upload .env.local to GitHub.
+5. git add . ; git commit ; git push
