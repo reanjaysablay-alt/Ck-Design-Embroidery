@@ -1,6 +1,6 @@
 # Stitchhouse — Embroidery Marketing Site + Shop
 
-Next.js 14 (App Router) + Tailwind CSS + Supabase (auth & database) + PayPal
+Next.js 16 (App Router) + Tailwind CSS + Supabase (auth & database) + PayPal
 + Gmail-sent order notifications.
 
 ## What this site does
