@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Modal from './Modal';
 import {
   advanceDelivery,
   completeDelivery,
@@ -134,9 +135,7 @@ function CompleteForm({ order, isPending, onSubmit, onCancel }) {
   }
 
   return (
-    <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-semibold text-slate-900">Proof of delivery</p>
-
+    <div className="space-y-4">
       <div>
         <label className="flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white text-center">
           {preview ? (
@@ -259,7 +258,7 @@ function FailForm({ isPending, onSubmit, onCancel, orderId }) {
   }
 
   return (
-    <div className="mt-5 space-y-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+    <div className="space-y-4">
       <p className="text-sm font-semibold text-red-800">Why could it not be delivered?</p>
 
       <select
@@ -471,27 +470,33 @@ export default function ActiveDelivery({ order }) {
 
         {/* Panels */}
         {panel === 'complete' && (
-          <CompleteForm
-            order={order}
-            isPending={isPending}
-            onSubmit={(formData) => run(completeDelivery, formData)}
-            onCancel={() => setPanel(null)}
-          />
+          <Modal title="Complete delivery" onClose={() => setPanel(null)} locked={isPending}>
+            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+            <CompleteForm
+              order={order}
+              isPending={isPending}
+              onSubmit={(formData) => run(completeDelivery, formData)}
+              onCancel={() => setPanel(null)}
+            />
+          </Modal>
         )}
 
         {panel === 'fail' && (
-          <FailForm
-            orderId={order.id}
-            isPending={isPending}
-            onSubmit={(formData) => run(failDelivery, formData)}
-            onCancel={() => setPanel(null)}
-          />
+          <Modal title="Can't deliver" onClose={() => setPanel(null)} locked={isPending}>
+            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+            <FailForm
+              orderId={order.id}
+              isPending={isPending}
+              onSubmit={(formData) => run(failDelivery, formData)}
+              onCancel={() => setPanel(null)}
+            />
+          </Modal>
         )}
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
         {/* Actions */}
-        {!panel && (
+        {(
           <div className="mt-5 space-y-2">
             {stage === 'arrived' && (
               <button
