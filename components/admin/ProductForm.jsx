@@ -52,6 +52,7 @@ export default function ProductForm({ product, action, submitLabel }) {
       // build` ("failed to parse input file"). Importing from a full URL
       // keeps webpack away from those assets entirely.
       const { removeBackground } = await import(
+        /* webpackIgnore: true */
         'https://esm.sh/@imgly/background-removal@1.7.0'
       );
 
