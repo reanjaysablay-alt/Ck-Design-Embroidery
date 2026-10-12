@@ -20,10 +20,13 @@ import { CartProvider } from '@/components/CartContext';
 import { getSiteSettings } from '@/lib/settings';
 import { getFontOption } from '@/lib/fonts';
 
+// Fraunces is a VARIABLE font, so no explicit weight list: one file per
+// style covers every weight (400-700 and beyond). Listing four weights
+// made the font loader download 24 separate files and tripped a bug in
+// Next's Turbopack font loader that failed the production build.
 const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-fraunces',
-  weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   display: 'swap',
 });
