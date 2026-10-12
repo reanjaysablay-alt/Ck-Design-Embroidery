@@ -2,7 +2,7 @@ import { formatDateTime } from '@/lib/formatDate';
 import { CollectCashButton } from './OrderActionButtons';
 import StageSelect from './StageSelect';
 import ProofUpload from './ProofUpload';
-import AssignRider from './AssignRider';
+import RiderAssignPanel from './RiderAssignPanel';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -44,9 +44,9 @@ export function StatusBadge({ status }) {
 // `stageAction`, if passed, adds the embroidery production-stage
 // dropdown (see ProductionStageTracker) for every active order —
 // only wired up on the active orders page.
-// `riders` + `assignAction` (assignDeliveryUser), if passed, show the
+// On the active orders page (stageAction passed), admin and staff see the
 // "Assign rider" panel once a delivery order is Ready for Fulfillment.
-export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, collectAction, proofAction, riders, assignAction }) {
+export default function OrderCard({ order, designUrls, actions, feeAction, deliveryFeeAction, stageAction, collectAction, proofAction }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
@@ -216,19 +216,11 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
         />
       )}
 
-      {riders &&
-        assignAction &&
+      {stageAction &&
         order.production_stage === 'ready_for_fulfillment' &&
         order.payment_method !== 'walkin' &&
         !['completed', 'canceled'].includes(order.order_status) &&
-        order.delivery_stage !== 'delivered' && (
-          <AssignRider
-            id={order.id}
-            riders={riders}
-            action={assignAction}
-            currentId={order.delivery_user_id}
-          />
-        )}
+        order.delivery_stage !== 'delivered' && <RiderAssignPanel order={order} />}
 
       {proofAction &&
         order.order_status !== 'pending' &&
