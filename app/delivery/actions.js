@@ -13,7 +13,7 @@ const READY_STAGE = 'ready_for_fulfillment';
 
 // Value written to payment_status once COD cash is collected.
 // Set to null to leave payment_status untouched (cashier records it).
-const COD_PAID_STATUS = 'paid';
+const COD_PAID_STATUS = null;
 
 function fail(error) {
   return { ok: false, error };
