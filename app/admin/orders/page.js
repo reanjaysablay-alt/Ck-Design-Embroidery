@@ -189,7 +189,11 @@ export default async function AdminOrdersPage({ searchParams }) {
                   {hasRider && (
                     <div className="mt-4 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1 w-fit">
                       Rider: {riderEmailById[order.delivery_user_id] || 'assigned'}
-                      {order.delivery_stage ? ` — ${order.delivery_stage.replace(/_/g, ' ')}` : ''}
+                      {order.delivery_stage
+                        ? ` — ${order.delivery_stage.replace(/_/g, ' ')}`
+                        : order.order_status === 'completed'
+                        ? ''
+                        : ' — waiting for the rider to accept'}
                     </div>
                   )}
 

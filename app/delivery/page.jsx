@@ -11,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import {
   acceptDelivery,
+  declineDelivery,
   releaseDelivery,
   advanceDelivery,
   completeDelivery,
@@ -288,7 +289,8 @@ function getOrderState(order) {
     return 'delivered';
   }
 
-  if (order.delivery_user_id) return 'accepted';
+  // Assigned by the admin but not accepted by the rider yet.
+  if (order.delivery_user_id) return 'assigned';
 
   return 'available';
 }
@@ -319,6 +321,8 @@ function StatusBadge({ state }) {
   const styles = {
     available:
       'border-amber-200 bg-amber-50 text-amber-700',
+    assigned:
+      'border-amber-200 bg-amber-50 text-amber-700',
     accepted:
       'border-blue-200 bg-blue-50 text-blue-700',
     picked_up:
@@ -335,6 +339,7 @@ function StatusBadge({ state }) {
 
   const labels = {
     available: 'Available',
+    assigned: 'New assignment',
     accepted: 'Accepted',
     picked_up: 'Picked up',
     out_for_delivery: 'On the way',
@@ -714,6 +719,24 @@ function ActiveDeliveryCard({
     );
   }
 
+  // The admin assigned this order to the rider; nothing starts until
+  // the rider taps Accept (or turns it down).
+  function handleAcceptAssigned() {
+    run(
+      acceptDelivery,
+      baseForm(),
+      onChanged
+    );
+  }
+
+  function handleDecline() {
+    run(
+      declineDelivery,
+      baseForm(),
+      onChanged
+    );
+  }
+
   function handleComplete(event) {
     event.preventDefault();
 
@@ -757,6 +780,9 @@ function ActiveDeliveryCard({
     'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   const stepText = {
+    assigned:
+      'The admin assigned this delivery to you. Tap "Accept delivery" to start, or decline it if you cannot take it.',
+
     accepted:
       'Pick up the packed order from production, then tap "Picked up".',
 
@@ -794,10 +820,14 @@ function ActiveDeliveryCard({
             </div>
 
             <p className="mt-1 text-xs text-slate-400">
-              Accepted{' '}
+              {state === 'assigned'
+                ? 'Order placed '
+                : 'Accepted '}
               {shortDate(
-                order.delivery_accepted_at ||
-                  order.created_at
+                state === 'assigned'
+                  ? order.created_at
+                  : order.delivery_accepted_at ||
+                      order.created_at
               )}
             </p>
           </div>
@@ -907,6 +937,30 @@ function ActiveDeliveryCard({
           </p>
 
           <div className="mt-4 space-y-3">
+            {state === 'assigned' && (
+              <>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleAcceptAssigned}
+                  className={primaryBtn}
+                >
+                  {isPending
+                    ? 'Saving...'
+                    : 'Accept delivery'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleDecline}
+                  className={`${secondaryBtn} w-full`}
+                >
+                  Decline
+                </button>
+              </>
+            )}
+
             {state === 'accepted' && (
               <>
                 <button
