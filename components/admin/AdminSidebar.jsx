@@ -28,11 +28,33 @@ const ICONS = {
       <circle cx="17.5" cy="21" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   ),
+<<<<<<< HEAD
+=======
+  // NEW: parcel / box with tape
+  packing: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5v-9z" strokeLinejoin="round" />
+      <path d="M3 7.5l9 4.5 9-4.5M12 12v9" strokeLinejoin="round" />
+      <path d="M7.5 5.2l9 4.5" strokeLinecap="round" />
+    </svg>
+  ),
+>>>>>>> a1bbbf0 (Fix)
   revenue: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+<<<<<<< HEAD
+=======
+  // NEW: this icon was referenced below but missing from ICONS
+  codRemittance: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="2.5" y="7" width="19" height="10" rx="2" />
+      <circle cx="12" cy="12" r="2.4" />
+      <path d="M6 10v.01M18 14v.01" strokeLinecap="round" />
+    </svg>
+  ),
+>>>>>>> a1bbbf0 (Fix)
   history: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="9" />
@@ -186,6 +208,19 @@ function NavLinks({
         badge={counts.pendingOrders}
       />
 
+<<<<<<< HEAD
+=======
+      {/* NEW: Packing (Admin and Staff) */}
+      <NavItem
+        href="/admin/packing"
+        icon={ICONS.packing}
+        label="Packing"
+        active={pathname.startsWith('/admin/packing')}
+        onClick={onNavigate}
+        badge={counts.pendingPacking}
+      />
+
+>>>>>>> a1bbbf0 (Fix)
       <NavItem
         href="/admin/orders/history"
         icon={ICONS.history}
@@ -292,7 +327,16 @@ function NavLinks({
   );
 }
 
-const EMPTY_COUNTS = { pendingOrders: 0, unreadInquiries: 0, unreadRatings: 0, unreadMessages: 0, pendingStaffCount: 0, cashierQueue: 0 };
+const EMPTY_COUNTS = {
+  pendingOrders: 0,
+  pendingPacking: 0,
+  unreadInquiries: 0,
+  unreadRatings: 0,
+  unreadMessages: 0,
+  pendingStaffCount: 0,
+  cashierQueue: 0,
+  pendingCodRemittances: 0,
+};
 const COUNTS_POLL_MS = 8000;
 
 export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, initialCounts }) {
@@ -300,9 +344,9 @@ export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, in
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const [counts, setCounts] = useState(initialCounts || EMPTY_COUNTS);
+  const [counts, setCounts] = useState({ ...EMPTY_COUNTS, ...(initialCounts || {}) });
 
-  // Nav badges (Orders/Inquiries/Ratings/Messages/Staff) are static
+  // Nav badges (Orders/Packing/Inquiries/Ratings/Messages/Staff) are static
   // server-rendered props otherwise, which only ever refresh on a full
   // page navigation. Poll instead so a new order, message, or staff
   // approval request shows up on its own — the same reason the
@@ -317,7 +361,7 @@ export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, in
         const res = await fetch('/api/admin/badge-counts');
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setCounts(data);
+        if (!cancelled) setCounts((prev) => ({ ...prev, ...data }));
       } catch {
         // Transient network hiccup — the next poll will retry.
       }

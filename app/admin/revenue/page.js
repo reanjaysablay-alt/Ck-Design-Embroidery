@@ -22,7 +22,11 @@ export const metadata = { title: 'Revenue — Stitchhouse Admin' };
 export const dynamic = 'force-dynamic';
 
 const money = (n) =>
+<<<<<<< HEAD
   `$${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+=======
+  `AED ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+>>>>>>> a1bbbf0 (Fix)
 
 const METHODS = [
   { key: 'paypal', label: 'PayPal', bar: 'bg-indigo-500', dot: 'bg-indigo-500' },
@@ -454,4 +458,8 @@ function PeriodSection({ report, view, cfg }) {
       </div>
     </>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a1bbbf0 (Fix)

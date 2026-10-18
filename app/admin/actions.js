@@ -1009,6 +1009,7 @@ export async function assignDeliveryUser(formData) {
     return { error: 'This order is not currently in the delivery pipeline.' };
   }
 
+<<<<<<< HEAD
   // Assigning does NOT accept the delivery for the rider. The order shows
   // up in their account as "New assignment" (delivery_stage stays empty)
   // and only moves to 'accepted' when THEY tap Accept. If the order was
@@ -1020,6 +1021,17 @@ export async function assignDeliveryUser(formData) {
   const stageUpdate = needsAcceptance
     ? { delivery_stage: null, delivery_accepted_at: null }
     : {};
+=======
+  // A freshly assigned order starts at 'accepted' so the rider can move
+  // it through picked up -> out for delivery -> delivered. A
+  // reassignment must not reset an order that is already further along.
+  const stageUpdate = existing.delivery_stage
+    ? {}
+    : {
+        delivery_stage: 'accepted',
+        delivery_accepted_at: new Date().toISOString(),
+      };
+>>>>>>> a1bbbf0 (Fix)
 
   const { data: order, error } = await admin
     .from('orders')

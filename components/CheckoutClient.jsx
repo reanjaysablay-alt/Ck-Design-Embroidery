@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 
 // UAE PayPal Business accounts are receive-only and settle in USD —
 // there is no AED balance. Keep checkout in USD unless that changes.
+// (This is the currency PayPal charges in. Prices shown on screen are AED.)
 const CURRENCY = 'USD';
 
 // PayPal SDK endpoint. Sandbox credentials MUST use the sandbox SDK and
@@ -306,7 +307,7 @@ export default function CheckoutClient({ user }) {
                 )}
               </div>
               <span className="font-mono text-thread flex-shrink-0">
-                ${(item.price * item.qty).toFixed(2)}
+                AED {(item.price * item.qty).toFixed(2)}
               </span>
             </div>
           ))}
@@ -314,7 +315,7 @@ export default function CheckoutClient({ user }) {
         <div className="flex justify-between pt-4 mt-2 border-t border-white/10">
           <span className="font-display text-lg text-thread">Total</span>
           <span className="font-mono text-lg text-thread">
-            ${subtotal.toFixed(2)} {CURRENCY}
+            AED {subtotal.toFixed(2)}
           </span>
         </div>
       </div>
@@ -334,4 +335,3 @@ function Field({ label, value, onChange }) {
     </div>
   );
 }
-

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
+// Locale is pinned so the server render and the browser always format
+// numbers the same way (avoids hydration mismatches).
 function money(n) {
-  return `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `AED ${Number(n || 0).toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Polls /api/admin/sales/top-products every few seconds so the
@@ -15,11 +17,16 @@ const POLL_MS = 5000;
 
 export default function TopProductsLive({ initialTopProducts }) {
   const [topProducts, setTopProducts] = useState(initialTopProducts);
-  const [updatedAt, setUpdatedAt] = useState(new Date());
+  // Starts as null so the server and client first renders match; the
+  // real time is set after mount (a new Date() here caused the
+  // hydration mismatch).
+  const [updatedAt, setUpdatedAt] = useState(null);
   const [live, setLive] = useState(true);
 
   useEffect(() => {
     let mounted = true;
+
+    setUpdatedAt(new Date());
 
     async function poll() {
       try {
@@ -74,8 +81,9 @@ export default function TopProductsLive({ initialTopProducts }) {
         ))}
       </div>
 
-      <p className="text-slate-300 text-[10px] font-mono mt-5">
-        Updated {updatedAt.toLocaleTimeString()}
+      <p className="text-slate-300 text-[10px] font-mono mt-5 min-h-[1em]">
+        {updatedAt &&
+          `Updated ${updatedAt.toLocaleTimeString('en-AE', { timeZone: 'Asia/Dubai' })}`}
       </p>
     </div>
   );

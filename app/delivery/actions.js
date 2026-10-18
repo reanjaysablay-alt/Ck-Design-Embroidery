@@ -13,7 +13,11 @@ const READY_STAGE = 'ready_for_fulfillment';
 
 // Value written to payment_status once COD cash is collected.
 // Set to null to leave payment_status untouched (cashier records it).
+<<<<<<< HEAD
 const COD_PAID_STATUS = null;
+=======
+const COD_PAID_STATUS = 'paid';
+>>>>>>> a1bbbf0 (Fix)
 
 function fail(error) {
   return { ok: false, error };
@@ -52,6 +56,63 @@ function getOrderId(formData) {
 }
 
 /* ------------------------------------------------------------------ */
+<<<<<<< HEAD
+=======
+/* Read: orders for the rider dashboard                                */
+/* ------------------------------------------------------------------ */
+
+/*
+ * These run on the server with the admin client, so they are not blocked
+ * by Row Level Security. Access is controlled by requireDelivery() instead:
+ * only signed-in delivery accounts can call them.
+ */
+
+// Orders that finished production and are waiting for a rider.
+export async function getAvailableOrders() {
+  const auth = await requireDelivery();
+  if (auth.error) return { ok: false, error: auth.error, orders: [] };
+
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from('orders')
+    .select('*')
+    .eq('production_stage', READY_STAGE)
+    .is('delivery_user_id', null)
+    .neq('payment_method', 'walkin')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getAvailableOrders:', error);
+    return { ok: false, error: error.message, orders: [] };
+  }
+
+  return { ok: true, orders: data || [] };
+}
+
+// Orders assigned to the signed-in rider (active and delivered).
+export async function getMyDeliveries() {
+  const auth = await requireDelivery();
+  if (auth.error) return { ok: false, error: auth.error, orders: [] };
+
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from('orders')
+    .select('*')
+    .eq('delivery_user_id', auth.user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getMyDeliveries:', error);
+    return { ok: false, error: error.message, orders: [] };
+  }
+
+  return { ok: true, orders: data || [] };
+}
+
+/* ------------------------------------------------------------------ */
+>>>>>>> a1bbbf0 (Fix)
 /* Accept / release                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -65,6 +126,7 @@ export async function acceptDelivery(formData) {
 
   const admin = createAdminClient();
 
+<<<<<<< HEAD
   // 1) An order the admin ASSIGNED to this rider is waiting for them to
   //    accept it (delivery_stage is still empty). Accepting starts it.
   //    Nothing else about the order changes.
@@ -91,6 +153,8 @@ export async function acceptDelivery(formData) {
   }
 
   // 2) Otherwise claim an open order from the available list.
+=======
+>>>>>>> a1bbbf0 (Fix)
   // delivery_user_id IS NULL guards against two riders claiming the same order.
   const { data, error } = await admin
     .from('orders')
@@ -120,6 +184,7 @@ export async function acceptDelivery(formData) {
   return { ok: true, orderId: data.id };
 }
 
+<<<<<<< HEAD
 // A rider can turn down an order the admin assigned to them (before
 // accepting it). It goes back to the admin to assign again.
 export async function declineDelivery(formData) {
@@ -152,6 +217,8 @@ export async function declineDelivery(formData) {
   return { ok: true, orderId: data.id };
 }
 
+=======
+>>>>>>> a1bbbf0 (Fix)
 // A rider can only give an order back before picking it up.
 export async function releaseDelivery(formData) {
   const auth = await requireDelivery();

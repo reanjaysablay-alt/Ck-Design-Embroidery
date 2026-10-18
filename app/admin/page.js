@@ -95,7 +95,7 @@ function MethodBar({ label, value, total, color }) {
 }
 
 function money(n) {
-  return `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `AED ${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default async function AdminHome() {

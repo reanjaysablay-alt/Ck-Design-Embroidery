@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+<<<<<<< HEAD
 import Modal from './Modal';
+=======
+>>>>>>> a1bbbf0 (Fix)
 import {
   advanceDelivery,
   completeDelivery,
@@ -135,7 +138,13 @@ function CompleteForm({ order, isPending, onSubmit, onCancel }) {
   }
 
   return (
+<<<<<<< HEAD
     <div className="space-y-4">
+=======
+    <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-sm font-semibold text-slate-900">Proof of delivery</p>
+
+>>>>>>> a1bbbf0 (Fix)
       <div>
         <label className="flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white text-center">
           {preview ? (
@@ -258,7 +267,11 @@ function FailForm({ isPending, onSubmit, onCancel, orderId }) {
   }
 
   return (
+<<<<<<< HEAD
     <div className="space-y-4">
+=======
+    <div className="mt-5 space-y-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+>>>>>>> a1bbbf0 (Fix)
       <p className="text-sm font-semibold text-red-800">Why could it not be delivered?</p>
 
       <select
@@ -470,6 +483,7 @@ export default function ActiveDelivery({ order }) {
 
         {/* Panels */}
         {panel === 'complete' && (
+<<<<<<< HEAD
           <Modal title="Complete delivery" onClose={() => setPanel(null)} locked={isPending}>
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
             <CompleteForm
@@ -491,12 +505,33 @@ export default function ActiveDelivery({ order }) {
               onCancel={() => setPanel(null)}
             />
           </Modal>
+=======
+          <CompleteForm
+            order={order}
+            isPending={isPending}
+            onSubmit={(formData) => run(completeDelivery, formData)}
+            onCancel={() => setPanel(null)}
+          />
+        )}
+
+        {panel === 'fail' && (
+          <FailForm
+            orderId={order.id}
+            isPending={isPending}
+            onSubmit={(formData) => run(failDelivery, formData)}
+            onCancel={() => setPanel(null)}
+          />
+>>>>>>> a1bbbf0 (Fix)
         )}
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
         {/* Actions */}
+<<<<<<< HEAD
         {(
+=======
+        {!panel && (
+>>>>>>> a1bbbf0 (Fix)
           <div className="mt-5 space-y-2">
             {stage === 'arrived' && (
               <button

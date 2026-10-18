@@ -12,7 +12,10 @@ import {
   reportCodCollected,
   uploadDesignProof,
   getDeliveryUsers,
+<<<<<<< HEAD
   assignDeliveryUser,
+=======
+>>>>>>> a1bbbf0 (Fix)
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -42,6 +45,28 @@ const STAT_ACCENTS = {
   indigo: 'bg-indigo-50 text-indigo-700',
 };
 
+<<<<<<< HEAD
+=======
+// Currency + locale for amounts on this page (UAE dirhams).
+// Same format as the rider dashboard: "AED 1,250.00".
+// Tip: move this into a shared file (e.g. '@/lib/money') and import it
+// everywhere instead of keeping copies.
+const CURRENCY_CODE = 'AED';
+const LOCALE = 'en-AE';
+
+function money(value) {
+  const amount = Number(value || 0);
+
+  return (
+    `${CURRENCY_CODE} ` +
+    amount.toLocaleString(LOCALE, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
+>>>>>>> a1bbbf0 (Fix)
 function StatCard({ label, value, accent }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 flex-1 min-w-[160px] shadow-sm">
@@ -66,7 +91,11 @@ function DeliveryFeeStatus({ order, feeLocked }) {
   if (fee > 0) {
     return (
       <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+<<<<<<< HEAD
         Delivery fee OK — ${fee.toFixed(2)}
+=======
+        Delivery fee OK — {money(fee)}
+>>>>>>> a1bbbf0 (Fix)
       </div>
     );
   }
@@ -86,6 +115,46 @@ function DeliveryFeeStatus({ order, feeLocked }) {
   );
 }
 
+<<<<<<< HEAD
+=======
+// An order is ready for delivery as soon as production marks it
+// "ready_for_fulfillment" (and it isn't walk-in or already assigned).
+// From then on it can be handed to a rider — printing the shipping label
+// is optional and does not block anything.
+function needsPacking(order) {
+  return (
+    order.production_stage === 'ready_for_fulfillment' &&
+    order.payment_method !== 'walkin' &&
+    !order.delivery_user_id
+  );
+}
+
+function PackingStatus({ order }) {
+  if (!needsPacking(order)) return null;
+
+  const printed = Boolean(order.label_printed_at);
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <Link
+        href="/admin/packing"
+        className="inline-flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 w-fit"
+      >
+        Ready for delivery — can be handed to a rider now →
+      </Link>
+
+      {/* Printing the label is optional and never blocks delivery. */}
+      <Link
+        href={`/admin/packing/${order.id}/label`}
+        className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
+      >
+        {printed ? 'Label printed · Reprint' : 'Print label (optional)'}
+      </Link>
+    </div>
+  );
+}
+
+>>>>>>> a1bbbf0 (Fix)
 // Only active, in-progress orders live here. The moment an order is
 // marked Completed, Picked Up, or Canceled it drops off this list
 // automatically (it's simply no longer in this query) and shows up on
@@ -95,7 +164,11 @@ export default async function AdminOrdersPage({ searchParams }) {
   const params = await searchParams;
   const activeTab = TABS.find((t) => t.key === params?.tab) || TABS[0];
 
+<<<<<<< HEAD
   // Only full admins can assign riders (assignDeliveryUser requires admin).
+=======
+  // Only full admins can see the rider list (assignDeliveryUser requires admin).
+>>>>>>> a1bbbf0 (Fix)
   const supabase = await createClient();
   const {
     data: { user },
@@ -126,6 +199,12 @@ export default async function AdminOrdersPage({ searchParams }) {
   const productionCount = list.filter((o) => ['to_ship', 'preparing'].includes(o.order_status)).length;
   const readyCount = list.filter((o) => ['to_receive', 'ready_for_pickup'].includes(o.order_status)).length;
 
+<<<<<<< HEAD
+=======
+  // Orders that finished production and are waiting to be handed to a rider.
+  const toPackCount = list.filter((o) => needsPacking(o)).length;
+
+>>>>>>> a1bbbf0 (Fix)
   const visibleOrders = list.filter((o) => activeTab.statuses.includes(o.order_status));
 
   return (
@@ -133,12 +212,20 @@ export default async function AdminOrdersPage({ searchParams }) {
       <AutoRefresh />
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-        <Link
-          href="/admin/orders/history"
-          className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
-        >
-          View History →
-        </Link>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/admin/packing"
+            className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
+          >
+            Ready for rider{toPackCount > 0 ? ` (${toPackCount})` : ''} →
+          </Link>
+          <Link
+            href="/admin/orders/history"
+            className="text-xs uppercase tracking-widest text-slate-500 hover:text-indigo-600"
+          >
+            View History →
+          </Link>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -189,6 +276,7 @@ export default async function AdminOrdersPage({ searchParams }) {
                   {hasRider && (
                     <div className="mt-4 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1 w-fit">
                       Rider: {riderEmailById[order.delivery_user_id] || 'assigned'}
+<<<<<<< HEAD
                       {order.delivery_stage
                         ? ` — ${order.delivery_stage.replace(/_/g, ' ')}`
                         : order.order_status === 'completed'
@@ -207,6 +295,13 @@ export default async function AdminOrdersPage({ searchParams }) {
                         action={assignDeliveryUser}
                       />
                     )}
+=======
+                      {order.delivery_stage ? ` — ${order.delivery_stage.replace(/_/g, ' ')}` : ''}
+                    </div>
+                  )}
+
+                  <PackingStatus order={order} />
+>>>>>>> a1bbbf0 (Fix)
 
                   <div className="flex flex-wrap gap-3 mt-4">
                     {order.order_status === 'pending' && (

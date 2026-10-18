@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
+<<<<<<< HEAD
 // Admin picks which rider gets a ready order — same look and flow as the
 // cashier assignment: choose one rider from a card list, confirm, assign.
 // `action` is assignDeliveryUser. `currentId` (optional) is the rider the
@@ -52,19 +53,56 @@ export default function AssignRider({ id: idProp, orderId, riders: ridersProp, a
       } catch {
         setError('Something went wrong — please try again.');
       }
+=======
+// Admin picks which rider gets a ready order. `action` is assignDeliveryUser.
+export default function AssignRider({ id, riders, action }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [riderId, setRiderId] = useState('');
+  const [error, setError] = useState('');
+
+  function handleAssign() {
+    if (!riderId) {
+      setError('Choose a rider first.');
+      return;
+    }
+
+    setError('');
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set('id', String(id));
+      formData.set('deliveryUserId', riderId);
+
+      const result = await action(formData);
+
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+
+      router.refresh();
+>>>>>>> a1bbbf0 (Fix)
     });
   }
 
   if (!riders.length) {
     return (
+<<<<<<< HEAD
       <p className="mt-4 text-sm text-slate-500">
         No rider accounts yet. Add a rider under Delivery Riders, then come back to assign this
         order. Riders can also accept it themselves from the delivery dashboard.
+=======
+      <p className="mt-4 text-xs text-slate-500">
+        No rider accounts yet. Riders can also accept this order themselves
+        from the delivery dashboard.
+>>>>>>> a1bbbf0 (Fix)
       </p>
     );
   }
 
   return (
+<<<<<<< HEAD
     <form onSubmit={handleSubmit} className="mt-4">
       <p className="font-mono text-xs uppercase tracking-widest text-slate-400 mb-2">
         Assign rider
@@ -116,3 +154,36 @@ export default function AssignRider({ id: idProp, orderId, riders: ridersProp, a
     </form>
   );
 }
+=======
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <span className="font-mono text-xs uppercase tracking-widest text-slate-400">
+        Assign rider
+      </span>
+
+      <select
+        value={riderId}
+        onChange={(e) => setRiderId(e.target.value)}
+        className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800"
+      >
+        <option value="">Choose a rider…</option>
+        {riders.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.email}
+          </option>
+        ))}
+      </select>
+
+      <button
+        type="button"
+        onClick={handleAssign}
+        disabled={isPending}
+        className="text-[10px] uppercase tracking-widest text-indigo-600 hover:text-indigo-800 border border-indigo-200 bg-indigo-50 rounded-full px-3 py-1.5 disabled:opacity-50"
+      >
+        {isPending ? 'Assigning...' : 'Assign'}
+      </button>
+
+      {error && <p className="w-full text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+>>>>>>> a1bbbf0 (Fix)

@@ -8,18 +8,31 @@ import {
   useState,
   useTransition,
 } from 'react';
+<<<<<<< HEAD
 import { createClient } from '@/lib/supabase/client';
 import {
   acceptDelivery,
   declineDelivery,
+=======
+import QRCode from 'qrcode';
+import { createClient } from '@/lib/supabase/client';
+import {
+  acceptDelivery,
+>>>>>>> a1bbbf0 (Fix)
   releaseDelivery,
   advanceDelivery,
   completeDelivery,
   failDelivery,
+<<<<<<< HEAD
+=======
+  getAvailableOrders,
+  getMyDeliveries,
+>>>>>>> a1bbbf0 (Fix)
 } from '@/app/delivery/actions';
 
 const supabase = createClient();
 
+<<<<<<< HEAD
 // Shrinks phone photos before upload. Raw camera photos are often 4-8 MB,
 // which is over the server's 4 MB request limit and made "Confirm delivered"
 // fail. A 1280px JPEG is usually 200-400 KB.
@@ -49,6 +62,15 @@ async function compressImage(file, maxSize = 1280, quality = 0.75) {
 const AFTER_LOGOUT_PATH = '/';
 const THEME_KEY = 'rider-theme';
 
+=======
+const AFTER_LOGOUT_PATH = '/';
+const THEME_KEY = 'rider-theme';
+
+// Currency + locale used for every amount and date on this screen.
+const CURRENCY_CODE = 'AED';
+const LOCALE = 'en-AE';
+
+>>>>>>> a1bbbf0 (Fix)
 /*
  * Dark mode is scoped to the dashboard (.rider-dark) by overriding the
  * Tailwind utility classes used below. It works no matter how the rest
@@ -106,12 +128,21 @@ const DARK_CSS = `
 .rider-dark .text-red-700, .rider-dark .text-red-800 { color: #fca5a5; }
 `;
 
+<<<<<<< HEAD
+=======
+// Formats an amount as UAE dirhams, e.g. "AED 1,250.00".
+>>>>>>> a1bbbf0 (Fix)
 function money(value) {
   const amount = Number(value || 0);
 
   return (
+<<<<<<< HEAD
     '$' +
     amount.toLocaleString('en-PH', {
+=======
+    `${CURRENCY_CODE} ` +
+    amount.toLocaleString(LOCALE, {
+>>>>>>> a1bbbf0 (Fix)
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -120,6 +151,7 @@ function money(value) {
 
 function dateTime(value) {
   if (!value) return '—';
+<<<<<<< HEAD
 
   const date = new Date(value);
 
@@ -128,6 +160,12 @@ function dateTime(value) {
   }
 
   return new Intl.DateTimeFormat('en-PH', {
+=======
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return new Intl.DateTimeFormat(LOCALE, {
+>>>>>>> a1bbbf0 (Fix)
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
@@ -135,6 +173,7 @@ function dateTime(value) {
 
 function shortDate(value) {
   if (!value) return '—';
+<<<<<<< HEAD
 
   const date = new Date(value);
 
@@ -143,6 +182,12 @@ function shortDate(value) {
   }
 
   return new Intl.DateTimeFormat('en-PH', {
+=======
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return new Intl.DateTimeFormat(LOCALE, {
+>>>>>>> a1bbbf0 (Fix)
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -162,6 +207,7 @@ function pad(value) {
 // Returns "YYYY-MM-DD" in the rider's local time zone.
 function toDateKey(value) {
   if (!value) return null;
+<<<<<<< HEAD
 
   const date =
     value instanceof Date
@@ -182,11 +228,25 @@ function keyToDate(key) {
     .split('-')
     .map(Number);
 
+=======
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function keyToDate(key) {
+  const [year, month, day] = key.split('-').map(Number);
+>>>>>>> a1bbbf0 (Fix)
   return new Date(year, month - 1, day);
 }
 
 function longDate(key) {
+<<<<<<< HEAD
   return new Intl.DateTimeFormat('en-PH', {
+=======
+  return new Intl.DateTimeFormat(LOCALE, {
+>>>>>>> a1bbbf0 (Fix)
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -195,7 +255,11 @@ function longDate(key) {
 }
 
 function monthLabel(year, month) {
+<<<<<<< HEAD
   return new Intl.DateTimeFormat('en-PH', {
+=======
+  return new Intl.DateTimeFormat(LOCALE, {
+>>>>>>> a1bbbf0 (Fix)
     month: 'long',
     year: 'numeric',
   }).format(new Date(year, month, 1));
@@ -226,8 +290,12 @@ function normalizeAddress(address) {
         city: '',
         region: '',
         country: '',
+<<<<<<< HEAD
         full:
           address.trim() || 'No delivery address provided',
+=======
+        full: address.trim() || 'No delivery address provided',
+>>>>>>> a1bbbf0 (Fix)
       };
     }
   }
@@ -238,6 +306,7 @@ function normalizeAddress(address) {
   const city = String(address.city || '').trim();
 
   const region = String(
+<<<<<<< HEAD
     address.emirate ||
       address.state ||
       address.province ||
@@ -253,6 +322,13 @@ function normalizeAddress(address) {
     region,
     country,
   ].filter(Boolean);
+=======
+    address.emirate || address.state || address.province || address.region || ''
+  ).trim();
+
+  const country = String(address.country || '').trim();
+  const locationParts = [line1, city, region, country].filter(Boolean);
+>>>>>>> a1bbbf0 (Fix)
 
   return {
     name,
@@ -283,9 +359,13 @@ function getNavigationUrl(address) {
 
   if (!query) return null;
 
+<<<<<<< HEAD
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     query
   )}`;
+=======
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+>>>>>>> a1bbbf0 (Fix)
 }
 
 function getOrderState(order) {
@@ -293,6 +373,7 @@ function getOrderState(order) {
 
   const stage = order.delivery_stage;
 
+<<<<<<< HEAD
   if (
     stage === 'delivered' ||
     order.delivered_at
@@ -317,11 +398,26 @@ function getOrderState(order) {
 
   // Assigned by the admin but not accepted by the rider yet.
   if (order.delivery_user_id) return 'assigned';
+=======
+  if (stage === 'delivered' || order.delivered_at) return 'delivered';
+  if (stage === 'failed') return 'failed';
+  if (stage === 'arrived') return 'arrived';
+  if (stage === 'out_for_delivery') return 'out_for_delivery';
+  if (stage === 'picked_up') return 'picked_up';
+  if (stage === 'accepted') return 'accepted';
+
+  if (order.order_status === 'completed' || order.order_status === 'delivered') {
+    return 'delivered';
+  }
+
+  if (order.delivery_user_id) return 'accepted';
+>>>>>>> a1bbbf0 (Fix)
 
   return 'available';
 }
 
 function isCod(order) {
+<<<<<<< HEAD
   return (
     String(order?.payment_method || '').toLowerCase() ===
     'cod'
@@ -333,6 +429,13 @@ function getCodAmount(order) {
     order?.cod_amount !== null &&
     order?.cod_amount !== undefined
   ) {
+=======
+  return String(order?.payment_method || '').toLowerCase() === 'cod';
+}
+
+function getCodAmount(order) {
+  if (order?.cod_amount !== null && order?.cod_amount !== undefined) {
+>>>>>>> a1bbbf0 (Fix)
     return Number(order.cod_amount || 0);
   }
 
@@ -345,6 +448,7 @@ function isCodAlreadyRemitted(order) {
 
 function StatusBadge({ state }) {
   const styles = {
+<<<<<<< HEAD
     available:
       'border-amber-200 bg-amber-50 text-amber-700',
     assigned:
@@ -361,11 +465,23 @@ function StatusBadge({ state }) {
       'border-red-200 bg-red-50 text-red-700',
     delivered:
       'border-emerald-200 bg-emerald-50 text-emerald-700',
+=======
+    available: 'border-amber-200 bg-amber-50 text-amber-700',
+    accepted: 'border-blue-200 bg-blue-50 text-blue-700',
+    picked_up: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    out_for_delivery: 'border-violet-200 bg-violet-50 text-violet-700',
+    arrived: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+    failed: 'border-red-200 bg-red-50 text-red-700',
+    delivered: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+>>>>>>> a1bbbf0 (Fix)
   };
 
   const labels = {
     available: 'Available',
+<<<<<<< HEAD
     assigned: 'New assignment',
+=======
+>>>>>>> a1bbbf0 (Fix)
     accepted: 'Accepted',
     picked_up: 'Picked up',
     out_for_delivery: 'On the way',
@@ -385,12 +501,16 @@ function StatusBadge({ state }) {
   );
 }
 
+<<<<<<< HEAD
 function SectionHeader({
   eyebrow,
   title,
   description,
   count,
 }) {
+=======
+function SectionHeader({ eyebrow, title, description, count }) {
+>>>>>>> a1bbbf0 (Fix)
   return (
     <div className="mb-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -420,19 +540,27 @@ function SectionHeader({
   );
 }
 
+<<<<<<< HEAD
 function EmptyState({
   title,
   description,
 }) {
+=======
+function EmptyState({ title, description }) {
+>>>>>>> a1bbbf0 (Fix)
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center sm:px-6 sm:py-12">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
         <div className="h-2.5 w-2.5 rounded-full bg-slate-300" />
       </div>
 
+<<<<<<< HEAD
       <h3 className="mt-4 text-sm font-semibold text-slate-900">
         {title}
       </h3>
+=======
+      <h3 className="mt-4 text-sm font-semibold text-slate-900">{title}</h3>
+>>>>>>> a1bbbf0 (Fix)
 
       <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">
         {description}
@@ -453,6 +581,7 @@ function AddressBlock({ address }) {
       )}
 
       {normalized.phone && (
+<<<<<<< HEAD
         <p className="mt-0.5 text-sm text-slate-500">
           {normalized.phone}
         </p>
@@ -461,6 +590,12 @@ function AddressBlock({ address }) {
       <p className="mt-1 text-sm leading-5 text-slate-600">
         {normalized.full}
       </p>
+=======
+        <p className="mt-0.5 text-sm text-slate-500">{normalized.phone}</p>
+      )}
+
+      <p className="mt-1 text-sm leading-5 text-slate-600">{normalized.full}</p>
+>>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }
@@ -468,6 +603,7 @@ function AddressBlock({ address }) {
 const mapsLinkClass =
   'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto';
 
+<<<<<<< HEAD
 function AvailableCard({
   order,
   onAccepted,
@@ -481,6 +617,13 @@ function AvailableCard({
     order.shipping_address
   );
 
+=======
+function AvailableCard({ order, onAccepted }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState('');
+
+  const navigationUrl = getNavigationUrl(order.shipping_address);
+>>>>>>> a1bbbf0 (Fix)
   const codAmount = getCodAmount(order);
 
   function handleAccept() {
@@ -488,6 +631,7 @@ function AvailableCard({
 
     startTransition(async () => {
       const formData = new FormData();
+<<<<<<< HEAD
 
       formData.set(
         'orderId',
@@ -502,6 +646,14 @@ function AvailableCard({
           result?.error ||
             'Unable to accept this delivery.'
         );
+=======
+      formData.set('orderId', String(order.id));
+
+      const result = await acceptDelivery(formData);
+
+      if (!result?.ok) {
+        setError(result?.error || 'Unable to accept this delivery.');
+>>>>>>> a1bbbf0 (Fix)
         return;
       }
 
@@ -522,7 +674,10 @@ function AvailableCard({
               <h3 className="text-lg font-semibold tracking-tight text-slate-950">
                 Order #{order.id}
               </h3>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
               <StatusBadge state="available" />
             </div>
 
@@ -532,10 +687,14 @@ function AvailableCard({
           </div>
 
           <div className="text-left sm:text-right">
+<<<<<<< HEAD
             <div className="text-xs font-medium text-slate-400">
               Order total
             </div>
 
+=======
+            <div className="text-xs font-medium text-slate-400">Order total</div>
+>>>>>>> a1bbbf0 (Fix)
             <div className="mt-1 text-lg font-semibold text-slate-950">
               {money(order.total)}
             </div>
@@ -551,8 +710,12 @@ function AvailableCard({
 
           <div className="mt-3">
             <p className="break-all text-sm font-medium text-slate-800">
+<<<<<<< HEAD
               {order.customer_email ||
                 'No email provided'}
+=======
+              {order.customer_email || 'No email provided'}
+>>>>>>> a1bbbf0 (Fix)
             </p>
           </div>
 
@@ -562,11 +725,15 @@ function AvailableCard({
             </div>
 
             <div className="mt-3">
+<<<<<<< HEAD
               <AddressBlock
                 address={
                   order.shipping_address
                 }
               />
+=======
+              <AddressBlock address={order.shipping_address} />
+>>>>>>> a1bbbf0 (Fix)
             </div>
           </div>
 
@@ -589,20 +756,28 @@ function AvailableCard({
 
           <div className="mt-3 space-y-4">
             <div className="flex items-center justify-between gap-4">
+<<<<<<< HEAD
               <span className="text-sm text-slate-500">
                 Payment
               </span>
 
+=======
+              <span className="text-sm text-slate-500">Payment</span>
+>>>>>>> a1bbbf0 (Fix)
               <span className="text-sm font-semibold uppercase text-slate-800">
                 {order.payment_method || '—'}
               </span>
             </div>
 
             <div className="flex items-center justify-between gap-4">
+<<<<<<< HEAD
               <span className="text-sm text-slate-500">
                 Payment status
               </span>
 
+=======
+              <span className="text-sm text-slate-500">Payment status</span>
+>>>>>>> a1bbbf0 (Fix)
               <span className="text-sm font-semibold text-slate-800">
                 {order.payment_status || '—'}
               </span>
@@ -613,7 +788,10 @@ function AvailableCard({
                 <div className="text-xs font-medium text-amber-700">
                   Cash to collect
                 </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                 <div className="mt-1 text-base font-semibold text-amber-900">
                   {money(codAmount)}
                 </div>
@@ -621,10 +799,14 @@ function AvailableCard({
             )}
 
             <div className="flex items-center justify-between gap-4">
+<<<<<<< HEAD
               <span className="text-sm text-slate-500">
                 Production
               </span>
 
+=======
+              <span className="text-sm text-slate-500">Production</span>
+>>>>>>> a1bbbf0 (Fix)
               <span className="text-right text-sm font-semibold text-emerald-700">
                 Ready for fulfillment
               </span>
@@ -643,9 +825,13 @@ function AvailableCard({
             disabled={isPending}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
+<<<<<<< HEAD
             {isPending
               ? 'Accepting...'
               : 'Accept Delivery'}
+=======
+            {isPending ? 'Accepting...' : 'Accept Delivery'}
+>>>>>>> a1bbbf0 (Fix)
           </button>
 
           <p className="mt-2 text-center text-xs leading-5 text-slate-400">
@@ -669,6 +855,7 @@ const FAIL_REASONS = [
 const inputClass =
   'w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-800 outline-none focus:border-slate-400 sm:text-sm';
 
+<<<<<<< HEAD
 function ActiveDeliveryCard({
   order,
   onChanged,
@@ -678,10 +865,15 @@ function ActiveDeliveryCard({
   const [isPending, startTransition] =
     useTransition();
 
+=======
+function ActiveDeliveryCard({ order, onChanged, onReleased }) {
+  const [isPending, startTransition] = useTransition();
+>>>>>>> a1bbbf0 (Fix)
   const [error, setError] = useState('');
   const [panel, setPanel] = useState(null);
 
   const state = getOrderState(order);
+<<<<<<< HEAD
 
   const navigationUrl =
     getNavigationUrl(
@@ -716,6 +908,20 @@ function ActiveDeliveryCard({
           result?.error ||
             'Something went wrong. Try again.'
         );
+=======
+  const navigationUrl = getNavigationUrl(order.shipping_address);
+  const cod = isCod(order);
+  const codAmount = getCodAmount(order);
+
+  function run(action, formData, after) {
+    setError('');
+
+    startTransition(async () => {
+      const result = await action(formData);
+
+      if (!result?.ok) {
+        setError(result?.error || 'Something went wrong. Try again.');
+>>>>>>> a1bbbf0 (Fix)
         return;
       }
 
@@ -726,17 +932,22 @@ function ActiveDeliveryCard({
 
   function baseForm() {
     const formData = new FormData();
+<<<<<<< HEAD
 
     formData.set(
       'orderId',
       String(order.id)
     );
 
+=======
+    formData.set('orderId', String(order.id));
+>>>>>>> a1bbbf0 (Fix)
     return formData;
   }
 
   function handleAdvance(to) {
     const formData = baseForm();
+<<<<<<< HEAD
 
     formData.set('to', to);
 
@@ -794,10 +1005,26 @@ function ActiveDeliveryCard({
       formData,
       onChanged
     );
+=======
+    formData.set('to', to);
+    run(advanceDelivery, formData, onChanged);
+  }
+
+  function handleRelease() {
+    run(releaseDelivery, baseForm(), onReleased);
+  }
+
+  function handleComplete(event) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    formData.set('orderId', String(order.id));
+    run(completeDelivery, formData, onChanged);
+>>>>>>> a1bbbf0 (Fix)
   }
 
   function handleFail(event) {
     event.preventDefault();
+<<<<<<< HEAD
 
     const formData =
       new FormData(event.currentTarget);
@@ -812,6 +1039,11 @@ function ActiveDeliveryCard({
       formData,
       onChanged
     );
+=======
+    const formData = new FormData(event.currentTarget);
+    formData.set('orderId', String(order.id));
+    run(failDelivery, formData, onChanged);
+>>>>>>> a1bbbf0 (Fix)
   }
 
   const primaryBtn =
@@ -821,6 +1053,7 @@ function ActiveDeliveryCard({
     'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   const stepText = {
+<<<<<<< HEAD
     assigned:
       'The admin assigned this delivery to you. Tap "Accept delivery" to start, or decline it if you cannot take it.',
 
@@ -840,6 +1073,15 @@ function ActiveDeliveryCard({
       order.delivery_failed_reason
         ? ` — ${order.delivery_failed_reason}`
         : ''
+=======
+    accepted: 'Pick up the packed order from production, then tap "Picked up".',
+    picked_up: 'You have the order. Tap "Start delivery" when you leave.',
+    out_for_delivery:
+      'On the way to the customer. Tap "I\'ve arrived" at the drop-off.',
+    arrived: 'At the drop-off. Hand over the order and complete it with a photo.',
+    failed: `Delivery failed${
+      order.delivery_failed_reason ? ` — ${order.delivery_failed_reason}` : ''
+>>>>>>> a1bbbf0 (Fix)
     }. You can try again.`,
   };
 
@@ -856,11 +1098,15 @@ function ActiveDeliveryCard({
               <h3 className="text-lg font-semibold tracking-tight text-slate-950">
                 Order #{order.id}
               </h3>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
               <StatusBadge state={state} />
             </div>
 
             <p className="mt-1 text-xs text-slate-400">
+<<<<<<< HEAD
               {state === 'assigned'
                 ? 'Order placed '
                 : 'Accepted '}
@@ -870,14 +1116,21 @@ function ActiveDeliveryCard({
                   : order.delivery_accepted_at ||
                       order.created_at
               )}
+=======
+              Accepted {shortDate(order.delivery_accepted_at || order.created_at)}
+>>>>>>> a1bbbf0 (Fix)
             </p>
           </div>
 
           <div className="text-left sm:text-right">
+<<<<<<< HEAD
             <div className="text-xs font-medium text-slate-400">
               Total
             </div>
 
+=======
+            <div className="text-xs font-medium text-slate-400">Total</div>
+>>>>>>> a1bbbf0 (Fix)
             <div className="mt-1 text-lg font-semibold text-slate-950">
               {money(order.total)}
             </div>
@@ -894,6 +1147,7 @@ function ActiveDeliveryCard({
 
             <div className="mt-3">
               <p className="break-all text-sm font-medium text-slate-800">
+<<<<<<< HEAD
                 {order.customer_email ||
                   'No email provided'}
               </p>
@@ -904,6 +1158,13 @@ function ActiveDeliveryCard({
                     order.shipping_address
                   }
                 />
+=======
+                {order.customer_email || 'No email provided'}
+              </p>
+
+              <div className="mt-4">
+                <AddressBlock address={order.shipping_address} />
+>>>>>>> a1bbbf0 (Fix)
               </div>
             </div>
 
@@ -926,15 +1187,20 @@ function ActiveDeliveryCard({
 
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
+<<<<<<< HEAD
                 <span className="text-sm text-slate-500">
                   Payment
                 </span>
 
+=======
+                <span className="text-sm text-slate-500">Payment</span>
+>>>>>>> a1bbbf0 (Fix)
                 <span className="text-sm font-semibold uppercase text-slate-800">
                   {order.payment_method || '—'}
                 </span>
               </div>
 
+<<<<<<< HEAD
               {Number(
                 order.delivery_fee || 0
               ) > 0 && (
@@ -947,6 +1213,13 @@ function ActiveDeliveryCard({
                     {money(
                       order.delivery_fee
                     )}
+=======
+              {Number(order.delivery_fee || 0) > 0 && (
+                <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
+                  <span className="text-sm text-slate-500">Delivery fee</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    {money(order.delivery_fee)}
+>>>>>>> a1bbbf0 (Fix)
                   </span>
                 </div>
               )}
@@ -956,7 +1229,10 @@ function ActiveDeliveryCard({
                   <div className="text-xs font-medium text-amber-700">
                     Cash to collect
                   </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                   <div className="mt-1 text-lg font-semibold text-amber-900">
                     {money(codAmount)}
                   </div>
@@ -973,6 +1249,7 @@ function ActiveDeliveryCard({
         )}
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+<<<<<<< HEAD
           <p className="text-sm leading-6 text-slate-600">
             {stepText[state]}
           </p>
@@ -1002,11 +1279,17 @@ function ActiveDeliveryCard({
               </>
             )}
 
+=======
+          <p className="text-sm leading-6 text-slate-600">{stepText[state]}</p>
+
+          <div className="mt-4 space-y-3">
+>>>>>>> a1bbbf0 (Fix)
             {state === 'accepted' && (
               <>
                 <button
                   type="button"
                   disabled={isPending}
+<<<<<<< HEAD
                   onClick={() =>
                     handleAdvance(
                       'picked_up'
@@ -1017,6 +1300,12 @@ function ActiveDeliveryCard({
                   {isPending
                     ? 'Saving...'
                     : 'Picked up'}
+=======
+                  onClick={() => handleAdvance('picked_up')}
+                  className={primaryBtn}
+                >
+                  {isPending ? 'Saving...' : 'Picked up'}
+>>>>>>> a1bbbf0 (Fix)
                 </button>
 
                 <button
@@ -1034,6 +1323,7 @@ function ActiveDeliveryCard({
               <button
                 type="button"
                 disabled={isPending}
+<<<<<<< HEAD
                 onClick={() =>
                   handleAdvance(
                     'out_for_delivery'
@@ -1081,6 +1371,32 @@ function ActiveDeliveryCard({
                     ? primaryBtn
                     : secondaryBtn
                 } w-full`}
+=======
+                onClick={() => handleAdvance('out_for_delivery')}
+                className={primaryBtn}
+              >
+                {isPending ? 'Saving...' : 'Start delivery'}
+              </button>
+            )}
+
+            {state === 'out_for_delivery' && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => handleAdvance('arrived')}
+                className={primaryBtn}
+              >
+                {isPending ? 'Saving...' : "I've arrived"}
+              </button>
+            )}
+
+            {(state === 'out_for_delivery' || state === 'arrived') && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPanel(panel === 'complete' ? null : 'complete')}
+                className={`${state === 'arrived' ? primaryBtn : secondaryBtn} w-full`}
+>>>>>>> a1bbbf0 (Fix)
               >
                 Complete delivery
               </button>
@@ -1090,6 +1406,7 @@ function ActiveDeliveryCard({
               <button
                 type="button"
                 disabled={isPending}
+<<<<<<< HEAD
                 onClick={() =>
                   handleAdvance(
                     'out_for_delivery'
@@ -1118,6 +1435,20 @@ function ActiveDeliveryCard({
                       : 'fail'
                   )
                 }
+=======
+                onClick={() => handleAdvance('out_for_delivery')}
+                className={primaryBtn}
+              >
+                {isPending ? 'Saving...' : 'Try delivery again'}
+              </button>
+            )}
+
+            {['picked_up', 'out_for_delivery', 'arrived'].includes(state) && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPanel(panel === 'fail' ? null : 'fail')}
+>>>>>>> a1bbbf0 (Fix)
                 className={`${secondaryBtn} w-full text-red-700`}
               >
                 Couldn't deliver
@@ -1134,7 +1465,10 @@ function ActiveDeliveryCard({
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Received by
                 </label>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                 <input
                   name="recipientName"
                   required
@@ -1146,10 +1480,15 @@ function ActiveDeliveryCard({
               {cod && (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">
+<<<<<<< HEAD
                     Cash collected (at least{' '}
                     {money(codAmount)})
                   </label>
 
+=======
+                    Cash collected (at least {money(codAmount)})
+                  </label>
+>>>>>>> a1bbbf0 (Fix)
                   <input
                     name="codCollected"
                     type="number"
@@ -1160,7 +1499,10 @@ function ActiveDeliveryCard({
                     defaultValue={codAmount}
                     className={inputClass}
                   />
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                   <p className="mt-1 text-xs leading-5 text-slate-400">
                     This amount will become part of your COD remittance.
                   </p>
@@ -1171,7 +1513,10 @@ function ActiveDeliveryCard({
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Proof photo (required, max 5 MB)
                 </label>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                 <input
                   name="photo"
                   type="file"
@@ -1186,6 +1531,7 @@ function ActiveDeliveryCard({
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Notes (optional)
                 </label>
+<<<<<<< HEAD
 
                 <textarea
                   name="notes"
@@ -1202,6 +1548,13 @@ function ActiveDeliveryCard({
                 {isPending
                   ? 'Submitting...'
                   : 'Confirm delivered'}
+=======
+                <textarea name="notes" rows={2} className={inputClass} />
+              </div>
+
+              <button type="submit" disabled={isPending} className={primaryBtn}>
+                {isPending ? 'Submitting...' : 'Confirm delivered'}
+>>>>>>> a1bbbf0 (Fix)
               </button>
             </form>
           )}
@@ -1215,13 +1568,17 @@ function ActiveDeliveryCard({
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Reason
                 </label>
+<<<<<<< HEAD
 
+=======
+>>>>>>> a1bbbf0 (Fix)
                 <select
                   name="reason"
                   required
                   defaultValue=""
                   className={inputClass}
                 >
+<<<<<<< HEAD
                   <option
                     value=""
                     disabled
@@ -1239,6 +1596,16 @@ function ActiveDeliveryCard({
                       </option>
                     )
                   )}
+=======
+                  <option value="" disabled>
+                    Select a reason…
+                  </option>
+                  {FAIL_REASONS.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+>>>>>>> a1bbbf0 (Fix)
                 </select>
               </div>
 
@@ -1246,6 +1613,7 @@ function ActiveDeliveryCard({
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Notes (optional)
                 </label>
+<<<<<<< HEAD
 
                 <textarea
                   name="notes"
@@ -1262,6 +1630,13 @@ function ActiveDeliveryCard({
                 {isPending
                   ? 'Saving...'
                   : 'Mark as failed'}
+=======
+                <textarea name="notes" rows={2} className={inputClass} />
+              </div>
+
+              <button type="submit" disabled={isPending} className={primaryBtn}>
+                {isPending ? 'Saving...' : 'Mark as failed'}
+>>>>>>> a1bbbf0 (Fix)
               </button>
             </form>
           )}
@@ -1271,6 +1646,7 @@ function ActiveDeliveryCard({
   );
 }
 
+<<<<<<< HEAD
 function SummaryCard({
   label,
   value,
@@ -1283,13 +1659,24 @@ function SummaryCard({
         emphasized
           ? 'border-amber-200 bg-amber-50'
           : 'border-slate-200 bg-white'
+=======
+function SummaryCard({ label, value, detail, emphasized = false }) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${
+        emphasized ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'
+>>>>>>> a1bbbf0 (Fix)
       }`}
     >
       <div
         className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${
+<<<<<<< HEAD
           emphasized
             ? 'text-amber-700'
             : 'text-slate-400'
+=======
+          emphasized ? 'text-amber-700' : 'text-slate-400'
+>>>>>>> a1bbbf0 (Fix)
         }`}
       >
         {label}
@@ -1297,27 +1684,104 @@ function SummaryCard({
 
       <div
         className={`mt-2 break-words text-xl font-semibold tracking-tight sm:text-2xl ${
+<<<<<<< HEAD
           emphasized
             ? 'text-amber-950'
             : 'text-slate-950'
+=======
+          emphasized ? 'text-amber-950' : 'text-slate-950'
+>>>>>>> a1bbbf0 (Fix)
         }`}
       >
         {value}
       </div>
 
+<<<<<<< HEAD
       {detail && (
         <div className="mt-1 text-xs text-slate-500">
           {detail}
         </div>
       )}
+=======
+      {detail && <div className="mt-1 text-xs text-slate-500">{detail}</div>}
+>>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }
 
+<<<<<<< HEAD
 function RemittanceCard({
   amount,
   count,
 }) {
+=======
+/*
+ * The rider's remittance QR. It contains only "COD:<riderId>" — no amounts or
+ * personal details. Staff scan it on the admin COD Remittance page and the
+ * "Confirm cash received" window opens for this rider with the amount filled in.
+ */
+function RemitQrCard({ riderId, amount, count }) {
+  const [src, setSrc] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!riderId) return undefined;
+
+    QRCode.toDataURL(`COD:${riderId}`, { margin: 1, width: 400 })
+      .then((url) => {
+        if (!cancelled) setSrc(url);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc('');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [riderId]);
+
+  return (
+    <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+        {/* White tile so the QR stays scannable in dark mode */}
+        <div
+          className="flex h-52 w-52 shrink-0 items-center justify-center rounded-2xl p-3"
+          style={{ backgroundColor: '#ffffff' }}
+        >
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt="COD remittance QR" width={184} height={184} />
+          ) : (
+            <span className="text-xs" style={{ color: '#64748b' }}>
+              Making QR…
+            </span>
+          )}
+        </div>
+
+        <div className="text-center sm:text-left">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Show this to staff
+          </div>
+
+          <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">
+            Remittance QR
+          </h3>
+
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Hand over{' '}
+            <span className="font-semibold text-slate-900">{money(amount)}</span>{' '}
+            for {count} {count === 1 ? 'order' : 'orders'}. Staff just scan this
+            code to confirm the cash.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RemittanceCard({ amount, count }) {
+>>>>>>> a1bbbf0 (Fix)
   if (amount <= 0) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
@@ -1326,7 +1790,11 @@ function RemittanceCard({
         </div>
 
         <div className="mt-2 text-xl font-semibold tracking-tight text-emerald-950 sm:text-2xl">
+<<<<<<< HEAD
           $0.00
+=======
+          {money(0)}
+>>>>>>> a1bbbf0 (Fix)
         </div>
 
         <p className="mt-1 text-sm text-emerald-800">
@@ -1347,10 +1815,14 @@ function RemittanceCard({
       </div>
 
       <p className="mt-1 text-sm text-amber-800">
+<<<<<<< HEAD
         {count}{' '}
         {count === 1
           ? 'delivered COD order'
           : 'delivered COD orders'}{' '}
+=======
+        {count} {count === 1 ? 'delivered COD order' : 'delivered COD orders'}{' '}
+>>>>>>> a1bbbf0 (Fix)
         waiting for staff acceptance.
       </p>
     </div>
@@ -1451,6 +1923,425 @@ const ChevronRightIcon = () => (
   </Icon>
 );
 
+<<<<<<< HEAD
+=======
+const QrIcon = () => (
+  <Icon>
+    <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+    <rect x="7" y="7" width="4" height="4" rx="0.5" />
+    <rect x="13" y="7" width="4" height="4" rx="0.5" />
+    <rect x="7" y="13" width="4" height="4" rx="0.5" />
+    <path d="M13 13h4v4" />
+  </Icon>
+);
+
+/* ---------------------------------------------------------------- */
+/* QR scanner                                                        */
+/* ---------------------------------------------------------------- */
+
+/*
+ * Opens the camera and reads the QR code printed on the shipping label
+ * (it contains the order id). Uses the browser's built-in BarcodeDetector
+ * when available (Chrome / Android) and falls back to the "jsqr" package
+ * everywhere else (iPhone Safari, desktop). Install it with:
+ *
+ *   npm install jsqr
+ *
+ * The camera needs HTTPS (or localhost). If it can't open, the rider can
+ * type the order number or the 8-character short code from the label.
+ */
+function QrScanner({ onResult, onClose }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const onResultRef = useRef(onResult);
+  const [error, setError] = useState('');
+  const [ready, setReady] = useState(false);
+  const [manual, setManual] = useState('');
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
+  useEffect(() => {
+    let stopped = false;
+    let stream = null;
+    let timer = null;
+
+    async function start() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError(
+          'The camera is not available here (it needs HTTPS). Type the order number below instead.'
+        );
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        });
+
+        if (stopped) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        const video = videoRef.current;
+        video.srcObject = stream;
+        await video.play();
+        setReady(true);
+
+        const detector =
+          'BarcodeDetector' in window
+            ? new window.BarcodeDetector({ formats: ['qr_code'] })
+            : null;
+
+        let jsQR = null;
+
+        if (!detector) {
+          jsQR = (await import('jsqr')).default;
+        }
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const tick = async () => {
+          if (stopped) return;
+
+          try {
+            if (video.readyState >= 2 && video.videoWidth) {
+              let value = '';
+
+              if (detector) {
+                const codes = await detector.detect(video);
+                value = codes[0]?.rawValue || '';
+              } else {
+                const scale = Math.min(1, 640 / video.videoWidth);
+                const w = Math.round(video.videoWidth * scale);
+                const h = Math.round(video.videoHeight * scale);
+
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(video, 0, 0, w, h);
+
+                const image = ctx.getImageData(0, 0, w, h);
+                const result = jsQR(image.data, w, h, {
+                  inversionAttempts: 'dontInvert',
+                });
+
+                value = result?.data || '';
+              }
+
+              if (value) {
+                stopped = true;
+                onResultRef.current?.(value);
+                return;
+              }
+            }
+          } catch {
+            // Ignore a bad frame and keep scanning.
+          }
+
+          timer = setTimeout(tick, 200);
+        };
+
+        tick();
+      } catch (err) {
+        setError(
+          err?.name === 'NotAllowedError'
+            ? 'Camera permission was denied. Allow camera access in your browser, or type the order number below.'
+            : 'Could not start the camera. Type the order number below instead.'
+        );
+      }
+    }
+
+    start();
+
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  function submitManual(event) {
+    event.preventDefault();
+    const value = manual.trim();
+    if (value) onResultRef.current?.(value);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+      <div className="flex max-h-full w-full max-w-md flex-col overflow-y-auto rounded-t-3xl bg-white p-4 shadow-xl sm:rounded-3xl sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Scan label
+            </div>
+            <h3 className="text-lg font-semibold tracking-tight text-slate-950">
+              Scan the order QR
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="relative mt-4 aspect-square w-full overflow-hidden rounded-2xl bg-black">
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className="h-full w-full object-cover"
+          />
+
+          {ready && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="h-3/5 w-3/5 rounded-2xl border-4 border-white/80" />
+            </div>
+          )}
+
+          {!ready && !error && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
+              Starting camera…
+            </div>
+          )}
+        </div>
+
+        <canvas ref={canvasRef} className="hidden" />
+
+        <p className="mt-3 text-center text-sm text-slate-500">
+          Hold the label steady so the QR code sits inside the square.
+        </p>
+
+        {error && (
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={submitManual} className="mt-4 flex gap-2">
+          <input
+            value={manual}
+            onChange={(event) => setManual(event.target.value)}
+            placeholder="Or type the order number"
+            className={inputClass}
+          />
+
+          <button
+            type="submit"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Look up
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* Scan result: customer info + how much COD to collect              */
+/* ---------------------------------------------------------------- */
+
+function ScanResult({ code, order, userId, onClose, onAccepted, onOpenMine }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState('');
+
+  if (!order) {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+        <div className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
+          <h3 className="text-lg font-semibold tracking-tight text-slate-950">
+            Order not found
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            No order matches <span className="font-semibold">{code}</span>. It may
+            belong to another rider, or the label may be for a different order.
+          </p>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const state = getOrderState(order);
+  const mine = Boolean(userId) && order.delivery_user_id === userId;
+  const takenByOther = Boolean(order.delivery_user_id) && !mine;
+  const canAccept = !order.delivery_user_id;
+  const cod = isCod(order);
+  const codAmount = getCodAmount(order);
+  const navigationUrl = getNavigationUrl(order.shipping_address);
+
+  function handleAccept() {
+    setError('');
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set('orderId', String(order.id));
+
+      const result = await acceptDelivery(formData);
+
+      if (!result?.ok) {
+        setError(result?.error || 'Unable to accept this delivery.');
+        return;
+      }
+
+      onAccepted?.();
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+      <div className="flex max-h-full w-full max-w-md flex-col overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Scanned order
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-950">
+                Order #{order.id}
+              </h3>
+              <StatusBadge state={state} />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+
+        {/* How much to collect */}
+        {cod ? (
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+              Cash to collect
+            </div>
+            <div className="mt-1 text-3xl font-semibold tracking-tight text-amber-950">
+              {money(codAmount)}
+            </div>
+            <div className="mt-1 text-xs text-amber-800">
+              Cash on delivery
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center">
+            <div className="text-sm font-semibold text-emerald-800">
+              Already paid — no cash to collect
+            </div>
+          </div>
+        )}
+
+        {/* Customer info */}
+        <div className="mt-5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Customer
+          </div>
+
+          <div className="mt-3">
+            <AddressBlock address={order.shipping_address} />
+
+            {order.customer_email && (
+              <p className="mt-2 break-all text-sm text-slate-500">
+                {order.customer_email}
+              </p>
+            )}
+          </div>
+
+          {navigationUrl && (
+            <a
+              href={navigationUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={mapsLinkClass}
+            >
+              Open in Maps
+            </a>
+          )}
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <span className="text-slate-500">Order total</span>
+            <span className="font-semibold text-slate-900">{money(order.total)}</span>
+          </div>
+
+          {Number(order.delivery_fee || 0) > 0 && (
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <span className="text-slate-500">Delivery fee</span>
+              <span className="font-semibold text-slate-900">
+                {money(order.delivery_fee)}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <span className="text-slate-500">Payment</span>
+            <span className="font-semibold uppercase text-slate-900">
+              {order.payment_method || '—'}
+            </span>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {takenByOther && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            This order is assigned to another rider.
+          </div>
+        )}
+
+        <div className="mt-5 space-y-3">
+          {canAccept && (
+            <button
+              type="button"
+              onClick={handleAccept}
+              disabled={isPending}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? 'Accepting...' : 'Accept Delivery'}
+            </button>
+          )}
+
+          {mine && (
+            <button
+              type="button"
+              onClick={onOpenMine}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              {state === 'delivered' ? 'See in Completed' : 'Open in My Deliveries'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+>>>>>>> a1bbbf0 (Fix)
 /* ---------------------------------------------------------------- */
 /* Delivery history calendar                                         */
 /* ---------------------------------------------------------------- */
@@ -1463,6 +2354,7 @@ const ChevronRightIcon = () => (
  * Days that have deliveries show a small amber dot so the rider can
  * see at a glance which dates they delivered on.
  */
+<<<<<<< HEAD
 function DeliveryCalendar({
   selected,
   onSelect,
@@ -1474,6 +2366,10 @@ function DeliveryCalendar({
       ? selected
       : todayKey
   );
+=======
+function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
+  const anchor = keyToDate(selected && selected !== 'all' ? selected : todayKey);
+>>>>>>> a1bbbf0 (Fix)
 
   const [view, setView] = useState({
     year: anchor.getFullYear(),
@@ -1482,6 +2378,7 @@ function DeliveryCalendar({
 
   function shiftMonth(delta) {
     setView((current) => {
+<<<<<<< HEAD
       const next = new Date(
         current.year,
         current.month + delta,
@@ -1492,11 +2389,16 @@ function DeliveryCalendar({
         year: next.getFullYear(),
         month: next.getMonth(),
       };
+=======
+      const next = new Date(current.year, current.month + delta, 1);
+      return { year: next.getFullYear(), month: next.getMonth() };
+>>>>>>> a1bbbf0 (Fix)
     });
   }
 
   function goToday() {
     const today = keyToDate(todayKey);
+<<<<<<< HEAD
 
     setView({
       year: today.getFullYear(),
@@ -1530,6 +2432,20 @@ function DeliveryCalendar({
         view.month + 1
       )}-${pad(day)}`
     );
+=======
+    setView({ year: today.getFullYear(), month: today.getMonth() });
+    onSelect(todayKey);
+  }
+
+  const firstWeekday = new Date(view.year, view.month, 1).getDay();
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+  const cells = [];
+
+  for (let i = 0; i < firstWeekday; i += 1) cells.push(null);
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push(`${view.year}-${pad(view.month + 1)}-${pad(day)}`);
+>>>>>>> a1bbbf0 (Fix)
   }
 
   return (
@@ -1569,6 +2485,7 @@ function DeliveryCalendar({
         ))}
 
         {cells.map((key, index) => {
+<<<<<<< HEAD
           if (!key) {
             return (
               <div key={`blank-${index}`} />
@@ -1582,6 +2499,12 @@ function DeliveryCalendar({
           const isSelected =
             selected === key;
 
+=======
+          if (!key) return <div key={`blank-${index}`} />;
+
+          const day = Number(key.slice(8, 10));
+          const isSelected = selected === key;
+>>>>>>> a1bbbf0 (Fix)
           const isToday = key === todayKey;
           const count = counts[key] || 0;
 
@@ -1591,6 +2514,7 @@ function DeliveryCalendar({
               type="button"
               onClick={() => onSelect(key)}
               aria-label={`${longDate(key)}${
+<<<<<<< HEAD
                 count
                   ? `, ${count} ${
                       count === 1
@@ -1598,6 +2522,9 @@ function DeliveryCalendar({
                         : 'deliveries'
                     }`
                   : ''
+=======
+                count ? `, ${count} ${count === 1 ? 'delivery' : 'deliveries'}` : ''
+>>>>>>> a1bbbf0 (Fix)
               }`}
               aria-pressed={isSelected}
               className={`relative flex min-h-11 flex-col items-center justify-center rounded-xl text-sm font-semibold transition ${
@@ -1609,12 +2536,18 @@ function DeliveryCalendar({
               }`}
             >
               <span>{day}</span>
+<<<<<<< HEAD
 
               <span
                 className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
                   count > 0
                     ? 'bg-amber-500'
                     : 'bg-transparent'
+=======
+              <span
+                className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
+                  count > 0 ? 'bg-amber-500' : 'bg-transparent'
+>>>>>>> a1bbbf0 (Fix)
                 }`}
               />
             </button>
@@ -1649,6 +2582,7 @@ function DeliveryCalendar({
 
 export default function DeliveryDashboard() {
   const [user, setUser] = useState(null);
+<<<<<<< HEAD
 
   const [availableOrders, setAvailableOrders] =
     useState([]);
@@ -1671,17 +2605,37 @@ export default function DeliveryDashboard() {
   // Delivery history date filter: "YYYY-MM-DD" or "all". Defaults to today.
   const [historyDate, setHistoryDate] =
     useState(() => toDateKey(new Date()));
+=======
+  const [availableOrders, setAvailableOrders] = useState([]);
+  const [myOrders, setMyOrders] = useState([]);
+  const [initialError, setInitialError] = useState('');
+  const [tab, setTab] = useState('available');
+  const [signingOut, setSigningOut] = useState(false);
+  const [dark, setDark] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // QR scanner + the order it found.
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+
+  // Delivery history date filter: "YYYY-MM-DD" or "all". Defaults to today.
+  const [historyDate, setHistoryDate] = useState(() => toDateKey(new Date()));
+>>>>>>> a1bbbf0 (Fix)
 
   const scrollRef = useRef(null);
 
   // Restore the saved theme after mount (avoids hydration mismatch).
   useEffect(() => {
     try {
+<<<<<<< HEAD
       if (
         window.localStorage.getItem(
           THEME_KEY
         ) === 'dark'
       ) {
+=======
+      if (window.localStorage.getItem(THEME_KEY) === 'dark') {
+>>>>>>> a1bbbf0 (Fix)
         setDark(true);
       }
     } catch {
@@ -1694,6 +2648,7 @@ export default function DeliveryDashboard() {
     if (!menuOpen) return undefined;
 
     function onKeyDown(event) {
+<<<<<<< HEAD
       if (event.key === 'Escape') {
         setMenuOpen(false);
       }
@@ -1709,6 +2664,13 @@ export default function DeliveryDashboard() {
         'keydown',
         onKeyDown
       );
+=======
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+>>>>>>> a1bbbf0 (Fix)
   }, [menuOpen]);
 
   function toggleDark() {
@@ -1716,10 +2678,14 @@ export default function DeliveryDashboard() {
       const next = !current;
 
       try {
+<<<<<<< HEAD
         window.localStorage.setItem(
           THEME_KEY,
           next ? 'dark' : 'light'
         );
+=======
+        window.localStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
+>>>>>>> a1bbbf0 (Fix)
       } catch {
         // Ignore storage errors.
       }
@@ -1728,20 +2694,33 @@ export default function DeliveryDashboard() {
     });
   }
 
+<<<<<<< HEAD
+=======
+  /*
+   * Orders are loaded through server actions (admin client on the server),
+   * so Row Level Security can't silently hide unassigned orders from riders.
+   * Access is checked on the server by requireDelivery().
+   */
+>>>>>>> a1bbbf0 (Fix)
   const load = useCallback(async () => {
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
 
     if (!authUser) {
+<<<<<<< HEAD
       setInitialError(
         'You must be signed in.'
       );
+=======
+      setInitialError('You must be signed in.');
+>>>>>>> a1bbbf0 (Fix)
       return;
     }
 
     setUser(authUser);
 
+<<<<<<< HEAD
     const [
       available,
       mine,
@@ -1787,10 +2766,25 @@ export default function DeliveryDashboard() {
         mine.error?.message ||
         ''
     );
+=======
+    try {
+      const [available, mine] = await Promise.all([
+        getAvailableOrders(),
+        getMyDeliveries(),
+      ]);
+
+      setAvailableOrders(available?.orders || []);
+      setMyOrders(mine?.orders || []);
+      setInitialError(available?.error || mine?.error || '');
+    } catch (err) {
+      setInitialError(err?.message || 'Could not load deliveries.');
+    }
+>>>>>>> a1bbbf0 (Fix)
   }, []);
 
   useEffect(() => {
     load();
+<<<<<<< HEAD
 
     const id = setInterval(
       load,
@@ -1839,6 +2833,19 @@ export default function DeliveryDashboard() {
           getOrderState(order) ===
           'delivered'
       ),
+=======
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const activeOrders = useMemo(
+    () => myOrders.filter((order) => getOrderState(order) !== 'delivered'),
+    [myOrders]
+  );
+
+  const deliveredOrders = useMemo(
+    () => myOrders.filter((order) => getOrderState(order) === 'delivered'),
+>>>>>>> a1bbbf0 (Fix)
     [myOrders]
   );
 
@@ -1847,6 +2854,7 @@ export default function DeliveryDashboard() {
     const counts = {};
 
     deliveredOrders.forEach((order) => {
+<<<<<<< HEAD
       const key = toDateKey(
         order.delivered_at
       );
@@ -1855,6 +2863,10 @@ export default function DeliveryDashboard() {
         counts[key] =
           (counts[key] || 0) + 1;
       }
+=======
+      const key = toDateKey(order.delivered_at);
+      if (key) counts[key] = (counts[key] || 0) + 1;
+>>>>>>> a1bbbf0 (Fix)
     });
 
     return counts;
@@ -1862,6 +2874,7 @@ export default function DeliveryDashboard() {
 
   // Delivered orders for the date picked on the calendar.
   const historyOrders = useMemo(() => {
+<<<<<<< HEAD
     if (historyDate === 'all') {
       return deliveredOrders;
     }
@@ -1870,27 +2883,41 @@ export default function DeliveryDashboard() {
       (order) =>
         toDateKey(order.delivered_at) ===
         historyDate
+=======
+    if (historyDate === 'all') return deliveredOrders;
+
+    return deliveredOrders.filter(
+      (order) => toDateKey(order.delivered_at) === historyDate
+>>>>>>> a1bbbf0 (Fix)
     );
   }, [deliveredOrders, historyDate]);
 
   const historyTotal = useMemo(
+<<<<<<< HEAD
     () =>
       historyOrders.reduce(
         (sum, order) =>
           sum + Number(order.total || 0),
         0
       ),
+=======
+    () => historyOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
+>>>>>>> a1bbbf0 (Fix)
     [historyOrders]
   );
 
   const historyFees = useMemo(
     () =>
+<<<<<<< HEAD
       historyOrders.reduce(
         (sum, order) =>
           sum +
           Number(order.delivery_fee || 0),
         0
       ),
+=======
+      historyOrders.reduce((sum, order) => sum + Number(order.delivery_fee || 0), 0),
+>>>>>>> a1bbbf0 (Fix)
     [historyOrders]
   );
 
@@ -1910,25 +2937,34 @@ export default function DeliveryDashboard() {
   const codToRemitOrders = useMemo(
     () =>
       deliveredOrders.filter(
+<<<<<<< HEAD
         (order) =>
           isCod(order) &&
           !isCodAlreadyRemitted(order)
+=======
+        (order) => isCod(order) && !isCodAlreadyRemitted(order)
+>>>>>>> a1bbbf0 (Fix)
       ),
     [deliveredOrders]
   );
 
   const codToRemitTotal = useMemo(
+<<<<<<< HEAD
     () =>
       codToRemitOrders.reduce(
         (sum, order) =>
           sum + getCodAmount(order),
         0
       ),
+=======
+    () => codToRemitOrders.reduce((sum, order) => sum + getCodAmount(order), 0),
+>>>>>>> a1bbbf0 (Fix)
     [codToRemitOrders]
   );
 
   const codActiveTotal = useMemo(
     () =>
+<<<<<<< HEAD
       activeOrders.reduce(
         (sum, order) => {
           if (!isCod(order)) {
@@ -1941,11 +2977,18 @@ export default function DeliveryDashboard() {
         },
         0
       ),
+=======
+      activeOrders.reduce((sum, order) => {
+        if (!isCod(order)) return sum;
+        return sum + getCodAmount(order);
+      }, 0),
+>>>>>>> a1bbbf0 (Fix)
     [activeOrders]
   );
 
   async function handleLogout() {
     setSigningOut(true);
+<<<<<<< HEAD
 
     await supabase.auth.signOut();
 
@@ -1958,6 +3001,14 @@ export default function DeliveryDashboard() {
       top: 0,
       behavior: 'smooth',
     });
+=======
+    await supabase.auth.signOut();
+    window.location.href = AFTER_LOGOUT_PATH;
+  }
+
+  function scrollTop() {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+>>>>>>> a1bbbf0 (Fix)
   }
 
   function selectTab(key) {
@@ -1982,32 +3033,123 @@ export default function DeliveryDashboard() {
     selectTab('completed');
   }
 
+<<<<<<< HEAD
+=======
+  /* ---------------- QR scanning ---------------- */
+
+  function openScanner() {
+    setMenuOpen(false);
+    setScanResult(null);
+    setScanOpen(true);
+  }
+
+  // Called with whatever the QR (or the typed text) contains.
+  const handleScanned = useCallback(
+    async (raw) => {
+      setScanOpen(false);
+
+      // The label QR is just the order id, but accept a URL ending in the id too.
+      const text = String(raw || '').trim();
+      const code = text.includes('/')
+        ? text.split(/[/?#]/).filter(Boolean).pop() || ''
+        : text;
+
+      if (!code) return;
+
+      const known = [...myOrders, ...availableOrders];
+      const upper = code.toUpperCase();
+
+      let found =
+        known.find((order) => String(order.id) === code) ||
+        (code.length >= 6
+          ? known.find((order) =>
+              String(order.id).toUpperCase().startsWith(upper)
+            )
+          : null) ||
+        null;
+
+      // Not in the lists we already loaded — ask the database.
+      if (!found) {
+        try {
+          const { data } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', code)
+            .maybeSingle();
+
+          found = data || null;
+        } catch {
+          found = null;
+        }
+      }
+
+      setScanResult({ code, order: found });
+    },
+    [myOrders, availableOrders]
+  );
+
+  function closeScanResult() {
+    setScanResult(null);
+  }
+
+  function scanAccepted() {
+    setScanResult(null);
+    goToActive();
+  }
+
+  function scanOpenMine() {
+    const order = scanResult?.order;
+    setScanResult(null);
+
+    if (order && getOrderState(order) === 'delivered') {
+      const key = toDateKey(order.delivered_at);
+      setHistoryDate(key || 'all');
+      selectTab('completed');
+    } else {
+      selectTab('active');
+    }
+  }
+
+>>>>>>> a1bbbf0 (Fix)
   const navItems = [
     {
       key: 'available',
       label: 'Available',
       Icon: PackageIcon,
+<<<<<<< HEAD
       badgeText: String(
         availableCount
       ),
       badgeCount: availableCount,
+=======
+      badgeText: String(availableOrders.length),
+      badgeCount: availableOrders.length,
+>>>>>>> a1bbbf0 (Fix)
     },
     {
       key: 'active',
       label: 'My Deliveries',
       Icon: TruckIcon,
+<<<<<<< HEAD
       badgeText: String(
         activeOrders.length
       ),
+=======
+      badgeText: String(activeOrders.length),
+>>>>>>> a1bbbf0 (Fix)
       badgeCount: activeOrders.length,
     },
     {
       key: 'completed',
       label: 'Completed',
       Icon: CheckIcon,
+<<<<<<< HEAD
       badgeText: String(
         deliveredOrders.length
       ),
+=======
+      badgeText: String(deliveredOrders.length),
+>>>>>>> a1bbbf0 (Fix)
       badgeCount: 0,
     },
     {
@@ -2015,15 +3157,23 @@ export default function DeliveryDashboard() {
       label: 'COD Remittance',
       Icon: CashIcon,
       badgeText: money(codToRemitTotal),
+<<<<<<< HEAD
       badgeCount:
         codToRemitOrders.length,
+=======
+      badgeCount: codToRemitOrders.length,
+>>>>>>> a1bbbf0 (Fix)
     },
   ];
 
   const currentLabel =
+<<<<<<< HEAD
     navItems.find(
       (item) => item.key === tab
     )?.label || 'Delivery';
+=======
+    navItems.find((item) => item.key === tab)?.label || 'Delivery';
+>>>>>>> a1bbbf0 (Fix)
 
   const todayKey = toDateKey(new Date());
 
@@ -2064,18 +3214,26 @@ export default function DeliveryDashboard() {
       {menuOpen && (
         <div
           className="fixed inset-0 z-[110] bg-black/40 md:hidden"
+<<<<<<< HEAD
           onClick={() =>
             setMenuOpen(false)
           }
+=======
+          onClick={() => setMenuOpen(false)}
+>>>>>>> a1bbbf0 (Fix)
         />
       )}
 
       {/* Side menu */}
       <aside
         className={`fixed inset-y-0 left-0 z-[120] flex w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:w-20 md:max-w-none md:translate-x-0 lg:w-64 ${
+<<<<<<< HEAD
           menuOpen
             ? 'translate-x-0'
             : '-translate-x-full'
+=======
+          menuOpen ? 'translate-x-0' : '-translate-x-full'
+>>>>>>> a1bbbf0 (Fix)
         }`}
       >
         <div className="border-b border-slate-100 px-5 pb-5 pt-[max(1.5rem,env(safe-area-inset-top))] md:px-0 md:py-5 lg:px-5 lg:py-6">
@@ -2090,9 +3248,13 @@ export default function DeliveryDashboard() {
             </div>
 
             {user?.email && (
+<<<<<<< HEAD
               <p className="mt-1 truncate text-xs text-slate-400">
                 {user.email}
               </p>
+=======
+              <p className="mt-1 truncate text-xs text-slate-400">{user.email}</p>
+>>>>>>> a1bbbf0 (Fix)
             )}
           </div>
 
@@ -2106,6 +3268,20 @@ export default function DeliveryDashboard() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+<<<<<<< HEAD
+=======
+          {/* Scan QR */}
+          <button
+            type="button"
+            title="Scan QR"
+            onClick={openScanner}
+            className="mb-2 flex min-h-12 w-full items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 md:justify-center md:px-0 lg:justify-start lg:px-3.5"
+          >
+            <QrIcon />
+            <span className="md:hidden lg:inline">Scan QR</span>
+          </button>
+
+>>>>>>> a1bbbf0 (Fix)
           {navItems.map((item) => (
             <button
               key={item.key}
@@ -2120,9 +3296,13 @@ export default function DeliveryDashboard() {
                   ? goToCompleted()
                   : selectTab(item.key)
               }
+<<<<<<< HEAD
               className={navClass(
                 item.key
               )}
+=======
+              className={navClass(item.key)}
+>>>>>>> a1bbbf0 (Fix)
             >
               <span className="relative">
                 <item.Icon />
@@ -2130,17 +3310,25 @@ export default function DeliveryDashboard() {
                 {/* Tablet rail: count bubble */}
                 {item.badgeCount > 0 && (
                   <span className="absolute -right-2 -top-2 hidden h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold leading-none text-white md:flex lg:hidden">
+<<<<<<< HEAD
                     {item.key ===
                     'remittance'
                       ? '!'
                       : item.badgeCount}
+=======
+                    {item.key === 'remittance' ? '!' : item.badgeCount}
+>>>>>>> a1bbbf0 (Fix)
                   </span>
                 )}
               </span>
 
+<<<<<<< HEAD
               <span className="md:hidden lg:inline">
                 {item.label}
               </span>
+=======
+              <span className="md:hidden lg:inline">{item.label}</span>
+>>>>>>> a1bbbf0 (Fix)
 
               <span className="ml-auto text-xs opacity-70 md:hidden lg:inline">
                 {item.badgeText}
@@ -2154,6 +3342,7 @@ export default function DeliveryDashboard() {
           <button
             type="button"
             onClick={toggleDark}
+<<<<<<< HEAD
             title={
               dark
                 ? 'Light mode'
@@ -2171,6 +3360,15 @@ export default function DeliveryDashboard() {
               {dark
                 ? 'Light mode'
                 : 'Dark mode'}
+=======
+            title={dark ? 'Light mode' : 'Dark mode'}
+            className={footerBtn}
+          >
+            {dark ? <SunIcon /> : <MoonIcon />}
+
+            <span className="md:hidden lg:inline">
+              {dark ? 'Light mode' : 'Dark mode'}
+>>>>>>> a1bbbf0 (Fix)
             </span>
           </button>
 
@@ -2184,9 +3382,13 @@ export default function DeliveryDashboard() {
             <LogoutIcon />
 
             <span className="md:hidden lg:inline">
+<<<<<<< HEAD
               {signingOut
                 ? 'Logging out...'
                 : 'Log out'}
+=======
+              {signingOut ? 'Logging out...' : 'Log out'}
+>>>>>>> a1bbbf0 (Fix)
             </span>
           </button>
         </div>
@@ -2198,9 +3400,13 @@ export default function DeliveryDashboard() {
         <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
           <button
             type="button"
+<<<<<<< HEAD
             onClick={() =>
               setMenuOpen(true)
             }
+=======
+            onClick={() => setMenuOpen(true)}
+>>>>>>> a1bbbf0 (Fix)
             aria-label="Open menu"
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700"
           >
@@ -2210,6 +3416,7 @@ export default function DeliveryDashboard() {
           <span className="text-base font-semibold text-slate-950">
             {currentLabel}
           </span>
+<<<<<<< HEAD
         </div>
 
         <main
@@ -2217,6 +3424,21 @@ export default function DeliveryDashboard() {
           className="flex-1 overflow-y-auto overscroll-contain"
         >
           <div className="mx-auto w-full max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8 lg:py-8">
+=======
+
+          <button
+            type="button"
+            onClick={openScanner}
+            aria-label="Scan QR"
+            className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-800"
+          >
+            <QrIcon />
+          </button>
+        </div>
+
+        <main ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto w-full max-w-6xl px-4 pb-[max(6rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8 lg:py-8">
+>>>>>>> a1bbbf0 (Fix)
             {initialError && (
               <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
                 <div className="text-sm font-semibold text-red-800">
@@ -2233,44 +3455,65 @@ export default function DeliveryDashboard() {
             <section className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
               <SummaryCard
                 label="Available"
+<<<<<<< HEAD
                 value={
                   availableCount
                 }
+=======
+                value={availableOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 detail="Ready for rider acceptance"
               />
 
               <SummaryCard
                 label="Active"
+<<<<<<< HEAD
                 value={
                   activeOrders.length
                 }
+=======
+                value={activeOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 detail="Currently assigned to you"
               />
 
               <SummaryCard
                 label="Completed"
+<<<<<<< HEAD
                 value={
                   deliveredOrders.length
                 }
+=======
+                value={deliveredOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 detail="Delivered orders"
               />
 
               <SummaryCard
                 label="COD to collect"
+<<<<<<< HEAD
                 value={money(
                   codActiveTotal
                 )}
+=======
+                value={money(codActiveTotal)}
+>>>>>>> a1bbbf0 (Fix)
                 detail="Across active COD deliveries"
               />
 
               <div className="col-span-2 md:col-span-2 xl:col-span-1">
                 <RemittanceCard
+<<<<<<< HEAD
                   amount={
                     codToRemitTotal
                   }
                   count={
                     codToRemitOrders.length
                   }
+=======
+                  amount={codToRemitTotal}
+                  count={codToRemitOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 />
               </div>
             </section>
@@ -2281,6 +3524,7 @@ export default function DeliveryDashboard() {
                 <SectionHeader
                   eyebrow="Fulfillment queue"
                   title="Available deliveries"
+<<<<<<< HEAD
                   description="Orders released for delivery, including ones the admin assigned to you. Tap Accept to take a delivery."
                   count={
                     availableCount
@@ -2289,12 +3533,20 @@ export default function DeliveryDashboard() {
 
                 {availableCount ===
                 0 ? (
+=======
+                  description="Orders that production has completed and released for delivery acceptance."
+                  count={availableOrders.length}
+                />
+
+                {availableOrders.length === 0 ? (
+>>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="No deliveries available"
                     description="There are currently no fulfillment-ready orders waiting for a rider."
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
+<<<<<<< HEAD
                     {assignedOrders.map(
                       (order) => (
                         <ActiveDeliveryCard
@@ -2322,6 +3574,15 @@ export default function DeliveryDashboard() {
                         />
                       )
                     )}
+=======
+                    {availableOrders.map((order) => (
+                      <AvailableCard
+                        key={order.id}
+                        order={order}
+                        onAccepted={goToActive}
+                      />
+                    ))}
+>>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
@@ -2334,6 +3595,7 @@ export default function DeliveryDashboard() {
                   eyebrow="Assigned to you"
                   title="My deliveries"
                   description="Orders currently assigned to your delivery account."
+<<<<<<< HEAD
                   count={
                     activeOrders.length
                   }
@@ -2341,12 +3603,19 @@ export default function DeliveryDashboard() {
 
                 {activeOrders.length ===
                 0 ? (
+=======
+                  count={activeOrders.length}
+                />
+
+                {activeOrders.length === 0 ? (
+>>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="No active deliveries"
                     description="Accept a fulfillment-ready order to see it here."
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
+<<<<<<< HEAD
                     {activeOrders.map(
                       (order) => (
                         <ActiveDeliveryCard
@@ -2359,6 +3628,16 @@ export default function DeliveryDashboard() {
                         />
                       )
                     )}
+=======
+                    {activeOrders.map((order) => (
+                      <ActiveDeliveryCard
+                        key={order.id}
+                        order={order}
+                        onChanged={load}
+                        onReleased={goToAvailable}
+                      />
+                    ))}
+>>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
@@ -2371,20 +3650,29 @@ export default function DeliveryDashboard() {
                   eyebrow="Delivery history"
                   title="Completed deliveries"
                   description="Pick a date on the calendar to see what you delivered that day. Today is shown first."
+<<<<<<< HEAD
                   count={
                     historyOrders.length
                   }
+=======
+                  count={historyOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 />
 
                 <div className="grid gap-5 lg:grid-cols-[320px_1fr] lg:items-start">
                   <DeliveryCalendar
                     selected={historyDate}
+<<<<<<< HEAD
                     onSelect={
                       setHistoryDate
                     }
                     counts={
                       deliveredCountsByDate
                     }
+=======
+                    onSelect={setHistoryDate}
+                    counts={deliveredCountsByDate}
+>>>>>>> a1bbbf0 (Fix)
                     todayKey={todayKey}
                   />
 
@@ -2401,6 +3689,7 @@ export default function DeliveryDashboard() {
 
                       <div className="mt-3 grid grid-cols-3 gap-3">
                         <div>
+<<<<<<< HEAD
                           <div className="text-xs text-slate-400">
                             Deliveries
                           </div>
@@ -2409,10 +3698,16 @@ export default function DeliveryDashboard() {
                             {
                               historyOrders.length
                             }
+=======
+                          <div className="text-xs text-slate-400">Deliveries</div>
+                          <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                            {historyOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
 
                         <div>
+<<<<<<< HEAD
                           <div className="text-xs text-slate-400">
                             Order total
                           </div>
@@ -2421,10 +3716,16 @@ export default function DeliveryDashboard() {
                             {money(
                               historyTotal
                             )}
+=======
+                          <div className="text-xs text-slate-400">Order total</div>
+                          <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
+                            {money(historyTotal)}
+>>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
 
                         <div>
+<<<<<<< HEAD
                           <div className="text-xs text-slate-400">
                             Delivery fees
                           </div>
@@ -2433,11 +3734,17 @@ export default function DeliveryDashboard() {
                             {money(
                               historyFees
                             )}
+=======
+                          <div className="text-xs text-slate-400">Delivery fees</div>
+                          <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
+                            {money(historyFees)}
+>>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
                       </div>
                     </div>
 
+<<<<<<< HEAD
                     {historyOrders.length ===
                     0 ? (
                       <EmptyState
@@ -2447,18 +3754,31 @@ export default function DeliveryDashboard() {
                             ? 'No completed deliveries'
                             : historyDate ===
                               todayKey
+=======
+                    {historyOrders.length === 0 ? (
+                      <EmptyState
+                        title={
+                          deliveredOrders.length === 0
+                            ? 'No completed deliveries'
+                            : historyDate === todayKey
+>>>>>>> a1bbbf0 (Fix)
                             ? 'No deliveries today yet'
                             : 'No deliveries on this date'
                         }
                         description={
+<<<<<<< HEAD
                           deliveredOrders.length ===
                           0
+=======
+                          deliveredOrders.length === 0
+>>>>>>> a1bbbf0 (Fix)
                             ? 'Completed deliveries will appear here after they are marked as delivered.'
                             : 'Pick another date on the calendar. Days with an amber dot have deliveries.'
                         }
                       />
                     ) : (
                       <div className="space-y-4">
+<<<<<<< HEAD
                         {historyOrders.map(
                           (order) => {
                             const cod =
@@ -2566,6 +3886,77 @@ export default function DeliveryDashboard() {
                             );
                           }
                         )}
+=======
+                        {historyOrders.map((order) => {
+                          const cod = isCod(order);
+                          const codAmount = getCodAmount(order);
+                          const remitted = isCodAlreadyRemitted(order);
+
+                          return (
+                            <article
+                              key={order.id}
+                              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+                            >
+                              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-base font-semibold text-slate-950">
+                                      Order #{order.id}
+                                    </h3>
+                                    <StatusBadge state="delivered" />
+                                  </div>
+
+                                  <p className="mt-1 break-all text-sm text-slate-500">
+                                    {order.customer_email || 'No email provided'}
+                                  </p>
+
+                                  <div className="mt-4">
+                                    <AddressBlock address={order.shipping_address} />
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 md:text-right">
+                                  <div className="text-xs text-slate-400">Delivered</div>
+
+                                  <div className="mt-1 text-sm font-semibold text-slate-800">
+                                    {dateTime(order.delivered_at)}
+                                  </div>
+
+                                  <div className="mt-3 text-lg font-semibold text-slate-950">
+                                    {money(order.total)}
+                                  </div>
+
+                                  {cod && (
+                                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left md:text-right">
+                                      <div className="text-xs text-slate-500">COD</div>
+
+                                      <div className="mt-1 text-sm font-semibold text-slate-900">
+                                        {money(codAmount)}
+                                      </div>
+
+                                      <div
+                                        className={`mt-1 text-xs font-semibold ${
+                                          remitted ? 'text-emerald-600' : 'text-amber-600'
+                                        }`}
+                                      >
+                                        {remitted
+                                          ? 'Remitted and accepted'
+                                          : 'Waiting for remittance'}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {Number(order.delivery_fee || 0) > 0 && (
+                                    <div className="mt-2 text-xs text-slate-500">
+                                      Delivery fee {money(order.delivery_fee)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })}
+>>>>>>> a1bbbf0 (Fix)
                       </div>
                     )}
                   </div>
@@ -2580,9 +3971,13 @@ export default function DeliveryDashboard() {
                   eyebrow="Cash turnover"
                   title="COD Remittance"
                   description="Cash collected from customers that still needs to be handed over to staff."
+<<<<<<< HEAD
                   count={
                     codToRemitOrders.length
                   }
+=======
+                  count={codToRemitOrders.length}
+>>>>>>> a1bbbf0 (Fix)
                 />
 
                 <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
@@ -2591,6 +3986,7 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="mt-2 text-2xl font-semibold tracking-tight text-amber-950 sm:text-3xl">
+<<<<<<< HEAD
                     {money(
                       codToRemitTotal
                     )}
@@ -2603,12 +3999,33 @@ export default function DeliveryDashboard() {
 
                 {codToRemitOrders.length ===
                 0 ? (
+=======
+                    {money(codToRemitTotal)}
+                  </div>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-amber-800">
+                    Give this amount to your staff or admin. Once staff accepts the
+                    cash, the amount will automatically return to {money(0)}.
+                  </p>
+                </div>
+
+                {codToRemitTotal > 0 && user?.id && (
+                  <RemitQrCard
+                    riderId={user.id}
+                    amount={codToRemitTotal}
+                    count={codToRemitOrders.length}
+                  />
+                )}
+
+                {codToRemitOrders.length === 0 ? (
+>>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="Nothing to remit"
                     description="All COD cash collected from your completed deliveries has already been accepted by staff."
                   />
                 ) : (
                   <div className="space-y-4">
+<<<<<<< HEAD
                     {codToRemitOrders.map(
                       (order) => (
                         <article
@@ -2658,13 +4075,84 @@ export default function DeliveryDashboard() {
                         </article>
                       )
                     )}
+=======
+                    {codToRemitOrders.map((order) => (
+                      <article
+                        key={order.id}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-slate-950">
+                                Order #{order.id}
+                              </h3>
+
+                              <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                To remit
+                              </span>
+                            </div>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                              Delivered {shortDate(order.delivered_at)}
+                            </p>
+
+                            <p className="mt-2 break-all text-sm text-slate-600">
+                              {order.customer_email || 'Customer'}
+                            </p>
+                          </div>
+
+                          <div className="sm:text-right">
+                            <div className="text-xs text-slate-400">COD collected</div>
+
+                            <div className="mt-1 text-2xl font-semibold text-slate-950">
+                              {money(getCodAmount(order))}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+>>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
             )}
           </div>
         </main>
+<<<<<<< HEAD
       </div>
+=======
+
+        {/* Floating scan button — always reachable, on every tab */}
+        {!scanOpen && !scanResult && (
+          <button
+            type="button"
+            onClick={openScanner}
+            aria-label="Scan QR"
+            className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[90] inline-flex min-h-14 items-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800"
+          >
+            <QrIcon />
+            Scan QR
+          </button>
+        )}
+      </div>
+
+      {/* Scanner + result (inside the root so dark mode applies) */}
+      {scanOpen && (
+        <QrScanner onResult={handleScanned} onClose={() => setScanOpen(false)} />
+      )}
+
+      {scanResult && (
+        <ScanResult
+          code={scanResult.code}
+          order={scanResult.order}
+          userId={user?.id}
+          onClose={closeScanResult}
+          onAccepted={scanAccepted}
+          onOpenMine={scanOpenMine}
+        />
+      )}
+>>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }

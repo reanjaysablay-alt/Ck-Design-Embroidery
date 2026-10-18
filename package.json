@@ -11,14 +11,25 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
+    "dirham": "^1.5.3",
     "next": "^16.3.0",
     "nodemailer": "^9.0.3",
+<<<<<<< HEAD
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
+=======
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+>>>>>>> a1bbbf0 (Fix)
   },
   "devDependencies": {
+    "@types/node": "26.6.4",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.3.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.4"
+    "tailwindcss": "^3.4.4",
+    "typescript": "7.0.2"
   }
 }
