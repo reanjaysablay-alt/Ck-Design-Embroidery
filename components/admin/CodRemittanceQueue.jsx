@@ -65,7 +65,7 @@ export default async function CodRemittanceQueue() {
                   </div>
                 </div>
                 <span className="font-mono text-slate-900 font-semibold">
-                  ${Number(o.total).toFixed(2)}
+                  &#x20C3;&nbsp;{Number(o.total).toFixed(2)}
                 </span>
               </div>
               <RemitCodForm

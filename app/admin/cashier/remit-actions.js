@@ -36,7 +36,7 @@ export async function remitCod(formData) {
     action: 'cod_remitted',
     targetType: 'order',
     targetId: orderId,
-    details: `Received $${amount.toFixed(2)} from rider`,
+    details: `Received \u20C3\u00A0${amount.toFixed(2)} from rider`,
   });
 
   revalidatePath('/admin/cashier');

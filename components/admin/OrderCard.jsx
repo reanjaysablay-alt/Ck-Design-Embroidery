@@ -58,7 +58,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge status={order.order_status} />
-          <span className="font-mono text-slate-900 font-semibold">${order.total}</span>
+          <span className="font-mono text-slate-900 font-semibold">&#x20C3;&nbsp;{order.total}</span>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           <span className="font-mono text-xs uppercase tracking-widest text-slate-400 mr-1">
             Delivery fee:
           </span>
-          ${Number(order.delivery_fee).toFixed(2)}
+          &#x20C3;&nbsp;{Number(order.delivery_fee).toFixed(2)}
         </div>
       )}
 
@@ -101,7 +101,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           <span className="font-mono text-xs uppercase tracking-widest text-slate-400">
             Delivery fee
           </span>
-          <span className="text-slate-400 text-xs">$</span>
+          <span className="text-slate-400 text-xs">&#x20C3;</span>
           <input
             type="number"
             name="fee"
@@ -166,7 +166,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
                 <span className="font-mono text-xs uppercase tracking-widest text-slate-400">
                   Customization fee:
                 </span>{' '}
-                ${Number(item.customizationFee).toFixed(2)}
+                &#x20C3;&nbsp;{Number(item.customizationFee).toFixed(2)}
               </div>
             )}
             {item.type === 'custom' && feeAction && (
@@ -176,7 +176,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
                 <span className="font-mono text-xs uppercase tracking-widest text-slate-400">
                   Customization fee
                 </span>
-                <span className="text-slate-400 text-xs">$</span>
+                <span className="text-slate-400 text-xs">&#x20C3;</span>
                 <input
                   type="number"
                   name="fee"

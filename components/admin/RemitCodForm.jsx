@@ -25,7 +25,7 @@ export default function RemitCodForm({ orderId, total, riderName, collected, cha
     }
     if (
       !window.confirm(
-        `Confirm you received $${Number(amount || 0).toFixed(2)} from ${riderName || 'the rider'} for order #${orderId}? This records the payment and cannot be undone.`
+        `Confirm you received \u20C3\u00A0${Number(amount || 0).toFixed(2)} from ${riderName || 'the rider'} for order #${orderId}? This records the payment and cannot be undone.`
       )
     ) {
       return;
@@ -56,7 +56,7 @@ export default function RemitCodForm({ orderId, total, riderName, collected, cha
           </>
         )}
         {' · '}Rider should hand over{' '}
-        <span className="text-slate-800 font-medium">${Number(total).toFixed(2)}</span>
+        <span className="text-slate-800 font-medium">&#x20C3;&nbsp;{Number(total).toFixed(2)}</span>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">

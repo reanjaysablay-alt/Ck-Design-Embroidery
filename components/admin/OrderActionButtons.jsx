@@ -96,7 +96,7 @@ export function CollectCashButton({ id, action, amount }) {
     <form
       action={action}
       onSubmit={(e) => {
-        if (!window.confirm(`Confirm you collected $${amount} in cash from the customer? The cashier will be notified to record it.`)) {
+        if (!window.confirm(`Confirm you collected \u20C3\u00A0${amount} in cash from the customer? The cashier will be notified to record it.`)) {
           e.preventDefault();
         }
       }}

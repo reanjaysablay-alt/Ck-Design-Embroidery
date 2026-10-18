@@ -24,14 +24,14 @@ module.exports = {
         thread: 'var(--color-thread)',
       },
       fontFamily: {
-        display: ['var(--font-fraunces)', 'serif'],
-        body: ['var(--font-inter)', 'sans-serif'],
-        mono: ['var(--font-mono)', 'monospace'],
+        display: ['Dirham', 'var(--font-fraunces)', 'serif'],
+        body: ['Dirham', 'var(--font-inter)', 'sans-serif'],
+        mono: ['Dirham', 'var(--font-mono)', 'monospace'],
         // Admin-selectable fonts (from Admin → Settings) for the site
         // title, tagline, and hero heading.
-        title: ['var(--font-title)', 'serif'],
-        tagline: ['var(--font-tagline)', 'sans-serif'],
-        heading: ['var(--font-heading)', 'serif'],
+        title: ['Dirham', 'var(--font-title)', 'serif'],
+        tagline: ['Dirham', 'var(--font-tagline)', 'sans-serif'],
+        heading: ['Dirham', 'var(--font-heading)', 'serif'],
       },
       backgroundImage: {
         twill: "repeating-linear-gradient(115deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 2px, transparent 2px, transparent 6px)",

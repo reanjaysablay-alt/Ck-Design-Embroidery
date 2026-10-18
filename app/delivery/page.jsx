@@ -86,12 +86,12 @@ const DARK_CSS = `
 .rider-dark .text-red-700, .rider-dark .text-red-800 { color: #fca5a5; }
 `;
 
-// Formats an amount as UAE dirhams, e.g. "AED 1,250.00".
+// Formats an amount as UAE dirhams, e.g. "U+20C3 1,250.00".
 function money(value) {
   const amount = Number(value || 0);
 
   return (
-    `${CURRENCY_CODE} ` +
+    `\u20C3\u00A0` +
     amount.toLocaleString(LOCALE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

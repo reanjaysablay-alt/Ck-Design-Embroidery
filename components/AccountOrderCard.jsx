@@ -18,7 +18,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl, 
         </div>
         <div className="flex items-center gap-3">
           <OrderStatusBadge order={order} />
-          <span className="font-mono text-sm text-gold">${order.total}</span>
+          <span className="font-mono text-sm text-gold">&#x20C3;&nbsp;{order.total}</span>
         </div>
       </div>
       <div className="text-sm text-thread/70 mb-1">
@@ -42,7 +42,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl, 
           <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
             Delivery fee:
           </span>{' '}
-          ${Number(order.delivery_fee).toFixed(2)}
+          &#x20C3;&nbsp;{Number(order.delivery_fee).toFixed(2)}
         </div>
       )}
 
@@ -93,7 +93,7 @@ export default function AccountOrderCard({ order, showTracker = true, proofUrl, 
                 <span className="font-mono text-xs uppercase tracking-widest text-thread/40">
                   Customization fee:
                 </span>{' '}
-                ${Number(item.customizationFee).toFixed(2)}
+                &#x20C3;&nbsp;{Number(item.customizationFee).toFixed(2)}
               </div>
             )}
             </div>

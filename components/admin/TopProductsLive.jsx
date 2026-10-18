@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 // Locale is pinned so the server render and the browser always format
 // numbers the same way (avoids hydration mismatches).
 function money(n) {
-  return `AED ${Number(n || 0).toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `\u20C3\u00A0${Number(n || 0).toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Polls /api/admin/sales/top-products every few seconds so the

@@ -61,7 +61,7 @@ return (
       <div>
         <p className="font-mono text-xs uppercase tracking-widest text-gold mb-3">{product.category}</p>
         <h1 className="font-display text-4xl text-thread mb-4">{product.name}</h1>
-        <p className="font-mono text-2xl text-thread mb-6">AED {product.price}</p>
+        <p className="font-mono text-2xl text-thread mb-6">&#x20C3;&nbsp;{product.price}</p>
         {product.inStock === false && (
           <p className="inline-block bg-stitchRed text-thread text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm mb-6">
             Out of Stock
@@ -193,7 +193,7 @@ return (
         >
           {outOfStock
             ? selectedSizeStock === 0
-              ? `AED{size} Sold Out`
+              ? `${size} Sold Out`
               : 'Out of Stock'
             : added
             ? 'Added to Cart ✓'

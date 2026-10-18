@@ -24,7 +24,7 @@ export default function OrderTrackingPanel({ summaries, trackers, details }) {
             <div className="font-mono text-xs text-thread/40">Tracking order #{current.id}</div>
             <div className="text-thread/60 text-sm">{current.dateLabel}</div>
           </div>
-          <span className="font-mono text-sm text-gold">${current.total}</span>
+          <span className="font-mono text-sm text-gold">&#x20C3;&nbsp;{current.total}</span>
         </div>
         {trackers[activeId]}
       </div>
@@ -54,7 +54,7 @@ export default function OrderTrackingPanel({ summaries, trackers, details }) {
                   </div>
                   <div className={`text-sm ${isActive ? 'text-gold' : 'text-thread/70'}`}>{s.stageLabel}</div>
                 </div>
-                <span className="font-mono text-sm text-gold">${s.total}</span>
+                <span className="font-mono text-sm text-gold">&#x20C3;&nbsp;{s.total}</span>
               </button>
 
               {isActive && <div className="mt-3">{details[s.id]}</div>}

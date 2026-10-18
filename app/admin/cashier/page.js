@@ -12,7 +12,7 @@ import CodRemittanceQueue from '@/components/admin/CodRemittanceQueue';
 export const metadata = { title: 'Cashier — Stitchhouse Admin' };
 export const dynamic = 'force-dynamic';
 
-const money = (n) => `$${Number(n).toFixed(2)}`;
+const money = (n) => `\u20C3\u00A0${Number(n).toFixed(2)}`;
 
 function itemsSummary(order) {
   const names = (order.items || []).map((i) => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`);

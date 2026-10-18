@@ -94,7 +94,7 @@ export default function CartPage() {
 
       <div className="flex items-center justify-between border-t border-white/10 pt-6 mb-8">
         <span className="font-display text-xl text-thread">Subtotal</span>
-        <span className="font-mono text-xl text-thread">AED{subtotal.toFixed(2)}</span>
+        <span className="font-mono text-xl text-thread">&#x20C3;&nbsp;{subtotal.toFixed(2)}</span>
       </div>
 
       <button

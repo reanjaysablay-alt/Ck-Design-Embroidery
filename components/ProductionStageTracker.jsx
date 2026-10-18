@@ -146,9 +146,9 @@ export default function OrderStageDetail({ order, proofUrl }) {
 
   const message =
     eff === 'payment' && isWalkin
-      ? `Ready for pickup. Please pay $${order.total} at the shop counter — payment is confirmed once our cashier records it.`
+      ? `Ready for pickup. Please pay \u20C3\u00A0${order.total} at the shop counter — payment is confirmed once our cashier records it.`
       : eff === 'payment'
-      ? `Out for delivery. Please pay $${order.total} in cash to our delivery team when your order arrives — payment is confirmed once our cashier records it.`
+      ? `Out for delivery. Please pay \u20C3\u00A0${order.total} in cash to our delivery team when your order arrives — payment is confirmed once our cashier records it.`
       : paysOnHandover && eff === 'completed' && stage === 'ready_for_fulfillment'
       ? 'Payment received — thank you! Your order will be marked completed shortly.'
       : TRACKER_STAGES.find((s) => s.key === eff)?.description;

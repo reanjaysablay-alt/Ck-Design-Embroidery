@@ -103,7 +103,7 @@ export default function ProductForm({ product, action, submitLabel }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Field label="Price (USD)" name="price" type="number" step="0.01" defaultValue={product?.price} required />
+        <Field label={'Price (\u20C3)'} name="price" type="number" step="0.01" defaultValue={product?.price} required />
         <Field label="Category" name="category" defaultValue={product?.category} />
       </div>
 

@@ -21,7 +21,7 @@ export default function RecordPaymentForm({ orderId, total, isCod, action }) {
   function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    if (!window.confirm(`Record $${Number(amount || 0).toFixed(2)} as received for order #${orderId}? This cannot be undone.`)) {
+    if (!window.confirm(`Record \u20C3\u00A0${Number(amount || 0).toFixed(2)} as received for order #${orderId}? This cannot be undone.`)) {
       return;
     }
     const formData = new FormData();

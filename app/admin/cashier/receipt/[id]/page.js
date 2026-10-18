@@ -10,7 +10,7 @@ import PrintButton from '@/components/admin/PrintButton';
 export const metadata = { title: 'Payment Receipt — Stitchhouse Admin' };
 export const dynamic = 'force-dynamic';
 
-const money = (n) => `$${Number(n).toFixed(2)}`;
+const money = (n) => `\u20C3\u00A0${Number(n).toFixed(2)}`;
 
 export default async function ReceiptPage({ params }) {
   const ctx = await getAccessContext();

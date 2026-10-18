@@ -840,7 +840,7 @@ export default function CheckoutClient({ user }) {
                 </div>
 
                 <span className="font-mono text-thread flex-shrink-0">
-                  AED {lineTotal.toFixed(2)}
+                  &#x20C3;&nbsp;{lineTotal.toFixed(2)}
                 </span>
               </div>
             );
@@ -851,7 +851,7 @@ export default function CheckoutClient({ user }) {
           <span className="font-display text-lg text-thread">Total</span>
 
           <span className="font-mono text-lg text-thread">
-            AED {Number(subtotal || 0).toFixed(2)}
+            &#x20C3;&nbsp;{Number(subtotal || 0).toFixed(2)}
           </span>
         </div>
       </div>

@@ -47,7 +47,7 @@ export default async function AdminProductsPage() {
               </div>
               <div className="text-slate-400 text-xs font-mono">{p.slug} · {p.category}</div>
             </div>
-            <div className="font-mono text-slate-900 font-medium flex-shrink-0">${p.price}</div>
+            <div className="font-mono text-slate-900 font-medium flex-shrink-0">&#x20C3;&nbsp;{p.price}</div>
             <Link
               href={`/admin/products/${p.id}/edit`}
               className="text-indigo-600 text-xs uppercase tracking-widest hover:underline flex-shrink-0"

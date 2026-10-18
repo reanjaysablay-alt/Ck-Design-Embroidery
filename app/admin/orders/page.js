@@ -42,7 +42,7 @@ const STAT_ACCENTS = {
 };
 
 // Currency + locale for amounts on this page (UAE dirhams).
-// Same format as the rider dashboard: "AED 1,250.00".
+// Same format as the rider dashboard: "U+20C3 1,250.00".
 // Tip: move this into a shared file (e.g. '@/lib/money') and import it
 // everywhere instead of keeping copies.
 const CURRENCY_CODE = 'AED';
@@ -52,7 +52,7 @@ function money(value) {
   const amount = Number(value || 0);
 
   return (
-    `${CURRENCY_CODE} ` +
+    `\u20C3\u00A0` +
     amount.toLocaleString(LOCALE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

@@ -331,8 +331,8 @@ export async function acceptOrder(formData) {
   await notifyOrderStatus(admin, order, {
     title: 'Order accepted 🎉',
     body: isWalkin
-      ? `Great news — order #${order.id} ($${total}) has been accepted and is being prepared. We'll let you know when it's ready for pickup.`
-      : `Great news — order #${order.id} ($${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
+      ? `Great news — order #${order.id} (\u20C3\u00A0${total}) has been accepted and is being prepared. We'll let you know when it's ready for pickup.`
+      : `Great news — order #${order.id} (\u20C3\u00A0${total}) has been accepted and is now in production. We'll be in touch with shipping details.`,
     emailTemplateFn: isWalkin ? orderPreparingCustomerEmail : orderToShipCustomerEmail,
   });
 
@@ -343,8 +343,8 @@ export async function acceptOrder(formData) {
     targetType: 'order',
     targetId: order.id,
     details: isWalkin
-      ? `Accepted order #${order.id} ($${total}) — moved to Preparing`
-      : `Accepted order #${order.id} ($${total}) — moved to To Ship`,
+      ? `Accepted order #${order.id} (\u20C3\u00A0${total}) — moved to Preparing`
+      : `Accepted order #${order.id} (\u20C3\u00A0${total}) — moved to To Ship`,
   });
 
   revalidatePath('/admin/orders');
@@ -369,7 +369,7 @@ export async function markShipped(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Order shipped 📦',
-    body: `Order #${order.id} ($${total}) is on its way to you.`,
+    body: `Order #${order.id} (\u20C3\u00A0${total}) is on its way to you.`,
     emailTemplateFn: orderToReceiveCustomerEmail,
   });
 
@@ -404,7 +404,7 @@ export async function markCompleted(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Order completed ✅',
-    body: `Order #${order.id} ($${total}) has been marked as received. Thanks for your order!`,
+    body: `Order #${order.id} (\u20C3\u00A0${total}) has been marked as received. Thanks for your order!`,
     emailTemplateFn: orderCompletedCustomerEmail,
   });
 
@@ -438,7 +438,7 @@ export async function markReadyForPickup(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Ready for pickup 📍',
-    body: `Order #${order.id} ($${total}) is ready for pickup at our shop. Please bring your payment.`,
+    body: `Order #${order.id} (\u20C3\u00A0${total}) is ready for pickup at our shop. Please bring your payment.`,
     emailTemplateFn: orderReadyForPickupCustomerEmail,
   });
 
@@ -472,7 +472,7 @@ export async function markPickedUp(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Order picked up ✅',
-    body: `Order #${order.id} ($${total}) has been marked as picked up. Thanks for your order!`,
+    body: `Order #${order.id} (\u20C3\u00A0${total}) has been marked as picked up. Thanks for your order!`,
     emailTemplateFn: orderPickedUpCustomerEmail,
   });
 
@@ -535,7 +535,7 @@ export async function cancelOrder(formData) {
   const total = Number(order.total).toFixed(2);
   await notifyOrderStatus(admin, order, {
     title: 'Order canceled',
-    body: `We're sorry — order #${order.id} ($${total}) couldn't be fulfilled.${
+    body: `We're sorry — order #${order.id} (\u20C3\u00A0${total}) couldn't be fulfilled.${
       order.payment_method === 'paypal' ? ' Your PayPal payment has been refunded.' : ''
     }`,
     emailTemplateFn: orderCanceledCustomerEmail,
@@ -547,7 +547,7 @@ export async function cancelOrder(formData) {
     action: 'order.cancel',
     targetType: 'order',
     targetId: order.id,
-    details: `Canceled order #${order.id} ($${total})${refunded ? ' — PayPal payment refunded' : ''}${
+    details: `Canceled order #${order.id} (\u20C3\u00A0${total})${refunded ? ' — PayPal payment refunded' : ''}${
       !alreadyCanceled && order.stock_deductions?.length ? ' — stock restored' : ''
     }`,
   });
@@ -617,7 +617,7 @@ export async function setCustomizationFee(formData) {
 
   await notifyOrderStatus(admin, order, {
     title: 'Order total updated 💲',
-    body: `A customization charge was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
+    body: `A customization charge was added to order #${order.id}. New total: \u20C3\u00A0${Number(order.total).toFixed(2)}.`,
     emailTemplateFn: (o) => orderTotalUpdatedCustomerEmail(o, 'customization charge'),
   });
 
@@ -627,7 +627,7 @@ export async function setCustomizationFee(formData) {
     action: 'order.set_fee',
     targetType: 'order',
     targetId: order.id,
-    details: `Set customization fee on order #${order.id}, item ${itemIndex + 1} — new total $${Number(order.total).toFixed(2)}`,
+    details: `Set customization fee on order #${order.id}, item ${itemIndex + 1} — new total \u20C3\u00A0${Number(order.total).toFixed(2)}`,
   });
 
   revalidatePath('/admin/orders');
@@ -675,7 +675,7 @@ export async function setDeliveryFee(formData) {
 
   await notifyOrderStatus(admin, order, {
     title: 'Order total updated 💲',
-    body: `A delivery fee was added to order #${order.id}. New total: $${Number(order.total).toFixed(2)}.`,
+    body: `A delivery fee was added to order #${order.id}. New total: \u20C3\u00A0${Number(order.total).toFixed(2)}.`,
     emailTemplateFn: (o) => orderTotalUpdatedCustomerEmail(o, 'delivery fee'),
   });
 
@@ -685,7 +685,7 @@ export async function setDeliveryFee(formData) {
     action: 'order.set_delivery_fee',
     targetType: 'order',
     targetId: order.id,
-    details: `Set delivery fee on order #${order.id} to $${fee.toFixed(2)} — new total $${Number(order.total).toFixed(2)}`,
+    details: `Set delivery fee on order #${order.id} to \u20C3\u00A0${fee.toFixed(2)} — new total \u20C3\u00A0${Number(order.total).toFixed(2)}`,
   });
 
   revalidatePath('/admin/orders');
@@ -732,7 +732,7 @@ export async function reportCodCollected(formData) {
     action: 'order.cod_collected',
     targetType: 'order',
     targetId: id,
-    details: `Reported $${Number(existing.total).toFixed(2)} cash collected on delivery for order #${id} — sent to the cashier`,
+    details: `Reported \u20C3\u00A0${Number(existing.total).toFixed(2)} cash collected on delivery for order #${id} — sent to the cashier`,
   });
 
   revalidatePath('/admin/orders');
@@ -824,7 +824,7 @@ export async function recordPayment(formData) {
   const receiptNo = formatReceiptNo(record.id);
   await notifyOrderStatus(admin, updated, {
     title: 'Payment received 💵',
-    body: `We received your payment of $${amount.toFixed(2)} for order #${order.id}. Receipt ${receiptNo}. Thank you!`,
+    body: `We received your payment of \u20C3\u00A0${amount.toFixed(2)} for order #${order.id}. Receipt ${receiptNo}. Thank you!`,
   });
 
   await logActivity({
@@ -833,7 +833,7 @@ export async function recordPayment(formData) {
     action: 'payment.record',
     targetType: 'order',
     targetId: order.id,
-    details: `Recorded ${isCod ? 'COD' : 'walk-in'} payment $${amount.toFixed(2)} for order #${order.id} (${receiptNo})`,
+    details: `Recorded ${isCod ? 'COD' : 'walk-in'} payment \u20C3\u00A0${amount.toFixed(2)} for order #${order.id} (${receiptNo})`,
   });
 
   revalidatePath('/admin/cashier');

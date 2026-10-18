@@ -22,7 +22,7 @@ export const metadata = { title: 'Revenue — Stitchhouse Admin' };
 export const dynamic = 'force-dynamic';
 
 const money = (n) =>
-  `AED ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `\u20C3\u00A0${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const METHODS = [
   { key: 'paypal', label: 'PayPal', bar: 'bg-indigo-500', dot: 'bg-indigo-500' },

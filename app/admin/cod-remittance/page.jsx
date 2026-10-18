@@ -5,12 +5,12 @@ import { loadCodRemittances, verifyCodRemittance } from './actions';
 import QrScannerModal from '@/components/admin/QrScannerModal';
 
 // Currency + locale for amounts and dates on this page (UAE dirhams).
-// Same format as the rider dashboard: "AED 1,250.00".
+// Same format as the rider dashboard: "U+20C3 1,250.00".
 const CURRENCY_CODE = 'AED';
 const LOCALE = 'en-AE';
 
 function formatMoney(value) {
-  return `${CURRENCY_CODE} ${Number(value || 0).toLocaleString(LOCALE, {
+  return `\u20C3\u00A0${Number(value || 0).toLocaleString(LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
