@@ -3,6 +3,8 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, getStaffEmailList } from '@/lib/admin';
 import { formatDate, formatDateTime } from '@/lib/formatDate';
 import { approveStaffProfile, denyStaffProfile, assignCashier } from '@/app/admin/actions';
+import { deleteAccount } from '@/app/admin/account-actions';
+import DeleteAccountButton from '@/components/admin/DeleteAccountButton';
 import CashierAssignForm from '@/components/admin/CashierAssignForm';
 import StaffApprovalButtons from '@/components/admin/StaffApprovalButtons';
 import DeliveryAccountForm from '@/components/admin/DeliveryAccountForm';
@@ -36,6 +38,7 @@ const ACTION_LABELS = {
   'order.set_production_stage': 'Updated a production stage',
   'delivery.assign': 'Assigned an order to a delivery person',
   'delivery.create': 'Created a delivery account',
+  'account.delete': 'Deleted a staff/delivery account',
 };
 
 export default async function AdminStaffPage() {
@@ -64,6 +67,7 @@ export default async function AdminStaffPage() {
     const match = authUsers.find((u) => u.email?.toLowerCase() === email);
     return {
       email,
+      id: match?.id || null,
       signedUp: !!match,
       createdAt: match?.created_at || null,
       lastSignInAt: match?.last_sign_in_at || null,
@@ -194,6 +198,13 @@ export default async function AdminStaffPage() {
                   </span>
                 )}
               </div>
+              {s.signedUp && s.id && (
+                <DeleteAccountButton
+                  action={deleteAccount}
+                  fields={{ userId: s.id, kind: 'staff' }}
+                  confirmText={`Delete the staff account ${s.email}? They will no longer be able to sign in. This cannot be undone.`}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -227,6 +238,11 @@ export default async function AdminStaffPage() {
                   Last sign-in {d.lastSignInAt ? formatDateTime(d.lastSignInAt) : 'never'}
                 </span>
               </div>
+              <DeleteAccountButton
+                action={deleteAccount}
+                fields={{ userId: d.id, kind: 'delivery' }}
+                confirmText={`Delete the delivery account ${d.name || d.email}? They will no longer be able to sign in, and past orders will no longer show them as the rider. This cannot be undone.`}
+              />
             </div>
           ))}
         </div>
@@ -291,6 +307,12 @@ export default async function AdminStaffPage() {
                   Last active {p.last_used_at ? formatDateTime(p.last_used_at) : 'never'}
                 </span>
               </div>
+              <DeleteAccountButton
+                action={denyStaffProfile}
+                fields={{ id: p.id }}
+                label="Remove"
+                confirmText={`Remove ${p.name}? Their saved name and PIN are deleted, and they must identify themselves again from scratch.`}
+              />
             </div>
           ))}
         </div>
