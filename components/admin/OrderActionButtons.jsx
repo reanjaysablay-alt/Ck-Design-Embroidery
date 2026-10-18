@@ -106,7 +106,7 @@ export function CollectCashButton({ id, action, amount }) {
         type="submit"
         className="bg-emerald-600 text-white font-medium text-xs px-5 py-2.5 rounded-full hover:bg-emerald-700 transition-colors"
       >
-        I collected the cash (${amount})
+        I collected the cash (&#x20C3;&nbsp;{amount})
       </button>
     </form>
   );

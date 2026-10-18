@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 // to a transparent-background PNG before being submitted to the server
 // action, which then uploads the cleaned image to Supabase Storage.
 export default function ProductForm({ product, action, submitLabel }) {
+  const [galleryBusy, setGalleryBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [processingError, setProcessingError] = useState('');
   const [previewUrl, setPreviewUrl] = useState(product?.image || null);
@@ -155,6 +156,8 @@ export default function ProductForm({ product, action, submitLabel }) {
         )}
       </div>
 
+      <ViewsEditor initial={product?.images} onBusyChange={setGalleryBusy} />
+
       <div>
         <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">Description</label>
         <textarea
@@ -227,12 +230,218 @@ export default function ProductForm({ product, action, submitLabel }) {
 
       <button
         type="submit"
-        disabled={processing}
+        disabled={processing || galleryBusy}
         className="bg-indigo-600 text-white font-medium text-sm px-8 py-3.5 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-60"
       >
-        {processing ? 'Processing image…' : submitLabel}
+        {processing ? 'Processing image…' : galleryBusy ? 'Uploading views…' : submitLabel}
       </button>
     </form>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Extra product views (side, back, detail...). The main image above is
+// shown to customers as the "Front view"; everything added here appears
+// next to it as clickable thumbnails on the product page.
+// Each photo is shrunk in the browser and uploaded on its own as soon as
+// it is chosen (a single big form submit would exceed Vercel's request
+// limit), then only the URLs + labels travel with the form.
+// ---------------------------------------------------------------------
+const MAX_VIEWS = 8;
+const VIEW_SUGGESTIONS = ['Side view', 'Back view', 'Detail', 'Close-up', 'Left side', 'Right side'];
+
+async function shrinkImage(file) {
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.88));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], `${file.name.replace(/\.[^/.]+$/, '')}.webp`, { type: 'image/webp' });
+  } catch {
+    return file;
+  }
+}
+
+function ViewsEditor({ initial, onBusyChange }) {
+  const [items, setItems] = useState(() =>
+    (initial || []).map((v, i) => ({ key: `old-${i}`, url: v.url, label: v.label || '', status: 'done' }))
+  );
+  const fileRef = useRef(null);
+  const counter = useRef(0);
+
+  const busy = items.some((i) => i.status === 'uploading');
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
+
+  function patch(key, changes) {
+    setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...changes } : i)));
+  }
+
+  function nextDefaultLabel(existing) {
+    const used = new Set(existing.map((i) => i.label.trim().toLowerCase()));
+    const pick = VIEW_SUGGESTIONS.slice(0, 3).find((l) => !used.has(l.toLowerCase()));
+    return pick || `View ${existing.length + 2}`;
+  }
+
+  async function handleFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+
+    const room = MAX_VIEWS - items.length;
+    const chosen = files.slice(0, Math.max(room, 0));
+
+    // Add placeholder rows first so the admin sees them straight away.
+    let working = [...items];
+    const added = chosen.map((file) => {
+      counter.current += 1;
+      const row = {
+        key: `new-${counter.current}`,
+        url: '',
+        preview: URL.createObjectURL(file),
+        label: nextDefaultLabel(working),
+        status: 'uploading',
+        file,
+      };
+      working = [...working, row];
+      return row;
+    });
+    setItems(working);
+
+    for (const row of added) {
+      try {
+        const small = await shrinkImage(row.file);
+        const body = new FormData();
+        body.append('file', small);
+        const res = await fetch('/api/admin/product-image', { method: 'POST', body });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(result.error || 'Upload failed');
+        patch(row.key, { url: result.url, status: 'done', error: '' });
+      } catch (err) {
+        patch(row.key, { status: 'error', error: err.message || 'Upload failed' });
+      }
+    }
+  }
+
+  function move(index, dir) {
+    setItems((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function remove(key) {
+    setItems((prev) => prev.filter((i) => i.key !== key));
+  }
+
+  const payload = JSON.stringify(
+    items.filter((i) => i.status === 'done').map((i) => ({ url: i.url, label: i.label.trim() }))
+  );
+
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">
+        More views (side, back, detail…)
+      </label>
+      <p className="text-slate-400 text-xs mb-3">
+        The main image above is shown to customers as the <strong>Front view</strong>. Add the other
+        angles here — customers can click each one on the product page. Up to {MAX_VIEWS}.
+      </p>
+
+      <input type="hidden" name="galleryJson" value={payload} />
+      <datalist id="view-suggestions">
+        {VIEW_SUGGESTIONS.map((l) => (
+          <option key={l} value={l} />
+        ))}
+      </datalist>
+
+      {items.length > 0 && (
+        <ul className="space-y-3 mb-4">
+          {items.map((item, index) => (
+            <li
+              key={item.key}
+              className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.preview || item.url}
+                alt=""
+                className="w-16 h-16 object-cover rounded-lg border border-slate-200 bg-white flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  list="view-suggestions"
+                  value={item.label}
+                  maxLength={40}
+                  onChange={(e) => patch(item.key, { label: e.target.value })}
+                  placeholder="Label, e.g. Side view"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm focus-visible:outline-indigo-500"
+                />
+                {item.status === 'uploading' && (
+                  <p className="text-indigo-600 text-xs mt-1">Uploading…</p>
+                )}
+                {item.status === 'error' && (
+                  <p className="text-red-600 text-xs mt-1">
+                    {item.error} — remove it and try again.
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => move(index, -1)}
+                  disabled={index === 0}
+                  aria-label="Move up"
+                  className="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(index, 1)}
+                  disabled={index === items.length - 1}
+                  aria-label="Move down"
+                  className="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(item.key)}
+                  aria-label="Remove this view"
+                  className="h-8 px-3 rounded-lg border border-red-200 text-red-600 text-xs hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {items.length < MAX_VIEWS && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFiles}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white file:text-xs file:uppercase file:tracking-widest focus-visible:outline-indigo-500"
+        />
+      )}
+    </div>
   );
 }
 

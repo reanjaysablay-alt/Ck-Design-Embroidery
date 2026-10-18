@@ -17,6 +17,14 @@ export default function ProductDetail({ product }) {
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | done | error
   const [uploadError, setUploadError] = useState('');
   const [added, setAdded] = useState(false);
+  // Front view = the main product image; the rest are the extra views
+  // (side, back, detail...) the admin added.
+  const views = [
+    { url: product.image, label: 'Front view' },
+    ...(product.images || []).filter((v) => v?.url),
+  ];
+  const [activeView, setActiveView] = useState(0);
+  const currentView = views[activeView] || views[0];
   const selectedSizeStock = product.stock && size ? product.stock[size] : null;
   const outOfStock = product.inStock === false || selectedSizeStock === 0;
 
@@ -54,8 +62,42 @@ export default function ProductDetail({ product }) {
 
 return (
     <div className="max-w-4xl mx-auto px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
-<div className="relative aspect-[4/5] bg-canvas2 rounded-sm overflow-hidden">
-        <Image src={productImageSrc(product.image)} alt={product.name} fill sizes="(max-width: 768px) 90vw, 38vw" className="object-cover" />
+<div>
+        <div className="relative aspect-[4/5] bg-canvas2 rounded-sm overflow-hidden">
+          <Image
+            key={currentView.url || 'placeholder'}
+            src={productImageSrc(currentView.url)}
+            alt={views.length > 1 ? `${product.name} — ${currentView.label}` : product.name}
+            fill
+            sizes="(max-width: 768px) 90vw, 38vw"
+            className="object-cover"
+          />
+        </div>
+
+        {views.length > 1 && (
+          <>
+            <p className="font-mono text-xs uppercase tracking-widest text-thread/50 mt-3">
+              {currentView.label}
+            </p>
+            <ul className="flex gap-3 mt-3 overflow-x-auto pb-1">
+              {views.map((view, i) => (
+                <li key={`${view.url}-${i}`} className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView(i)}
+                    aria-label={`Show ${view.label || `view ${i + 1}`}`}
+                    aria-pressed={i === activeView}
+                    className={`relative block w-16 h-20 rounded-sm overflow-hidden bg-canvas2 border-2 ${
+                      i === activeView ? 'border-gold' : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <Image src={productImageSrc(view.url)} alt="" fill sizes="64px" className="object-cover" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
 
       <div>

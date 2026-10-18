@@ -257,7 +257,7 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
             <CollectCashButton id={order.id} action={collectAction} amount={Number(order.total).toFixed(2)} />
           ) : (
             <span className="text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
-              Cash on delivery — collect ${Number(order.total).toFixed(2)} when delivered
+              Cash on delivery — collect &#x20C3;&nbsp;{Number(order.total).toFixed(2)} when delivered
             </span>
           )}
         </div>

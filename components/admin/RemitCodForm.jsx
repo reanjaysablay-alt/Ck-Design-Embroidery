@@ -51,8 +51,8 @@ export default function RemitCodForm({ orderId, total, riderName, collected, cha
         Rider: <span className="text-slate-800 font-medium">{riderName || 'Unknown'}</span>
         {collected != null && (
           <>
-            {' · '}Customer paid ${Number(collected).toFixed(2)}
-            {change > 0 && <> · change given ${Number(change).toFixed(2)}</>}
+            {' · '}Customer paid &#x20C3;&nbsp;{Number(collected).toFixed(2)}
+            {change > 0 && <> · change given &#x20C3;&nbsp;{Number(change).toFixed(2)}</>}
           </>
         )}
         {' · '}Rider should hand over{' '}

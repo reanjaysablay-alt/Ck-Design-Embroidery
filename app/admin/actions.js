@@ -73,6 +73,26 @@ async function requireCashierOrAdmin() {
   return ctx;
 }
 
+// Extra product views (side, back, detail...) arrive as JSON in the
+// hidden `galleryJson` field. The files themselves were already uploaded
+// one by one via /api/admin/product-image, so only URLs + labels are here.
+function parseGallery(formData) {
+  let raw;
+  try {
+    raw = JSON.parse(formData.get('galleryJson')?.toString() || '[]');
+  } catch {
+    raw = [];
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .slice(0, 8)
+    .map((v) => ({
+      url: typeof v?.url === 'string' ? v.url.trim() : '',
+      label: typeof v?.label === 'string' ? v.label.trim().slice(0, 40) : '',
+    }))
+    .filter((v) => /^https:\/\//.test(v.url));
+}
+
 // Reads and normalizes the product form fields (shared by create + update).
 function parseProductForm(formData) {
   const sizesRaw = formData.get('sizes')?.toString().trim();
@@ -115,6 +135,7 @@ function parseProductForm(formData) {
     sizes,
     stock,
     in_stock: inStock,
+    images: parseGallery(formData),
   };
 }
 
