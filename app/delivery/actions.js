@@ -169,7 +169,7 @@ export async function releaseDelivery(formData) {
     })
     .eq('id', orderId)
     .eq('delivery_user_id', user.id)
-    .eq('delivery_stage', 'accepted')
+    .or('delivery_stage.eq.accepted,delivery_stage.is.null')
     .select('id')
     .maybeSingle();
 
@@ -210,21 +210,45 @@ export async function advanceDelivery(formData) {
 
   if (to === 'out_for_delivery') patch.delivery_failed_reason = null;
 
-  const { data, error } = await admin
+  let query = admin
     .from('orders')
     .update(patch)
     .eq('id', orderId)
-    .eq('delivery_user_id', user.id)
-    .in('delivery_stage', allowedFrom)
-    .select('id')
-    .maybeSingle();
+    .eq('delivery_user_id', user.id);
+
+  // An order an admin assigned has no stage yet (NULL) but the rider
+  // dashboard shows it as "Accepted", so treat NULL the same as 'accepted'.
+  query = allowedFrom.includes('accepted')
+    ? query.or(`delivery_stage.in.(${allowedFrom.join(',')}),delivery_stage.is.null`)
+    : query.in('delivery_stage', allowedFrom);
+
+  const { data, error } = await query.select('id').maybeSingle();
 
   if (error) {
     console.error('advanceDelivery:', error);
     return fail(error.message);
   }
 
-  if (!data) return fail('This step is not available for the order.');
+  if (!data) {
+    // Explain why, instead of a vague message.
+    const { data: current } = await admin
+      .from('orders')
+      .select('delivery_stage, delivery_user_id')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (current && current.delivery_user_id === user.id && current.delivery_stage === to) {
+      // Already moved (double tap / stale screen): just refresh.
+      refresh();
+      return { ok: true };
+    }
+    if (!current || current.delivery_user_id !== user.id) {
+      return fail('This order is not assigned to your account.');
+    }
+    return fail(
+      `This order is at "${(current.delivery_stage || 'new').replace(/_/g, ' ')}", so it cannot move to "${to.replace(/_/g, ' ')}".`
+    );
+  }
 
   refresh();
   return { ok: true };
