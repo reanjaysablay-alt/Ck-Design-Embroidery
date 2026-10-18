@@ -12,10 +12,6 @@ import {
   reportCodCollected,
   uploadDesignProof,
   getDeliveryUsers,
-<<<<<<< HEAD
-  assignDeliveryUser,
-=======
->>>>>>> a1bbbf0 (Fix)
 } from '@/app/admin/actions';
 import {
   AcceptButton,
@@ -45,8 +41,6 @@ const STAT_ACCENTS = {
   indigo: 'bg-indigo-50 text-indigo-700',
 };
 
-<<<<<<< HEAD
-=======
 // Currency + locale for amounts on this page (UAE dirhams).
 // Same format as the rider dashboard: "AED 1,250.00".
 // Tip: move this into a shared file (e.g. '@/lib/money') and import it
@@ -66,7 +60,6 @@ function money(value) {
   );
 }
 
->>>>>>> a1bbbf0 (Fix)
 function StatCard({ label, value, accent }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 flex-1 min-w-[160px] shadow-sm">
@@ -91,11 +84,7 @@ function DeliveryFeeStatus({ order, feeLocked }) {
   if (fee > 0) {
     return (
       <div className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
-<<<<<<< HEAD
-        Delivery fee OK — ${fee.toFixed(2)}
-=======
         Delivery fee OK — {money(fee)}
->>>>>>> a1bbbf0 (Fix)
       </div>
     );
   }
@@ -115,8 +104,6 @@ function DeliveryFeeStatus({ order, feeLocked }) {
   );
 }
 
-<<<<<<< HEAD
-=======
 // An order is ready for delivery as soon as production marks it
 // "ready_for_fulfillment" (and it isn't walk-in or already assigned).
 // From then on it can be handed to a rider — printing the shipping label
@@ -154,7 +141,6 @@ function PackingStatus({ order }) {
   );
 }
 
->>>>>>> a1bbbf0 (Fix)
 // Only active, in-progress orders live here. The moment an order is
 // marked Completed, Picked Up, or Canceled it drops off this list
 // automatically (it's simply no longer in this query) and shows up on
@@ -164,11 +150,7 @@ export default async function AdminOrdersPage({ searchParams }) {
   const params = await searchParams;
   const activeTab = TABS.find((t) => t.key === params?.tab) || TABS[0];
 
-<<<<<<< HEAD
-  // Only full admins can assign riders (assignDeliveryUser requires admin).
-=======
   // Only full admins can see the rider list (assignDeliveryUser requires admin).
->>>>>>> a1bbbf0 (Fix)
   const supabase = await createClient();
   const {
     data: { user },
@@ -199,12 +181,9 @@ export default async function AdminOrdersPage({ searchParams }) {
   const productionCount = list.filter((o) => ['to_ship', 'preparing'].includes(o.order_status)).length;
   const readyCount = list.filter((o) => ['to_receive', 'ready_for_pickup'].includes(o.order_status)).length;
 
-<<<<<<< HEAD
-=======
   // Orders that finished production and are waiting to be handed to a rider.
   const toPackCount = list.filter((o) => needsPacking(o)).length;
 
->>>>>>> a1bbbf0 (Fix)
   const visibleOrders = list.filter((o) => activeTab.statuses.includes(o.order_status));
 
   return (
@@ -276,32 +255,11 @@ export default async function AdminOrdersPage({ searchParams }) {
                   {hasRider && (
                     <div className="mt-4 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1 w-fit">
                       Rider: {riderEmailById[order.delivery_user_id] || 'assigned'}
-<<<<<<< HEAD
-                      {order.delivery_stage
-                        ? ` — ${order.delivery_stage.replace(/_/g, ' ')}`
-                        : order.order_status === 'completed'
-                        ? ''
-                        : ' — waiting for the rider to accept'}
-                    </div>
-                  )}
-
-                  {canAssign &&
-                    !hasRider &&
-                    order.production_stage === 'ready_for_fulfillment' &&
-                    order.payment_method !== 'walkin' && (
-                      <AssignRider
-                        id={order.id}
-                        riders={riders}
-                        action={assignDeliveryUser}
-                      />
-                    )}
-=======
                       {order.delivery_stage ? ` — ${order.delivery_stage.replace(/_/g, ' ')}` : ''}
                     </div>
                   )}
 
                   <PackingStatus order={order} />
->>>>>>> a1bbbf0 (Fix)
 
                   <div className="flex flex-wrap gap-3 mt-4">
                     {order.order_status === 'pending' && (

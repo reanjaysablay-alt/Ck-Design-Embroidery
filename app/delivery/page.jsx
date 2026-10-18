@@ -8,61 +8,20 @@ import {
   useState,
   useTransition,
 } from 'react';
-<<<<<<< HEAD
-import { createClient } from '@/lib/supabase/client';
-import {
-  acceptDelivery,
-  declineDelivery,
-=======
 import QRCode from 'qrcode';
 import { createClient } from '@/lib/supabase/client';
 import {
   acceptDelivery,
->>>>>>> a1bbbf0 (Fix)
   releaseDelivery,
   advanceDelivery,
   completeDelivery,
   failDelivery,
-<<<<<<< HEAD
-=======
   getAvailableOrders,
   getMyDeliveries,
->>>>>>> a1bbbf0 (Fix)
 } from '@/app/delivery/actions';
 
 const supabase = createClient();
 
-<<<<<<< HEAD
-// Shrinks phone photos before upload. Raw camera photos are often 4-8 MB,
-// which is over the server's 4 MB request limit and made "Confirm delivered"
-// fail. A 1280px JPEG is usually 200-400 KB.
-async function compressImage(file, maxSize = 1280, quality = 0.75) {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
-
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', quality)
-    );
-    if (!blob) return file;
-
-    return new File([blob], 'proof.jpg', { type: 'image/jpeg' });
-  } catch {
-    return file;
-  }
-}
-
-const AFTER_LOGOUT_PATH = '/';
-const THEME_KEY = 'rider-theme';
-
-=======
 const AFTER_LOGOUT_PATH = '/';
 const THEME_KEY = 'rider-theme';
 
@@ -70,7 +29,6 @@ const THEME_KEY = 'rider-theme';
 const CURRENCY_CODE = 'AED';
 const LOCALE = 'en-AE';
 
->>>>>>> a1bbbf0 (Fix)
 /*
  * Dark mode is scoped to the dashboard (.rider-dark) by overriding the
  * Tailwind utility classes used below. It works no matter how the rest
@@ -128,21 +86,13 @@ const DARK_CSS = `
 .rider-dark .text-red-700, .rider-dark .text-red-800 { color: #fca5a5; }
 `;
 
-<<<<<<< HEAD
-=======
 // Formats an amount as UAE dirhams, e.g. "AED 1,250.00".
->>>>>>> a1bbbf0 (Fix)
 function money(value) {
   const amount = Number(value || 0);
 
   return (
-<<<<<<< HEAD
-    '$' +
-    amount.toLocaleString('en-PH', {
-=======
     `${CURRENCY_CODE} ` +
     amount.toLocaleString(LOCALE, {
->>>>>>> a1bbbf0 (Fix)
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -151,21 +101,10 @@ function money(value) {
 
 function dateTime(value) {
   if (!value) return '—';
-<<<<<<< HEAD
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '—';
-  }
-
-  return new Intl.DateTimeFormat('en-PH', {
-=======
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
 
   return new Intl.DateTimeFormat(LOCALE, {
->>>>>>> a1bbbf0 (Fix)
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
@@ -173,21 +112,10 @@ function dateTime(value) {
 
 function shortDate(value) {
   if (!value) return '—';
-<<<<<<< HEAD
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '—';
-  }
-
-  return new Intl.DateTimeFormat('en-PH', {
-=======
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
 
   return new Intl.DateTimeFormat(LOCALE, {
->>>>>>> a1bbbf0 (Fix)
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -207,28 +135,6 @@ function pad(value) {
 // Returns "YYYY-MM-DD" in the rider's local time zone.
 function toDateKey(value) {
   if (!value) return null;
-<<<<<<< HEAD
-
-  const date =
-    value instanceof Date
-      ? value
-      : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return `${date.getFullYear()}-${pad(
-    date.getMonth() + 1
-  )}-${pad(date.getDate())}`;
-}
-
-function keyToDate(key) {
-  const [year, month, day] = key
-    .split('-')
-    .map(Number);
-
-=======
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
 
@@ -237,16 +143,11 @@ function keyToDate(key) {
 
 function keyToDate(key) {
   const [year, month, day] = key.split('-').map(Number);
->>>>>>> a1bbbf0 (Fix)
   return new Date(year, month - 1, day);
 }
 
 function longDate(key) {
-<<<<<<< HEAD
-  return new Intl.DateTimeFormat('en-PH', {
-=======
   return new Intl.DateTimeFormat(LOCALE, {
->>>>>>> a1bbbf0 (Fix)
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -255,11 +156,7 @@ function longDate(key) {
 }
 
 function monthLabel(year, month) {
-<<<<<<< HEAD
-  return new Intl.DateTimeFormat('en-PH', {
-=======
   return new Intl.DateTimeFormat(LOCALE, {
->>>>>>> a1bbbf0 (Fix)
     month: 'long',
     year: 'numeric',
   }).format(new Date(year, month, 1));
@@ -290,12 +187,7 @@ function normalizeAddress(address) {
         city: '',
         region: '',
         country: '',
-<<<<<<< HEAD
-        full:
-          address.trim() || 'No delivery address provided',
-=======
         full: address.trim() || 'No delivery address provided',
->>>>>>> a1bbbf0 (Fix)
       };
     }
   }
@@ -306,29 +198,11 @@ function normalizeAddress(address) {
   const city = String(address.city || '').trim();
 
   const region = String(
-<<<<<<< HEAD
-    address.emirate ||
-      address.state ||
-      address.province ||
-      address.region ||
-      ''
-  ).trim();
-
-  const country = String(address.country || '').trim();
-
-  const locationParts = [
-    line1,
-    city,
-    region,
-    country,
-  ].filter(Boolean);
-=======
     address.emirate || address.state || address.province || address.region || ''
   ).trim();
 
   const country = String(address.country || '').trim();
   const locationParts = [line1, city, region, country].filter(Boolean);
->>>>>>> a1bbbf0 (Fix)
 
   return {
     name,
@@ -359,13 +233,7 @@ function getNavigationUrl(address) {
 
   if (!query) return null;
 
-<<<<<<< HEAD
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    query
-  )}`;
-=======
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
->>>>>>> a1bbbf0 (Fix)
 }
 
 function getOrderState(order) {
@@ -373,32 +241,6 @@ function getOrderState(order) {
 
   const stage = order.delivery_stage;
 
-<<<<<<< HEAD
-  if (
-    stage === 'delivered' ||
-    order.delivered_at
-  ) {
-    return 'delivered';
-  }
-
-  if (stage === 'failed') return 'failed';
-  if (stage === 'arrived') return 'arrived';
-  if (stage === 'out_for_delivery') {
-    return 'out_for_delivery';
-  }
-  if (stage === 'picked_up') return 'picked_up';
-  if (stage === 'accepted') return 'accepted';
-
-  if (
-    order.order_status === 'completed' ||
-    order.order_status === 'delivered'
-  ) {
-    return 'delivered';
-  }
-
-  // Assigned by the admin but not accepted by the rider yet.
-  if (order.delivery_user_id) return 'assigned';
-=======
   if (stage === 'delivered' || order.delivered_at) return 'delivered';
   if (stage === 'failed') return 'failed';
   if (stage === 'arrived') return 'arrived';
@@ -411,31 +253,16 @@ function getOrderState(order) {
   }
 
   if (order.delivery_user_id) return 'accepted';
->>>>>>> a1bbbf0 (Fix)
 
   return 'available';
 }
 
 function isCod(order) {
-<<<<<<< HEAD
-  return (
-    String(order?.payment_method || '').toLowerCase() ===
-    'cod'
-  );
-}
-
-function getCodAmount(order) {
-  if (
-    order?.cod_amount !== null &&
-    order?.cod_amount !== undefined
-  ) {
-=======
   return String(order?.payment_method || '').toLowerCase() === 'cod';
 }
 
 function getCodAmount(order) {
   if (order?.cod_amount !== null && order?.cod_amount !== undefined) {
->>>>>>> a1bbbf0 (Fix)
     return Number(order.cod_amount || 0);
   }
 
@@ -448,24 +275,6 @@ function isCodAlreadyRemitted(order) {
 
 function StatusBadge({ state }) {
   const styles = {
-<<<<<<< HEAD
-    available:
-      'border-amber-200 bg-amber-50 text-amber-700',
-    assigned:
-      'border-amber-200 bg-amber-50 text-amber-700',
-    accepted:
-      'border-blue-200 bg-blue-50 text-blue-700',
-    picked_up:
-      'border-indigo-200 bg-indigo-50 text-indigo-700',
-    out_for_delivery:
-      'border-violet-200 bg-violet-50 text-violet-700',
-    arrived:
-      'border-cyan-200 bg-cyan-50 text-cyan-700',
-    failed:
-      'border-red-200 bg-red-50 text-red-700',
-    delivered:
-      'border-emerald-200 bg-emerald-50 text-emerald-700',
-=======
     available: 'border-amber-200 bg-amber-50 text-amber-700',
     accepted: 'border-blue-200 bg-blue-50 text-blue-700',
     picked_up: 'border-indigo-200 bg-indigo-50 text-indigo-700',
@@ -473,15 +282,10 @@ function StatusBadge({ state }) {
     arrived: 'border-cyan-200 bg-cyan-50 text-cyan-700',
     failed: 'border-red-200 bg-red-50 text-red-700',
     delivered: 'border-emerald-200 bg-emerald-50 text-emerald-700',
->>>>>>> a1bbbf0 (Fix)
   };
 
   const labels = {
     available: 'Available',
-<<<<<<< HEAD
-    assigned: 'New assignment',
-=======
->>>>>>> a1bbbf0 (Fix)
     accepted: 'Accepted',
     picked_up: 'Picked up',
     out_for_delivery: 'On the way',
@@ -501,16 +305,7 @@ function StatusBadge({ state }) {
   );
 }
 
-<<<<<<< HEAD
-function SectionHeader({
-  eyebrow,
-  title,
-  description,
-  count,
-}) {
-=======
 function SectionHeader({ eyebrow, title, description, count }) {
->>>>>>> a1bbbf0 (Fix)
   return (
     <div className="mb-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -540,27 +335,14 @@ function SectionHeader({ eyebrow, title, description, count }) {
   );
 }
 
-<<<<<<< HEAD
-function EmptyState({
-  title,
-  description,
-}) {
-=======
 function EmptyState({ title, description }) {
->>>>>>> a1bbbf0 (Fix)
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center sm:px-6 sm:py-12">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
         <div className="h-2.5 w-2.5 rounded-full bg-slate-300" />
       </div>
 
-<<<<<<< HEAD
-      <h3 className="mt-4 text-sm font-semibold text-slate-900">
-        {title}
-      </h3>
-=======
       <h3 className="mt-4 text-sm font-semibold text-slate-900">{title}</h3>
->>>>>>> a1bbbf0 (Fix)
 
       <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">
         {description}
@@ -581,21 +363,10 @@ function AddressBlock({ address }) {
       )}
 
       {normalized.phone && (
-<<<<<<< HEAD
-        <p className="mt-0.5 text-sm text-slate-500">
-          {normalized.phone}
-        </p>
-      )}
-
-      <p className="mt-1 text-sm leading-5 text-slate-600">
-        {normalized.full}
-      </p>
-=======
         <p className="mt-0.5 text-sm text-slate-500">{normalized.phone}</p>
       )}
 
       <p className="mt-1 text-sm leading-5 text-slate-600">{normalized.full}</p>
->>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }
@@ -603,27 +374,11 @@ function AddressBlock({ address }) {
 const mapsLinkClass =
   'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto';
 
-<<<<<<< HEAD
-function AvailableCard({
-  order,
-  onAccepted,
-}) {
-  const [isPending, startTransition] =
-    useTransition();
-
-  const [error, setError] = useState('');
-
-  const navigationUrl = getNavigationUrl(
-    order.shipping_address
-  );
-
-=======
 function AvailableCard({ order, onAccepted }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
 
   const navigationUrl = getNavigationUrl(order.shipping_address);
->>>>>>> a1bbbf0 (Fix)
   const codAmount = getCodAmount(order);
 
   function handleAccept() {
@@ -631,29 +386,12 @@ function AvailableCard({ order, onAccepted }) {
 
     startTransition(async () => {
       const formData = new FormData();
-<<<<<<< HEAD
-
-      formData.set(
-        'orderId',
-        String(order.id)
-      );
-
-      const result =
-        await acceptDelivery(formData);
-
-      if (!result?.ok) {
-        setError(
-          result?.error ||
-            'Unable to accept this delivery.'
-        );
-=======
       formData.set('orderId', String(order.id));
 
       const result = await acceptDelivery(formData);
 
       if (!result?.ok) {
         setError(result?.error || 'Unable to accept this delivery.');
->>>>>>> a1bbbf0 (Fix)
         return;
       }
 
@@ -674,10 +412,6 @@ function AvailableCard({ order, onAccepted }) {
               <h3 className="text-lg font-semibold tracking-tight text-slate-950">
                 Order #{order.id}
               </h3>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
               <StatusBadge state="available" />
             </div>
 
@@ -687,14 +421,7 @@ function AvailableCard({ order, onAccepted }) {
           </div>
 
           <div className="text-left sm:text-right">
-<<<<<<< HEAD
-            <div className="text-xs font-medium text-slate-400">
-              Order total
-            </div>
-
-=======
             <div className="text-xs font-medium text-slate-400">Order total</div>
->>>>>>> a1bbbf0 (Fix)
             <div className="mt-1 text-lg font-semibold text-slate-950">
               {money(order.total)}
             </div>
@@ -710,12 +437,7 @@ function AvailableCard({ order, onAccepted }) {
 
           <div className="mt-3">
             <p className="break-all text-sm font-medium text-slate-800">
-<<<<<<< HEAD
-              {order.customer_email ||
-                'No email provided'}
-=======
               {order.customer_email || 'No email provided'}
->>>>>>> a1bbbf0 (Fix)
             </p>
           </div>
 
@@ -725,15 +447,7 @@ function AvailableCard({ order, onAccepted }) {
             </div>
 
             <div className="mt-3">
-<<<<<<< HEAD
-              <AddressBlock
-                address={
-                  order.shipping_address
-                }
-              />
-=======
               <AddressBlock address={order.shipping_address} />
->>>>>>> a1bbbf0 (Fix)
             </div>
           </div>
 
@@ -756,28 +470,14 @@ function AvailableCard({ order, onAccepted }) {
 
           <div className="mt-3 space-y-4">
             <div className="flex items-center justify-between gap-4">
-<<<<<<< HEAD
-              <span className="text-sm text-slate-500">
-                Payment
-              </span>
-
-=======
               <span className="text-sm text-slate-500">Payment</span>
->>>>>>> a1bbbf0 (Fix)
               <span className="text-sm font-semibold uppercase text-slate-800">
                 {order.payment_method || '—'}
               </span>
             </div>
 
             <div className="flex items-center justify-between gap-4">
-<<<<<<< HEAD
-              <span className="text-sm text-slate-500">
-                Payment status
-              </span>
-
-=======
               <span className="text-sm text-slate-500">Payment status</span>
->>>>>>> a1bbbf0 (Fix)
               <span className="text-sm font-semibold text-slate-800">
                 {order.payment_status || '—'}
               </span>
@@ -788,10 +488,6 @@ function AvailableCard({ order, onAccepted }) {
                 <div className="text-xs font-medium text-amber-700">
                   Cash to collect
                 </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                 <div className="mt-1 text-base font-semibold text-amber-900">
                   {money(codAmount)}
                 </div>
@@ -799,14 +495,7 @@ function AvailableCard({ order, onAccepted }) {
             )}
 
             <div className="flex items-center justify-between gap-4">
-<<<<<<< HEAD
-              <span className="text-sm text-slate-500">
-                Production
-              </span>
-
-=======
               <span className="text-sm text-slate-500">Production</span>
->>>>>>> a1bbbf0 (Fix)
               <span className="text-right text-sm font-semibold text-emerald-700">
                 Ready for fulfillment
               </span>
@@ -825,13 +514,7 @@ function AvailableCard({ order, onAccepted }) {
             disabled={isPending}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-<<<<<<< HEAD
-            {isPending
-              ? 'Accepting...'
-              : 'Accept Delivery'}
-=======
             {isPending ? 'Accepting...' : 'Accept Delivery'}
->>>>>>> a1bbbf0 (Fix)
           </button>
 
           <p className="mt-2 text-center text-xs leading-5 text-slate-400">
@@ -855,60 +538,12 @@ const FAIL_REASONS = [
 const inputClass =
   'w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-800 outline-none focus:border-slate-400 sm:text-sm';
 
-<<<<<<< HEAD
-function ActiveDeliveryCard({
-  order,
-  onChanged,
-  onReleased,
-  onAccepted,
-}) {
-  const [isPending, startTransition] =
-    useTransition();
-
-=======
 function ActiveDeliveryCard({ order, onChanged, onReleased }) {
   const [isPending, startTransition] = useTransition();
->>>>>>> a1bbbf0 (Fix)
   const [error, setError] = useState('');
   const [panel, setPanel] = useState(null);
 
   const state = getOrderState(order);
-<<<<<<< HEAD
-
-  const navigationUrl =
-    getNavigationUrl(
-      order.shipping_address
-    );
-
-  const cod = isCod(order);
-  const codAmount = getCodAmount(order);
-
-  function run(
-    action,
-    formData,
-    after
-  ) {
-    setError('');
-
-    startTransition(async () => {
-      let result;
-
-      try {
-        result = await action(formData);
-      } catch (err) {
-        console.error('Delivery action failed:', err);
-        setError(
-          'Could not reach the server. Check your connection and try again.'
-        );
-        return;
-      }
-
-      if (!result?.ok) {
-        setError(
-          result?.error ||
-            'Something went wrong. Try again.'
-        );
-=======
   const navigationUrl = getNavigationUrl(order.shipping_address);
   const cod = isCod(order);
   const codAmount = getCodAmount(order);
@@ -921,7 +556,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
 
       if (!result?.ok) {
         setError(result?.error || 'Something went wrong. Try again.');
->>>>>>> a1bbbf0 (Fix)
         return;
       }
 
@@ -932,80 +566,12 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
 
   function baseForm() {
     const formData = new FormData();
-<<<<<<< HEAD
-
-    formData.set(
-      'orderId',
-      String(order.id)
-    );
-
-=======
     formData.set('orderId', String(order.id));
->>>>>>> a1bbbf0 (Fix)
     return formData;
   }
 
   function handleAdvance(to) {
     const formData = baseForm();
-<<<<<<< HEAD
-
-    formData.set('to', to);
-
-    run(
-      advanceDelivery,
-      formData,
-      onChanged
-    );
-  }
-
-  function handleRelease() {
-    run(
-      releaseDelivery,
-      baseForm(),
-      onReleased
-    );
-  }
-
-  // The admin assigned this order to the rider; nothing starts until
-  // the rider taps Accept (or turns it down).
-  function handleAcceptAssigned() {
-    run(
-      acceptDelivery,
-      baseForm(),
-      onAccepted || onChanged
-    );
-  }
-
-  function handleDecline() {
-    run(
-      declineDelivery,
-      baseForm(),
-      onChanged
-    );
-  }
-
-  async function handleComplete(event) {
-    event.preventDefault();
-
-    const formData =
-      new FormData(event.currentTarget);
-
-    formData.set(
-      'orderId',
-      String(order.id)
-    );
-
-    const photo = formData.get('photo');
-    if (photo && photo.size) {
-      formData.set('photo', await compressImage(photo));
-    }
-
-    run(
-      completeDelivery,
-      formData,
-      onChanged
-    );
-=======
     formData.set('to', to);
     run(advanceDelivery, formData, onChanged);
   }
@@ -1019,31 +585,13 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
     const formData = new FormData(event.currentTarget);
     formData.set('orderId', String(order.id));
     run(completeDelivery, formData, onChanged);
->>>>>>> a1bbbf0 (Fix)
   }
 
   function handleFail(event) {
     event.preventDefault();
-<<<<<<< HEAD
-
-    const formData =
-      new FormData(event.currentTarget);
-
-    formData.set(
-      'orderId',
-      String(order.id)
-    );
-
-    run(
-      failDelivery,
-      formData,
-      onChanged
-    );
-=======
     const formData = new FormData(event.currentTarget);
     formData.set('orderId', String(order.id));
     run(failDelivery, formData, onChanged);
->>>>>>> a1bbbf0 (Fix)
   }
 
   const primaryBtn =
@@ -1053,27 +601,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
     'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   const stepText = {
-<<<<<<< HEAD
-    assigned:
-      'The admin assigned this delivery to you. Tap "Accept delivery" to start, or decline it if you cannot take it.',
-
-    accepted:
-      'Pick up the packed order from production, then tap "Picked up".',
-
-    picked_up:
-      'You have the order. Tap "Start delivery" when you leave.',
-
-    out_for_delivery:
-      'On the way to the customer. Tap "I\'ve arrived" at the drop-off.',
-
-    arrived:
-      'At the drop-off. Hand over the order and complete it with a photo.',
-
-    failed: `Delivery failed${
-      order.delivery_failed_reason
-        ? ` — ${order.delivery_failed_reason}`
-        : ''
-=======
     accepted: 'Pick up the packed order from production, then tap "Picked up".',
     picked_up: 'You have the order. Tap "Start delivery" when you leave.',
     out_for_delivery:
@@ -1081,7 +608,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
     arrived: 'At the drop-off. Hand over the order and complete it with a photo.',
     failed: `Delivery failed${
       order.delivery_failed_reason ? ` — ${order.delivery_failed_reason}` : ''
->>>>>>> a1bbbf0 (Fix)
     }. You can try again.`,
   };
 
@@ -1098,39 +624,16 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
               <h3 className="text-lg font-semibold tracking-tight text-slate-950">
                 Order #{order.id}
               </h3>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
               <StatusBadge state={state} />
             </div>
 
             <p className="mt-1 text-xs text-slate-400">
-<<<<<<< HEAD
-              {state === 'assigned'
-                ? 'Order placed '
-                : 'Accepted '}
-              {shortDate(
-                state === 'assigned'
-                  ? order.created_at
-                  : order.delivery_accepted_at ||
-                      order.created_at
-              )}
-=======
               Accepted {shortDate(order.delivery_accepted_at || order.created_at)}
->>>>>>> a1bbbf0 (Fix)
             </p>
           </div>
 
           <div className="text-left sm:text-right">
-<<<<<<< HEAD
-            <div className="text-xs font-medium text-slate-400">
-              Total
-            </div>
-
-=======
             <div className="text-xs font-medium text-slate-400">Total</div>
->>>>>>> a1bbbf0 (Fix)
             <div className="mt-1 text-lg font-semibold text-slate-950">
               {money(order.total)}
             </div>
@@ -1147,24 +650,11 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
 
             <div className="mt-3">
               <p className="break-all text-sm font-medium text-slate-800">
-<<<<<<< HEAD
-                {order.customer_email ||
-                  'No email provided'}
-              </p>
-
-              <div className="mt-4">
-                <AddressBlock
-                  address={
-                    order.shipping_address
-                  }
-                />
-=======
                 {order.customer_email || 'No email provided'}
               </p>
 
               <div className="mt-4">
                 <AddressBlock address={order.shipping_address} />
->>>>>>> a1bbbf0 (Fix)
               </div>
             </div>
 
@@ -1187,39 +677,17 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
 
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-<<<<<<< HEAD
-                <span className="text-sm text-slate-500">
-                  Payment
-                </span>
-
-=======
                 <span className="text-sm text-slate-500">Payment</span>
->>>>>>> a1bbbf0 (Fix)
                 <span className="text-sm font-semibold uppercase text-slate-800">
                   {order.payment_method || '—'}
                 </span>
               </div>
 
-<<<<<<< HEAD
-              {Number(
-                order.delivery_fee || 0
-              ) > 0 && (
-                <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-                  <span className="text-sm text-slate-500">
-                    Delivery fee
-                  </span>
-
-                  <span className="text-sm font-semibold text-slate-800">
-                    {money(
-                      order.delivery_fee
-                    )}
-=======
               {Number(order.delivery_fee || 0) > 0 && (
                 <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
                   <span className="text-sm text-slate-500">Delivery fee</span>
                   <span className="text-sm font-semibold text-slate-800">
                     {money(order.delivery_fee)}
->>>>>>> a1bbbf0 (Fix)
                   </span>
                 </div>
               )}
@@ -1229,10 +697,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                   <div className="text-xs font-medium text-amber-700">
                     Cash to collect
                   </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                   <div className="mt-1 text-lg font-semibold text-amber-900">
                     {money(codAmount)}
                   </div>
@@ -1249,63 +713,18 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
         )}
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-<<<<<<< HEAD
-          <p className="text-sm leading-6 text-slate-600">
-            {stepText[state]}
-          </p>
-
-          <div className="mt-4 space-y-3">
-            {state === 'assigned' && (
-              <>
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={handleAcceptAssigned}
-                  className={primaryBtn}
-                >
-                  {isPending
-                    ? 'Saving...'
-                    : 'Accept delivery'}
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={handleDecline}
-                  className={`${secondaryBtn} w-full`}
-                >
-                  Decline
-                </button>
-              </>
-            )}
-
-=======
           <p className="text-sm leading-6 text-slate-600">{stepText[state]}</p>
 
           <div className="mt-4 space-y-3">
->>>>>>> a1bbbf0 (Fix)
             {state === 'accepted' && (
               <>
                 <button
                   type="button"
                   disabled={isPending}
-<<<<<<< HEAD
-                  onClick={() =>
-                    handleAdvance(
-                      'picked_up'
-                    )
-                  }
-                  className={primaryBtn}
-                >
-                  {isPending
-                    ? 'Saving...'
-                    : 'Picked up'}
-=======
                   onClick={() => handleAdvance('picked_up')}
                   className={primaryBtn}
                 >
                   {isPending ? 'Saving...' : 'Picked up'}
->>>>>>> a1bbbf0 (Fix)
                 </button>
 
                 <button
@@ -1323,55 +742,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
               <button
                 type="button"
                 disabled={isPending}
-<<<<<<< HEAD
-                onClick={() =>
-                  handleAdvance(
-                    'out_for_delivery'
-                  )
-                }
-                className={primaryBtn}
-              >
-                {isPending
-                  ? 'Saving...'
-                  : 'Start delivery'}
-              </button>
-            )}
-
-            {state ===
-              'out_for_delivery' && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() =>
-                  handleAdvance('arrived')
-                }
-                className={primaryBtn}
-              >
-                {isPending
-                  ? 'Saving...'
-                  : "I've arrived"}
-              </button>
-            )}
-
-            {(state ===
-              'out_for_delivery' ||
-              state === 'arrived') && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() =>
-                  setPanel(
-                    panel === 'complete'
-                      ? null
-                      : 'complete'
-                  )
-                }
-                className={`${
-                  state === 'arrived'
-                    ? primaryBtn
-                    : secondaryBtn
-                } w-full`}
-=======
                 onClick={() => handleAdvance('out_for_delivery')}
                 className={primaryBtn}
               >
@@ -1396,7 +766,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 disabled={isPending}
                 onClick={() => setPanel(panel === 'complete' ? null : 'complete')}
                 className={`${state === 'arrived' ? primaryBtn : secondaryBtn} w-full`}
->>>>>>> a1bbbf0 (Fix)
               >
                 Complete delivery
               </button>
@@ -1406,36 +775,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
               <button
                 type="button"
                 disabled={isPending}
-<<<<<<< HEAD
-                onClick={() =>
-                  handleAdvance(
-                    'out_for_delivery'
-                  )
-                }
-                className={primaryBtn}
-              >
-                {isPending
-                  ? 'Saving...'
-                  : 'Try delivery again'}
-              </button>
-            )}
-
-            {[
-              'picked_up',
-              'out_for_delivery',
-              'arrived',
-            ].includes(state) && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() =>
-                  setPanel(
-                    panel === 'fail'
-                      ? null
-                      : 'fail'
-                  )
-                }
-=======
                 onClick={() => handleAdvance('out_for_delivery')}
                 className={primaryBtn}
               >
@@ -1448,7 +787,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 type="button"
                 disabled={isPending}
                 onClick={() => setPanel(panel === 'fail' ? null : 'fail')}
->>>>>>> a1bbbf0 (Fix)
                 className={`${secondaryBtn} w-full text-red-700`}
               >
                 Couldn't deliver
@@ -1465,10 +803,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Received by
                 </label>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                 <input
                   name="recipientName"
                   required
@@ -1480,15 +814,8 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
               {cod && (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">
-<<<<<<< HEAD
-                    Cash collected (at least{' '}
-                    {money(codAmount)})
-                  </label>
-
-=======
                     Cash collected (at least {money(codAmount)})
                   </label>
->>>>>>> a1bbbf0 (Fix)
                   <input
                     name="codCollected"
                     type="number"
@@ -1499,10 +826,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                     defaultValue={codAmount}
                     className={inputClass}
                   />
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                   <p className="mt-1 text-xs leading-5 text-slate-400">
                     This amount will become part of your COD remittance.
                   </p>
@@ -1513,10 +836,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Proof photo (required, max 5 MB)
                 </label>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                 <input
                   name="photo"
                   type="file"
@@ -1531,30 +850,11 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Notes (optional)
                 </label>
-<<<<<<< HEAD
-
-                <textarea
-                  name="notes"
-                  rows={2}
-                  className={inputClass}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isPending}
-                className={primaryBtn}
-              >
-                {isPending
-                  ? 'Submitting...'
-                  : 'Confirm delivered'}
-=======
                 <textarea name="notes" rows={2} className={inputClass} />
               </div>
 
               <button type="submit" disabled={isPending} className={primaryBtn}>
                 {isPending ? 'Submitting...' : 'Confirm delivered'}
->>>>>>> a1bbbf0 (Fix)
               </button>
             </form>
           )}
@@ -1568,35 +868,12 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Reason
                 </label>
-<<<<<<< HEAD
-
-=======
->>>>>>> a1bbbf0 (Fix)
                 <select
                   name="reason"
                   required
                   defaultValue=""
                   className={inputClass}
                 >
-<<<<<<< HEAD
-                  <option
-                    value=""
-                    disabled
-                  >
-                    Select a reason…
-                  </option>
-
-                  {FAIL_REASONS.map(
-                    (reason) => (
-                      <option
-                        key={reason}
-                        value={reason}
-                      >
-                        {reason}
-                      </option>
-                    )
-                  )}
-=======
                   <option value="" disabled>
                     Select a reason…
                   </option>
@@ -1605,7 +882,6 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                       {reason}
                     </option>
                   ))}
->>>>>>> a1bbbf0 (Fix)
                 </select>
               </div>
 
@@ -1613,30 +889,11 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Notes (optional)
                 </label>
-<<<<<<< HEAD
-
-                <textarea
-                  name="notes"
-                  rows={2}
-                  className={inputClass}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isPending}
-                className={primaryBtn}
-              >
-                {isPending
-                  ? 'Saving...'
-                  : 'Mark as failed'}
-=======
                 <textarea name="notes" rows={2} className={inputClass} />
               </div>
 
               <button type="submit" disabled={isPending} className={primaryBtn}>
                 {isPending ? 'Saving...' : 'Mark as failed'}
->>>>>>> a1bbbf0 (Fix)
               </button>
             </form>
           )}
@@ -1646,37 +903,16 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
   );
 }
 
-<<<<<<< HEAD
-function SummaryCard({
-  label,
-  value,
-  detail,
-  emphasized = false,
-}) {
-  return (
-    <div
-      className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${
-        emphasized
-          ? 'border-amber-200 bg-amber-50'
-          : 'border-slate-200 bg-white'
-=======
 function SummaryCard({ label, value, detail, emphasized = false }) {
   return (
     <div
       className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${
         emphasized ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'
->>>>>>> a1bbbf0 (Fix)
       }`}
     >
       <div
         className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${
-<<<<<<< HEAD
-          emphasized
-            ? 'text-amber-700'
-            : 'text-slate-400'
-=======
           emphasized ? 'text-amber-700' : 'text-slate-400'
->>>>>>> a1bbbf0 (Fix)
         }`}
       >
         {label}
@@ -1684,37 +920,17 @@ function SummaryCard({ label, value, detail, emphasized = false }) {
 
       <div
         className={`mt-2 break-words text-xl font-semibold tracking-tight sm:text-2xl ${
-<<<<<<< HEAD
-          emphasized
-            ? 'text-amber-950'
-            : 'text-slate-950'
-=======
           emphasized ? 'text-amber-950' : 'text-slate-950'
->>>>>>> a1bbbf0 (Fix)
         }`}
       >
         {value}
       </div>
 
-<<<<<<< HEAD
-      {detail && (
-        <div className="mt-1 text-xs text-slate-500">
-          {detail}
-        </div>
-      )}
-=======
       {detail && <div className="mt-1 text-xs text-slate-500">{detail}</div>}
->>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }
 
-<<<<<<< HEAD
-function RemittanceCard({
-  amount,
-  count,
-}) {
-=======
 /*
  * The rider's remittance QR. It contains only "COD:<riderId>" — no amounts or
  * personal details. Staff scan it on the admin COD Remittance page and the
@@ -1781,7 +997,6 @@ function RemitQrCard({ riderId, amount, count }) {
 }
 
 function RemittanceCard({ amount, count }) {
->>>>>>> a1bbbf0 (Fix)
   if (amount <= 0) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
@@ -1790,11 +1005,7 @@ function RemittanceCard({ amount, count }) {
         </div>
 
         <div className="mt-2 text-xl font-semibold tracking-tight text-emerald-950 sm:text-2xl">
-<<<<<<< HEAD
-          $0.00
-=======
           {money(0)}
->>>>>>> a1bbbf0 (Fix)
         </div>
 
         <p className="mt-1 text-sm text-emerald-800">
@@ -1815,14 +1026,7 @@ function RemittanceCard({ amount, count }) {
       </div>
 
       <p className="mt-1 text-sm text-amber-800">
-<<<<<<< HEAD
-        {count}{' '}
-        {count === 1
-          ? 'delivered COD order'
-          : 'delivered COD orders'}{' '}
-=======
         {count} {count === 1 ? 'delivered COD order' : 'delivered COD orders'}{' '}
->>>>>>> a1bbbf0 (Fix)
         waiting for staff acceptance.
       </p>
     </div>
@@ -1923,8 +1127,6 @@ const ChevronRightIcon = () => (
   </Icon>
 );
 
-<<<<<<< HEAD
-=======
 const QrIcon = () => (
   <Icon>
     <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
@@ -2341,7 +1543,6 @@ function ScanResult({ code, order, userId, onClose, onAccepted, onOpenMine }) {
   );
 }
 
->>>>>>> a1bbbf0 (Fix)
 /* ---------------------------------------------------------------- */
 /* Delivery history calendar                                         */
 /* ---------------------------------------------------------------- */
@@ -2354,22 +1555,8 @@ function ScanResult({ code, order, userId, onClose, onAccepted, onOpenMine }) {
  * Days that have deliveries show a small amber dot so the rider can
  * see at a glance which dates they delivered on.
  */
-<<<<<<< HEAD
-function DeliveryCalendar({
-  selected,
-  onSelect,
-  counts,
-  todayKey,
-}) {
-  const anchor = keyToDate(
-    selected && selected !== 'all'
-      ? selected
-      : todayKey
-  );
-=======
 function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
   const anchor = keyToDate(selected && selected !== 'all' ? selected : todayKey);
->>>>>>> a1bbbf0 (Fix)
 
   const [view, setView] = useState({
     year: anchor.getFullYear(),
@@ -2378,61 +1565,13 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
 
   function shiftMonth(delta) {
     setView((current) => {
-<<<<<<< HEAD
-      const next = new Date(
-        current.year,
-        current.month + delta,
-        1
-      );
-
-      return {
-        year: next.getFullYear(),
-        month: next.getMonth(),
-      };
-=======
       const next = new Date(current.year, current.month + delta, 1);
       return { year: next.getFullYear(), month: next.getMonth() };
->>>>>>> a1bbbf0 (Fix)
     });
   }
 
   function goToday() {
     const today = keyToDate(todayKey);
-<<<<<<< HEAD
-
-    setView({
-      year: today.getFullYear(),
-      month: today.getMonth(),
-    });
-
-    onSelect(todayKey);
-  }
-
-  const firstWeekday = new Date(
-    view.year,
-    view.month,
-    1
-  ).getDay();
-
-  const daysInMonth = new Date(
-    view.year,
-    view.month + 1,
-    0
-  ).getDate();
-
-  const cells = [];
-
-  for (let i = 0; i < firstWeekday; i += 1) {
-    cells.push(null);
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push(
-      `${view.year}-${pad(
-        view.month + 1
-      )}-${pad(day)}`
-    );
-=======
     setView({ year: today.getFullYear(), month: today.getMonth() });
     onSelect(todayKey);
   }
@@ -2445,7 +1584,6 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
 
   for (let day = 1; day <= daysInMonth; day += 1) {
     cells.push(`${view.year}-${pad(view.month + 1)}-${pad(day)}`);
->>>>>>> a1bbbf0 (Fix)
   }
 
   return (
@@ -2485,26 +1623,10 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
         ))}
 
         {cells.map((key, index) => {
-<<<<<<< HEAD
-          if (!key) {
-            return (
-              <div key={`blank-${index}`} />
-            );
-          }
-
-          const day = Number(
-            key.slice(8, 10)
-          );
-
-          const isSelected =
-            selected === key;
-
-=======
           if (!key) return <div key={`blank-${index}`} />;
 
           const day = Number(key.slice(8, 10));
           const isSelected = selected === key;
->>>>>>> a1bbbf0 (Fix)
           const isToday = key === todayKey;
           const count = counts[key] || 0;
 
@@ -2514,17 +1636,7 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
               type="button"
               onClick={() => onSelect(key)}
               aria-label={`${longDate(key)}${
-<<<<<<< HEAD
-                count
-                  ? `, ${count} ${
-                      count === 1
-                        ? 'delivery'
-                        : 'deliveries'
-                    }`
-                  : ''
-=======
                 count ? `, ${count} ${count === 1 ? 'delivery' : 'deliveries'}` : ''
->>>>>>> a1bbbf0 (Fix)
               }`}
               aria-pressed={isSelected}
               className={`relative flex min-h-11 flex-col items-center justify-center rounded-xl text-sm font-semibold transition ${
@@ -2536,18 +1648,9 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
               }`}
             >
               <span>{day}</span>
-<<<<<<< HEAD
-
-              <span
-                className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
-                  count > 0
-                    ? 'bg-amber-500'
-                    : 'bg-transparent'
-=======
               <span
                 className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
                   count > 0 ? 'bg-amber-500' : 'bg-transparent'
->>>>>>> a1bbbf0 (Fix)
                 }`}
               />
             </button>
@@ -2582,30 +1685,6 @@ function DeliveryCalendar({ selected, onSelect, counts, todayKey }) {
 
 export default function DeliveryDashboard() {
   const [user, setUser] = useState(null);
-<<<<<<< HEAD
-
-  const [availableOrders, setAvailableOrders] =
-    useState([]);
-
-  const [myOrders, setMyOrders] =
-    useState([]);
-
-  const [initialError, setInitialError] =
-    useState('');
-
-  const [tab, setTab] =
-    useState('available');
-
-  const [signingOut, setSigningOut] =
-    useState(false);
-
-  const [dark, setDark] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Delivery history date filter: "YYYY-MM-DD" or "all". Defaults to today.
-  const [historyDate, setHistoryDate] =
-    useState(() => toDateKey(new Date()));
-=======
   const [availableOrders, setAvailableOrders] = useState([]);
   const [myOrders, setMyOrders] = useState([]);
   const [initialError, setInitialError] = useState('');
@@ -2620,22 +1699,13 @@ export default function DeliveryDashboard() {
 
   // Delivery history date filter: "YYYY-MM-DD" or "all". Defaults to today.
   const [historyDate, setHistoryDate] = useState(() => toDateKey(new Date()));
->>>>>>> a1bbbf0 (Fix)
 
   const scrollRef = useRef(null);
 
   // Restore the saved theme after mount (avoids hydration mismatch).
   useEffect(() => {
     try {
-<<<<<<< HEAD
-      if (
-        window.localStorage.getItem(
-          THEME_KEY
-        ) === 'dark'
-      ) {
-=======
       if (window.localStorage.getItem(THEME_KEY) === 'dark') {
->>>>>>> a1bbbf0 (Fix)
         setDark(true);
       }
     } catch {
@@ -2648,29 +1718,11 @@ export default function DeliveryDashboard() {
     if (!menuOpen) return undefined;
 
     function onKeyDown(event) {
-<<<<<<< HEAD
-      if (event.key === 'Escape') {
-        setMenuOpen(false);
-      }
-    }
-
-    window.addEventListener(
-      'keydown',
-      onKeyDown
-    );
-
-    return () =>
-      window.removeEventListener(
-        'keydown',
-        onKeyDown
-      );
-=======
       if (event.key === 'Escape') setMenuOpen(false);
     }
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
->>>>>>> a1bbbf0 (Fix)
   }, [menuOpen]);
 
   function toggleDark() {
@@ -2678,14 +1730,7 @@ export default function DeliveryDashboard() {
       const next = !current;
 
       try {
-<<<<<<< HEAD
-        window.localStorage.setItem(
-          THEME_KEY,
-          next ? 'dark' : 'light'
-        );
-=======
         window.localStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
->>>>>>> a1bbbf0 (Fix)
       } catch {
         // Ignore storage errors.
       }
@@ -2694,79 +1739,23 @@ export default function DeliveryDashboard() {
     });
   }
 
-<<<<<<< HEAD
-=======
   /*
    * Orders are loaded through server actions (admin client on the server),
    * so Row Level Security can't silently hide unassigned orders from riders.
    * Access is checked on the server by requireDelivery().
    */
->>>>>>> a1bbbf0 (Fix)
   const load = useCallback(async () => {
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
 
     if (!authUser) {
-<<<<<<< HEAD
-      setInitialError(
-        'You must be signed in.'
-      );
-=======
       setInitialError('You must be signed in.');
->>>>>>> a1bbbf0 (Fix)
       return;
     }
 
     setUser(authUser);
 
-<<<<<<< HEAD
-    const [
-      available,
-      mine,
-    ] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq(
-          'production_stage',
-          'ready_for_fulfillment'
-        )
-        .is('delivery_user_id', null)
-        .neq(
-          'payment_method',
-          'walkin'
-        )
-        .order('created_at', {
-          ascending: true,
-        }),
-
-      supabase
-        .from('orders')
-        .select('*')
-        .eq(
-          'delivery_user_id',
-          authUser.id
-        )
-        .order('created_at', {
-          ascending: false,
-        }),
-    ]);
-
-    setAvailableOrders(
-      available.data || []
-    );
-
-    setMyOrders(
-      mine.data || []
-    );
-
-    setInitialError(
-      available.error?.message ||
-        mine.error?.message ||
-        ''
-    );
-=======
     try {
       const [available, mine] = await Promise.all([
         getAvailableOrders(),
@@ -2779,61 +1768,10 @@ export default function DeliveryDashboard() {
     } catch (err) {
       setInitialError(err?.message || 'Could not load deliveries.');
     }
->>>>>>> a1bbbf0 (Fix)
   }, []);
 
   useEffect(() => {
     load();
-<<<<<<< HEAD
-
-    const id = setInterval(
-      load,
-      15000
-    );
-
-    return () =>
-      clearInterval(id);
-  }, [load]);
-
-  // Orders the admin assigned to this rider that the rider has not
-  // accepted yet. They wait in "Available deliveries" (with Accept /
-  // Decline) and only move to "My deliveries" once accepted.
-  const assignedOrders = useMemo(
-    () =>
-      myOrders.filter(
-        (order) =>
-          getOrderState(order) ===
-          'assigned'
-      ),
-    [myOrders]
-  );
-
-  const activeOrders = useMemo(
-    () =>
-      myOrders.filter((order) => {
-        const state =
-          getOrderState(order);
-
-        return (
-          state !== 'delivered' &&
-          state !== 'assigned'
-        );
-      }),
-    [myOrders]
-  );
-
-  const availableCount =
-    availableOrders.length +
-    assignedOrders.length;
-
-  const deliveredOrders = useMemo(
-    () =>
-      myOrders.filter(
-        (order) =>
-          getOrderState(order) ===
-          'delivered'
-      ),
-=======
     const id = setInterval(load, 15000);
     return () => clearInterval(id);
   }, [load]);
@@ -2845,7 +1783,6 @@ export default function DeliveryDashboard() {
 
   const deliveredOrders = useMemo(
     () => myOrders.filter((order) => getOrderState(order) === 'delivered'),
->>>>>>> a1bbbf0 (Fix)
     [myOrders]
   );
 
@@ -2854,19 +1791,8 @@ export default function DeliveryDashboard() {
     const counts = {};
 
     deliveredOrders.forEach((order) => {
-<<<<<<< HEAD
-      const key = toDateKey(
-        order.delivered_at
-      );
-
-      if (key) {
-        counts[key] =
-          (counts[key] || 0) + 1;
-      }
-=======
       const key = toDateKey(order.delivered_at);
       if (key) counts[key] = (counts[key] || 0) + 1;
->>>>>>> a1bbbf0 (Fix)
     });
 
     return counts;
@@ -2874,50 +1800,21 @@ export default function DeliveryDashboard() {
 
   // Delivered orders for the date picked on the calendar.
   const historyOrders = useMemo(() => {
-<<<<<<< HEAD
-    if (historyDate === 'all') {
-      return deliveredOrders;
-    }
-
-    return deliveredOrders.filter(
-      (order) =>
-        toDateKey(order.delivered_at) ===
-        historyDate
-=======
     if (historyDate === 'all') return deliveredOrders;
 
     return deliveredOrders.filter(
       (order) => toDateKey(order.delivered_at) === historyDate
->>>>>>> a1bbbf0 (Fix)
     );
   }, [deliveredOrders, historyDate]);
 
   const historyTotal = useMemo(
-<<<<<<< HEAD
-    () =>
-      historyOrders.reduce(
-        (sum, order) =>
-          sum + Number(order.total || 0),
-        0
-      ),
-=======
     () => historyOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
->>>>>>> a1bbbf0 (Fix)
     [historyOrders]
   );
 
   const historyFees = useMemo(
     () =>
-<<<<<<< HEAD
-      historyOrders.reduce(
-        (sum, order) =>
-          sum +
-          Number(order.delivery_fee || 0),
-        0
-      ),
-=======
       historyOrders.reduce((sum, order) => sum + Number(order.delivery_fee || 0), 0),
->>>>>>> a1bbbf0 (Fix)
     [historyOrders]
   );
 
@@ -2937,78 +1834,33 @@ export default function DeliveryDashboard() {
   const codToRemitOrders = useMemo(
     () =>
       deliveredOrders.filter(
-<<<<<<< HEAD
-        (order) =>
-          isCod(order) &&
-          !isCodAlreadyRemitted(order)
-=======
         (order) => isCod(order) && !isCodAlreadyRemitted(order)
->>>>>>> a1bbbf0 (Fix)
       ),
     [deliveredOrders]
   );
 
   const codToRemitTotal = useMemo(
-<<<<<<< HEAD
-    () =>
-      codToRemitOrders.reduce(
-        (sum, order) =>
-          sum + getCodAmount(order),
-        0
-      ),
-=======
     () => codToRemitOrders.reduce((sum, order) => sum + getCodAmount(order), 0),
->>>>>>> a1bbbf0 (Fix)
     [codToRemitOrders]
   );
 
   const codActiveTotal = useMemo(
     () =>
-<<<<<<< HEAD
-      activeOrders.reduce(
-        (sum, order) => {
-          if (!isCod(order)) {
-            return sum;
-          }
-
-          return (
-            sum + getCodAmount(order)
-          );
-        },
-        0
-      ),
-=======
       activeOrders.reduce((sum, order) => {
         if (!isCod(order)) return sum;
         return sum + getCodAmount(order);
       }, 0),
->>>>>>> a1bbbf0 (Fix)
     [activeOrders]
   );
 
   async function handleLogout() {
     setSigningOut(true);
-<<<<<<< HEAD
-
-    await supabase.auth.signOut();
-
-    window.location.href =
-      AFTER_LOGOUT_PATH;
-  }
-
-  function scrollTop() {
-    scrollRef.current?.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-=======
     await supabase.auth.signOut();
     window.location.href = AFTER_LOGOUT_PATH;
   }
 
   function scrollTop() {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
->>>>>>> a1bbbf0 (Fix)
   }
 
   function selectTab(key) {
@@ -3033,8 +1885,6 @@ export default function DeliveryDashboard() {
     selectTab('completed');
   }
 
-<<<<<<< HEAD
-=======
   /* ---------------- QR scanning ---------------- */
 
   function openScanner() {
@@ -3110,46 +1960,26 @@ export default function DeliveryDashboard() {
     }
   }
 
->>>>>>> a1bbbf0 (Fix)
   const navItems = [
     {
       key: 'available',
       label: 'Available',
       Icon: PackageIcon,
-<<<<<<< HEAD
-      badgeText: String(
-        availableCount
-      ),
-      badgeCount: availableCount,
-=======
       badgeText: String(availableOrders.length),
       badgeCount: availableOrders.length,
->>>>>>> a1bbbf0 (Fix)
     },
     {
       key: 'active',
       label: 'My Deliveries',
       Icon: TruckIcon,
-<<<<<<< HEAD
-      badgeText: String(
-        activeOrders.length
-      ),
-=======
       badgeText: String(activeOrders.length),
->>>>>>> a1bbbf0 (Fix)
       badgeCount: activeOrders.length,
     },
     {
       key: 'completed',
       label: 'Completed',
       Icon: CheckIcon,
-<<<<<<< HEAD
-      badgeText: String(
-        deliveredOrders.length
-      ),
-=======
       badgeText: String(deliveredOrders.length),
->>>>>>> a1bbbf0 (Fix)
       badgeCount: 0,
     },
     {
@@ -3157,23 +1987,12 @@ export default function DeliveryDashboard() {
       label: 'COD Remittance',
       Icon: CashIcon,
       badgeText: money(codToRemitTotal),
-<<<<<<< HEAD
-      badgeCount:
-        codToRemitOrders.length,
-=======
       badgeCount: codToRemitOrders.length,
->>>>>>> a1bbbf0 (Fix)
     },
   ];
 
   const currentLabel =
-<<<<<<< HEAD
-    navItems.find(
-      (item) => item.key === tab
-    )?.label || 'Delivery';
-=======
     navItems.find((item) => item.key === tab)?.label || 'Delivery';
->>>>>>> a1bbbf0 (Fix)
 
   const todayKey = toDateKey(new Date());
 
@@ -3214,26 +2033,14 @@ export default function DeliveryDashboard() {
       {menuOpen && (
         <div
           className="fixed inset-0 z-[110] bg-black/40 md:hidden"
-<<<<<<< HEAD
-          onClick={() =>
-            setMenuOpen(false)
-          }
-=======
           onClick={() => setMenuOpen(false)}
->>>>>>> a1bbbf0 (Fix)
         />
       )}
 
       {/* Side menu */}
       <aside
         className={`fixed inset-y-0 left-0 z-[120] flex w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:w-20 md:max-w-none md:translate-x-0 lg:w-64 ${
-<<<<<<< HEAD
-          menuOpen
-            ? 'translate-x-0'
-            : '-translate-x-full'
-=======
           menuOpen ? 'translate-x-0' : '-translate-x-full'
->>>>>>> a1bbbf0 (Fix)
         }`}
       >
         <div className="border-b border-slate-100 px-5 pb-5 pt-[max(1.5rem,env(safe-area-inset-top))] md:px-0 md:py-5 lg:px-5 lg:py-6">
@@ -3248,13 +2055,7 @@ export default function DeliveryDashboard() {
             </div>
 
             {user?.email && (
-<<<<<<< HEAD
-              <p className="mt-1 truncate text-xs text-slate-400">
-                {user.email}
-              </p>
-=======
               <p className="mt-1 truncate text-xs text-slate-400">{user.email}</p>
->>>>>>> a1bbbf0 (Fix)
             )}
           </div>
 
@@ -3268,8 +2069,6 @@ export default function DeliveryDashboard() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-<<<<<<< HEAD
-=======
           {/* Scan QR */}
           <button
             type="button"
@@ -3281,7 +2080,6 @@ export default function DeliveryDashboard() {
             <span className="md:hidden lg:inline">Scan QR</span>
           </button>
 
->>>>>>> a1bbbf0 (Fix)
           {navItems.map((item) => (
             <button
               key={item.key}
@@ -3296,13 +2094,7 @@ export default function DeliveryDashboard() {
                   ? goToCompleted()
                   : selectTab(item.key)
               }
-<<<<<<< HEAD
-              className={navClass(
-                item.key
-              )}
-=======
               className={navClass(item.key)}
->>>>>>> a1bbbf0 (Fix)
             >
               <span className="relative">
                 <item.Icon />
@@ -3310,25 +2102,12 @@ export default function DeliveryDashboard() {
                 {/* Tablet rail: count bubble */}
                 {item.badgeCount > 0 && (
                   <span className="absolute -right-2 -top-2 hidden h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold leading-none text-white md:flex lg:hidden">
-<<<<<<< HEAD
-                    {item.key ===
-                    'remittance'
-                      ? '!'
-                      : item.badgeCount}
-=======
                     {item.key === 'remittance' ? '!' : item.badgeCount}
->>>>>>> a1bbbf0 (Fix)
                   </span>
                 )}
               </span>
 
-<<<<<<< HEAD
-              <span className="md:hidden lg:inline">
-                {item.label}
-              </span>
-=======
               <span className="md:hidden lg:inline">{item.label}</span>
->>>>>>> a1bbbf0 (Fix)
 
               <span className="ml-auto text-xs opacity-70 md:hidden lg:inline">
                 {item.badgeText}
@@ -3342,25 +2121,6 @@ export default function DeliveryDashboard() {
           <button
             type="button"
             onClick={toggleDark}
-<<<<<<< HEAD
-            title={
-              dark
-                ? 'Light mode'
-                : 'Dark mode'
-            }
-            className={footerBtn}
-          >
-            {dark ? (
-              <SunIcon />
-            ) : (
-              <MoonIcon />
-            )}
-
-            <span className="md:hidden lg:inline">
-              {dark
-                ? 'Light mode'
-                : 'Dark mode'}
-=======
             title={dark ? 'Light mode' : 'Dark mode'}
             className={footerBtn}
           >
@@ -3368,7 +2128,6 @@ export default function DeliveryDashboard() {
 
             <span className="md:hidden lg:inline">
               {dark ? 'Light mode' : 'Dark mode'}
->>>>>>> a1bbbf0 (Fix)
             </span>
           </button>
 
@@ -3382,13 +2141,7 @@ export default function DeliveryDashboard() {
             <LogoutIcon />
 
             <span className="md:hidden lg:inline">
-<<<<<<< HEAD
-              {signingOut
-                ? 'Logging out...'
-                : 'Log out'}
-=======
               {signingOut ? 'Logging out...' : 'Log out'}
->>>>>>> a1bbbf0 (Fix)
             </span>
           </button>
         </div>
@@ -3400,13 +2153,7 @@ export default function DeliveryDashboard() {
         <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
           <button
             type="button"
-<<<<<<< HEAD
-            onClick={() =>
-              setMenuOpen(true)
-            }
-=======
             onClick={() => setMenuOpen(true)}
->>>>>>> a1bbbf0 (Fix)
             aria-label="Open menu"
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700"
           >
@@ -3416,15 +2163,6 @@ export default function DeliveryDashboard() {
           <span className="text-base font-semibold text-slate-950">
             {currentLabel}
           </span>
-<<<<<<< HEAD
-        </div>
-
-        <main
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto overscroll-contain"
-        >
-          <div className="mx-auto w-full max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8 lg:py-8">
-=======
 
           <button
             type="button"
@@ -3438,7 +2176,6 @@ export default function DeliveryDashboard() {
 
         <main ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
           <div className="mx-auto w-full max-w-6xl px-4 pb-[max(6rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8 lg:py-8">
->>>>>>> a1bbbf0 (Fix)
             {initialError && (
               <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
                 <div className="text-sm font-semibold text-red-800">
@@ -3455,65 +2192,32 @@ export default function DeliveryDashboard() {
             <section className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
               <SummaryCard
                 label="Available"
-<<<<<<< HEAD
-                value={
-                  availableCount
-                }
-=======
                 value={availableOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 detail="Ready for rider acceptance"
               />
 
               <SummaryCard
                 label="Active"
-<<<<<<< HEAD
-                value={
-                  activeOrders.length
-                }
-=======
                 value={activeOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 detail="Currently assigned to you"
               />
 
               <SummaryCard
                 label="Completed"
-<<<<<<< HEAD
-                value={
-                  deliveredOrders.length
-                }
-=======
                 value={deliveredOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 detail="Delivered orders"
               />
 
               <SummaryCard
                 label="COD to collect"
-<<<<<<< HEAD
-                value={money(
-                  codActiveTotal
-                )}
-=======
                 value={money(codActiveTotal)}
->>>>>>> a1bbbf0 (Fix)
                 detail="Across active COD deliveries"
               />
 
               <div className="col-span-2 md:col-span-2 xl:col-span-1">
                 <RemittanceCard
-<<<<<<< HEAD
-                  amount={
-                    codToRemitTotal
-                  }
-                  count={
-                    codToRemitOrders.length
-                  }
-=======
                   amount={codToRemitTotal}
                   count={codToRemitOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 />
               </div>
             </section>
@@ -3524,57 +2228,17 @@ export default function DeliveryDashboard() {
                 <SectionHeader
                   eyebrow="Fulfillment queue"
                   title="Available deliveries"
-<<<<<<< HEAD
-                  description="Orders released for delivery, including ones the admin assigned to you. Tap Accept to take a delivery."
-                  count={
-                    availableCount
-                  }
-                />
-
-                {availableCount ===
-                0 ? (
-=======
                   description="Orders that production has completed and released for delivery acceptance."
                   count={availableOrders.length}
                 />
 
                 {availableOrders.length === 0 ? (
->>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="No deliveries available"
                     description="There are currently no fulfillment-ready orders waiting for a rider."
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
-<<<<<<< HEAD
-                    {assignedOrders.map(
-                      (order) => (
-                        <ActiveDeliveryCard
-                          key={order.id}
-                          order={order}
-                          onChanged={load}
-                          onAccepted={
-                            goToActive
-                          }
-                          onReleased={
-                            goToAvailable
-                          }
-                        />
-                      )
-                    )}
-
-                    {availableOrders.map(
-                      (order) => (
-                        <AvailableCard
-                          key={order.id}
-                          order={order}
-                          onAccepted={
-                            goToActive
-                          }
-                        />
-                      )
-                    )}
-=======
                     {availableOrders.map((order) => (
                       <AvailableCard
                         key={order.id}
@@ -3582,7 +2246,6 @@ export default function DeliveryDashboard() {
                         onAccepted={goToActive}
                       />
                     ))}
->>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
@@ -3595,40 +2258,16 @@ export default function DeliveryDashboard() {
                   eyebrow="Assigned to you"
                   title="My deliveries"
                   description="Orders currently assigned to your delivery account."
-<<<<<<< HEAD
-                  count={
-                    activeOrders.length
-                  }
-                />
-
-                {activeOrders.length ===
-                0 ? (
-=======
                   count={activeOrders.length}
                 />
 
                 {activeOrders.length === 0 ? (
->>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="No active deliveries"
                     description="Accept a fulfillment-ready order to see it here."
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
-<<<<<<< HEAD
-                    {activeOrders.map(
-                      (order) => (
-                        <ActiveDeliveryCard
-                          key={order.id}
-                          order={order}
-                          onChanged={load}
-                          onReleased={
-                            goToAvailable
-                          }
-                        />
-                      )
-                    )}
-=======
                     {activeOrders.map((order) => (
                       <ActiveDeliveryCard
                         key={order.id}
@@ -3637,7 +2276,6 @@ export default function DeliveryDashboard() {
                         onReleased={goToAvailable}
                       />
                     ))}
->>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
@@ -3650,29 +2288,14 @@ export default function DeliveryDashboard() {
                   eyebrow="Delivery history"
                   title="Completed deliveries"
                   description="Pick a date on the calendar to see what you delivered that day. Today is shown first."
-<<<<<<< HEAD
-                  count={
-                    historyOrders.length
-                  }
-=======
                   count={historyOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 />
 
                 <div className="grid gap-5 lg:grid-cols-[320px_1fr] lg:items-start">
                   <DeliveryCalendar
                     selected={historyDate}
-<<<<<<< HEAD
-                    onSelect={
-                      setHistoryDate
-                    }
-                    counts={
-                      deliveredCountsByDate
-                    }
-=======
                     onSelect={setHistoryDate}
                     counts={deliveredCountsByDate}
->>>>>>> a1bbbf0 (Fix)
                     todayKey={todayKey}
                   />
 
@@ -3689,204 +2312,45 @@ export default function DeliveryDashboard() {
 
                       <div className="mt-3 grid grid-cols-3 gap-3">
                         <div>
-<<<<<<< HEAD
-                          <div className="text-xs text-slate-400">
-                            Deliveries
-                          </div>
-
-                          <div className="mt-0.5 text-sm font-semibold text-slate-900">
-                            {
-                              historyOrders.length
-                            }
-=======
                           <div className="text-xs text-slate-400">Deliveries</div>
                           <div className="mt-0.5 text-sm font-semibold text-slate-900">
                             {historyOrders.length}
->>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
 
                         <div>
-<<<<<<< HEAD
-                          <div className="text-xs text-slate-400">
-                            Order total
-                          </div>
-
-                          <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
-                            {money(
-                              historyTotal
-                            )}
-=======
                           <div className="text-xs text-slate-400">Order total</div>
                           <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
                             {money(historyTotal)}
->>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
 
                         <div>
-<<<<<<< HEAD
-                          <div className="text-xs text-slate-400">
-                            Delivery fees
-                          </div>
-
-                          <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
-                            {money(
-                              historyFees
-                            )}
-=======
                           <div className="text-xs text-slate-400">Delivery fees</div>
                           <div className="mt-0.5 break-words text-sm font-semibold text-slate-900">
                             {money(historyFees)}
->>>>>>> a1bbbf0 (Fix)
                           </div>
                         </div>
                       </div>
                     </div>
 
-<<<<<<< HEAD
-                    {historyOrders.length ===
-                    0 ? (
-                      <EmptyState
-                        title={
-                          deliveredOrders.length ===
-                          0
-                            ? 'No completed deliveries'
-                            : historyDate ===
-                              todayKey
-=======
                     {historyOrders.length === 0 ? (
                       <EmptyState
                         title={
                           deliveredOrders.length === 0
                             ? 'No completed deliveries'
                             : historyDate === todayKey
->>>>>>> a1bbbf0 (Fix)
                             ? 'No deliveries today yet'
                             : 'No deliveries on this date'
                         }
                         description={
-<<<<<<< HEAD
-                          deliveredOrders.length ===
-                          0
-=======
                           deliveredOrders.length === 0
->>>>>>> a1bbbf0 (Fix)
                             ? 'Completed deliveries will appear here after they are marked as delivered.'
                             : 'Pick another date on the calendar. Days with an amber dot have deliveries.'
                         }
                       />
                     ) : (
                       <div className="space-y-4">
-<<<<<<< HEAD
-                        {historyOrders.map(
-                          (order) => {
-                            const cod =
-                              isCod(order);
-
-                            const codAmount =
-                              getCodAmount(
-                                order
-                              );
-
-                            const remitted =
-                              isCodAlreadyRemitted(
-                                order
-                              );
-
-                            return (
-                              <article
-                                key={order.id}
-                                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
-                              >
-                                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                                  <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <h3 className="text-base font-semibold text-slate-950">
-                                        Order #
-                                        {
-                                          order.id
-                                        }
-                                      </h3>
-
-                                      <StatusBadge state="delivered" />
-                                    </div>
-
-                                    <p className="mt-1 break-all text-sm text-slate-500">
-                                      {order.customer_email ||
-                                        'No email provided'}
-                                    </p>
-
-                                    <div className="mt-4">
-                                      <AddressBlock
-                                        address={
-                                          order.shipping_address
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="shrink-0 md:text-right">
-                                    <div className="text-xs text-slate-400">
-                                      Delivered
-                                    </div>
-
-                                    <div className="mt-1 text-sm font-semibold text-slate-800">
-                                      {dateTime(
-                                        order.delivered_at
-                                      )}
-                                    </div>
-
-                                    <div className="mt-3 text-lg font-semibold text-slate-950">
-                                      {money(
-                                        order.total
-                                      )}
-                                    </div>
-
-                                    {cod && (
-                                      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left md:text-right">
-                                        <div className="text-xs text-slate-500">
-                                          COD
-                                        </div>
-
-                                        <div className="mt-1 text-sm font-semibold text-slate-900">
-                                          {money(
-                                            codAmount
-                                          )}
-                                        </div>
-
-                                        <div
-                                          className={`mt-1 text-xs font-semibold ${
-                                            remitted
-                                              ? 'text-emerald-600'
-                                              : 'text-amber-600'
-                                          }`}
-                                        >
-                                          {remitted
-                                            ? 'Remitted and accepted'
-                                            : 'Waiting for remittance'}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {Number(
-                                      order.delivery_fee ||
-                                        0
-                                    ) > 0 && (
-                                      <div className="mt-2 text-xs text-slate-500">
-                                        Delivery fee{' '}
-                                        {money(
-                                          order.delivery_fee
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </article>
-                            );
-                          }
-                        )}
-=======
                         {historyOrders.map((order) => {
                           const cod = isCod(order);
                           const codAmount = getCodAmount(order);
@@ -3956,7 +2420,6 @@ export default function DeliveryDashboard() {
                             </article>
                           );
                         })}
->>>>>>> a1bbbf0 (Fix)
                       </div>
                     )}
                   </div>
@@ -3971,13 +2434,7 @@ export default function DeliveryDashboard() {
                   eyebrow="Cash turnover"
                   title="COD Remittance"
                   description="Cash collected from customers that still needs to be handed over to staff."
-<<<<<<< HEAD
-                  count={
-                    codToRemitOrders.length
-                  }
-=======
                   count={codToRemitOrders.length}
->>>>>>> a1bbbf0 (Fix)
                 />
 
                 <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
@@ -3986,20 +2443,6 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="mt-2 text-2xl font-semibold tracking-tight text-amber-950 sm:text-3xl">
-<<<<<<< HEAD
-                    {money(
-                      codToRemitTotal
-                    )}
-                  </div>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-amber-800">
-                    Give this amount to your staff or admin. Once staff accepts the cash, the amount will automatically return to $0.00.
-                  </p>
-                </div>
-
-                {codToRemitOrders.length ===
-                0 ? (
-=======
                     {money(codToRemitTotal)}
                   </div>
 
@@ -4018,64 +2461,12 @@ export default function DeliveryDashboard() {
                 )}
 
                 {codToRemitOrders.length === 0 ? (
->>>>>>> a1bbbf0 (Fix)
                   <EmptyState
                     title="Nothing to remit"
                     description="All COD cash collected from your completed deliveries has already been accepted by staff."
                   />
                 ) : (
                   <div className="space-y-4">
-<<<<<<< HEAD
-                    {codToRemitOrders.map(
-                      (order) => (
-                        <article
-                          key={order.id}
-                          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
-                        >
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-semibold text-slate-950">
-                                  Order #
-                                  {order.id}
-                                </h3>
-
-                                <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                                  To remit
-                                </span>
-                              </div>
-
-                              <p className="mt-1 text-sm text-slate-500">
-                                Delivered{' '}
-                                {shortDate(
-                                  order.delivered_at
-                                )}
-                              </p>
-
-                              <p className="mt-2 break-all text-sm text-slate-600">
-                                {order.customer_email ||
-                                  'Customer'}
-                              </p>
-                            </div>
-
-                            <div className="sm:text-right">
-                              <div className="text-xs text-slate-400">
-                                COD collected
-                              </div>
-
-                              <div className="mt-1 text-2xl font-semibold text-slate-950">
-                                {money(
-                                  getCodAmount(
-                                    order
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      )
-                    )}
-=======
                     {codToRemitOrders.map((order) => (
                       <article
                         key={order.id}
@@ -4112,16 +2503,12 @@ export default function DeliveryDashboard() {
                         </div>
                       </article>
                     ))}
->>>>>>> a1bbbf0 (Fix)
                   </div>
                 )}
               </section>
             )}
           </div>
         </main>
-<<<<<<< HEAD
-      </div>
-=======
 
         {/* Floating scan button — always reachable, on every tab */}
         {!scanOpen && !scanResult && (
@@ -4152,7 +2539,6 @@ export default function DeliveryDashboard() {
           onOpenMine={scanOpenMine}
         />
       )}
->>>>>>> a1bbbf0 (Fix)
     </div>
   );
 }

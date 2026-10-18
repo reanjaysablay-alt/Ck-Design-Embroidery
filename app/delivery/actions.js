@@ -13,11 +13,7 @@ const READY_STAGE = 'ready_for_fulfillment';
 
 // Value written to payment_status once COD cash is collected.
 // Set to null to leave payment_status untouched (cashier records it).
-<<<<<<< HEAD
-const COD_PAID_STATUS = null;
-=======
 const COD_PAID_STATUS = 'paid';
->>>>>>> a1bbbf0 (Fix)
 
 function fail(error) {
   return { ok: false, error };
@@ -56,8 +52,6 @@ function getOrderId(formData) {
 }
 
 /* ------------------------------------------------------------------ */
-<<<<<<< HEAD
-=======
 /* Read: orders for the rider dashboard                                */
 /* ------------------------------------------------------------------ */
 
@@ -112,7 +106,6 @@ export async function getMyDeliveries() {
 }
 
 /* ------------------------------------------------------------------ */
->>>>>>> a1bbbf0 (Fix)
 /* Accept / release                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -126,35 +119,6 @@ export async function acceptDelivery(formData) {
 
   const admin = createAdminClient();
 
-<<<<<<< HEAD
-  // 1) An order the admin ASSIGNED to this rider is waiting for them to
-  //    accept it (delivery_stage is still empty). Accepting starts it.
-  //    Nothing else about the order changes.
-  const { data: assigned, error: assignedError } = await admin
-    .from('orders')
-    .update({
-      delivery_stage: 'accepted',
-      delivery_accepted_at: new Date().toISOString(),
-    })
-    .eq('id', orderId)
-    .eq('delivery_user_id', user.id)
-    .is('delivery_stage', null)
-    .select('id')
-    .maybeSingle();
-
-  if (assignedError) {
-    console.error('acceptDelivery (assigned):', assignedError);
-    return fail(assignedError.message);
-  }
-
-  if (assigned) {
-    refresh();
-    return { ok: true, orderId: assigned.id };
-  }
-
-  // 2) Otherwise claim an open order from the available list.
-=======
->>>>>>> a1bbbf0 (Fix)
   // delivery_user_id IS NULL guards against two riders claiming the same order.
   const { data, error } = await admin
     .from('orders')
@@ -184,41 +148,6 @@ export async function acceptDelivery(formData) {
   return { ok: true, orderId: data.id };
 }
 
-<<<<<<< HEAD
-// A rider can turn down an order the admin assigned to them (before
-// accepting it). It goes back to the admin to assign again.
-export async function declineDelivery(formData) {
-  const auth = await requireDelivery();
-  if (auth.error) return fail(auth.error);
-  const { user } = auth;
-
-  const orderId = getOrderId(formData);
-  if (!orderId) return fail('Missing order ID.');
-
-  const admin = createAdminClient();
-
-  const { data, error } = await admin
-    .from('orders')
-    .update({ delivery_user_id: null })
-    .eq('id', orderId)
-    .eq('delivery_user_id', user.id)
-    .is('delivery_stage', null)
-    .select('id')
-    .maybeSingle();
-
-  if (error) {
-    console.error('declineDelivery:', error);
-    return fail(error.message);
-  }
-
-  if (!data) return fail('This assignment can no longer be declined.');
-
-  refresh();
-  return { ok: true, orderId: data.id };
-}
-
-=======
->>>>>>> a1bbbf0 (Fix)
 // A rider can only give an order back before picking it up.
 export async function releaseDelivery(formData) {
   const auth = await requireDelivery();

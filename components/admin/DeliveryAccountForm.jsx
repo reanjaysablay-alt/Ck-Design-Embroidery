@@ -27,12 +27,7 @@ export default function DeliveryAccountForm() {
         <input name="email" type="email" required placeholder="Login email" className={inputClass} />
         <input
           name="password"
-<<<<<<< HEAD
-          type="password"
-          autoComplete="new-password"
-=======
           type="text"
->>>>>>> a1bbbf0 (Fix)
           required
           minLength={8}
           placeholder="Password (8+ characters)"

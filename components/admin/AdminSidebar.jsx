@@ -28,8 +28,6 @@ const ICONS = {
       <circle cx="17.5" cy="21" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   ),
-<<<<<<< HEAD
-=======
   // NEW: parcel / box with tape
   packing: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -38,14 +36,11 @@ const ICONS = {
       <path d="M7.5 5.2l9 4.5" strokeLinecap="round" />
     </svg>
   ),
->>>>>>> a1bbbf0 (Fix)
   revenue: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
-<<<<<<< HEAD
-=======
   // NEW: this icon was referenced below but missing from ICONS
   codRemittance: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -54,7 +49,6 @@ const ICONS = {
       <path d="M6 10v.01M18 14v.01" strokeLinecap="round" />
     </svg>
   ),
->>>>>>> a1bbbf0 (Fix)
   history: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="9" />
@@ -208,8 +202,6 @@ function NavLinks({
         badge={counts.pendingOrders}
       />
 
-<<<<<<< HEAD
-=======
       {/* NEW: Packing (Admin and Staff) */}
       <NavItem
         href="/admin/packing"
@@ -220,7 +212,6 @@ function NavLinks({
         badge={counts.pendingPacking}
       />
 
->>>>>>> a1bbbf0 (Fix)
       <NavItem
         href="/admin/orders/history"
         icon={ICONS.history}
