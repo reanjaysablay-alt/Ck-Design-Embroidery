@@ -165,7 +165,7 @@ export default async function AdminOrdersPage({ searchParams }) {
       console.error('getDeliveryUsers:', err.message);
     }
   }
-  const riderEmailById = Object.fromEntries(riders.map((r) => [r.id, r.email]));
+  const riderEmailById = Object.fromEntries(riders.map((r) => [r.id, r.name || r.email]));
 
   const admin = createAdminClient();
   const { data: orders } = await admin

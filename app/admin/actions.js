@@ -868,6 +868,11 @@ function isDeliveryAuthUser(user, envEmails) {
 export async function getDeliveryUsers() {
   await requireAdmin();
   const admin = createAdminClient();
+  const profileNames = {};
+  const { data: profs } = await admin.from('delivery_profiles').select('user_id, display_name');
+  for (const p of profs || []) {
+    if (p.display_name) profileNames[p.user_id] = p.display_name;
+  }
   const envEmails = getDeliveryEnvEmails();
 
   const results = [];
@@ -888,7 +893,7 @@ export async function getDeliveryUsers() {
         results.push({
           id: u.id,
           email: u.email,
-          name: u.user_metadata?.nickname || u.user_metadata?.full_name || null,
+          name: profileNames[u.id] || u.user_metadata?.nickname || u.user_metadata?.full_name || null,
         });
       }
     }

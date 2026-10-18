@@ -57,7 +57,7 @@ export default function AssignRider({ id, riders, action }) {
         <option value="">Choose a rider…</option>
         {riders.map((r) => (
           <option key={r.id} value={r.id}>
-            {r.email}
+            {r.name ? `${r.name} · ${r.email}` : r.email}
           </option>
         ))}
       </select>

@@ -12,7 +12,6 @@
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "dirham": "^1.5.3",
-    "jsqr": "^1.4.0",
     "next": "^16.3.0",
     "nodemailer": "^9.0.3",
     "qrcode": "^1.5.4",

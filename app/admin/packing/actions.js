@@ -70,9 +70,22 @@ export async function assignRiderChecked(...args) {
   const result = await assignDeliveryUser(...args);
   refresh();
   return result;
+
+  
 }
 
 // Saves the "From" address printed on every shipping label.
+export async function saveSenderAddress(address) {
+  await requireUser();
+  const value = String(address || '').trim();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('shop_settings')
+    .upsert({ key: 'sender_address', value }, { onConflict: 'key' });
+  if (error) throw new Error(error.message);
+  revalidatePath('/admin/packing');
+  revalidatePath('/admin/packing/print-all');
+}
 export async function saveSenderAddress(address) {
   await requireUser();
   const value = String(address || '').trim();
