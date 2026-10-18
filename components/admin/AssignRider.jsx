@@ -4,10 +4,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Admin picks which rider gets a ready order. `action` is assignDeliveryUser.
-export default function AssignRider({ id, riders, action }) {
+export default function AssignRider({ id, riders, action, currentId }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [riderId, setRiderId] = useState('');
+  const [riderId, setRiderId] = useState(currentId || '');
   const [error, setError] = useState('');
 
   function handleAssign() {
@@ -57,7 +57,7 @@ export default function AssignRider({ id, riders, action }) {
         <option value="">Choose a rider…</option>
         {riders.map((r) => (
           <option key={r.id} value={r.id}>
-            {r.name ? `${r.name} · ${r.email}` : r.email}
+            {[r.name, r.email].filter(Boolean).join(' · ') || 'Rider'}
           </option>
         ))}
       </select>
