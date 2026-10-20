@@ -373,6 +373,9 @@ export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, in
     const stored = localStorage.getItem('admin-dark-mode') === 'true';
     setDark(stored);
     document.documentElement.classList.toggle('dark', stored);
+    // Leaving the admin area: drop the class so the storefront / rider
+    // screens are never affected by the admin preference.
+    return () => document.documentElement.classList.remove('dark');
   }, []);
 
   function toggleDark() {

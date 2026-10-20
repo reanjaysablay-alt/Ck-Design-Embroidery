@@ -3,7 +3,7 @@
 // No amounts are printed on the label.
 export default function ShippingLabel({ d, qr }) {
   return (
-    <div className="shipping-label bg-white text-black border-2 border-black w-[380px] max-w-full text-sm flex flex-col">
+    <div className="shipping-label keep-light bg-white text-black border-2 border-black w-[380px] max-w-full text-sm flex flex-col">
       {/* Order number + QR */}
       <div className="flex items-center justify-between gap-3 border-b-2 border-black p-3">
         <div className="min-w-0">
