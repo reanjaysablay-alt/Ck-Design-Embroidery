@@ -3,6 +3,7 @@ import { createOrder } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { verifyCartItems } from '@/lib/cartVerify';
 import { getDeliveryQuote, DELIVERY_QUOTE_ERROR } from '@/lib/deliveryFee';
+import { isUaeAddress, UAE_ONLY_ERROR } from '@/lib/uaeOnly';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -35,6 +36,10 @@ export async function POST(request) {
   const { items, currency, address } = await request.json();
   if (!items?.length) {
     return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+  }
+
+  if (!isUaeAddress(address)) {
+    return NextResponse.json({ error: UAE_ONLY_ERROR }, { status: 400 });
   }
 
   try {

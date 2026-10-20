@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
 import { verifyCartItems, deductStock } from '@/lib/cartVerify';
 import { getDeliveryQuote, DELIVERY_QUOTE_ERROR } from '@/lib/deliveryFee';
+import { isUaeAddress, UAE_ONLY_ERROR } from '@/lib/uaeOnly';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -36,6 +37,11 @@ export async function POST(request) {
   const { orderID, items, address } = await request.json();
   if (!orderID || !items?.length) {
     return NextResponse.json({ error: 'Missing order details' }, { status: 400 });
+  }
+
+  // Checked BEFORE any money is captured.
+  if (!isUaeAddress(address)) {
+    return NextResponse.json({ error: UAE_ONLY_ERROR }, { status: 400 });
   }
 
   try {

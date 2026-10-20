@@ -1,28 +1,81 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const CartContext = createContext(null);
-const STORAGE_KEY = 'stitchhouse-cart';
+
+// The cart is saved in the browser, so it must be kept PER ACCOUNT.
+// (It used to be one shared key, so a brand-new account opened on the same
+// browser showed whatever the previous visitor/account had in their cart.)
+const STORAGE_PREFIX = 'stitchhouse-cart';
+const LEGACY_KEY = 'stitchhouse-cart'; // old shared key - removed on load
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
-  const [hydrated, setHydrated] = useState(false);
+  // undefined = still finding out who is signed in; null = signed out.
+  const [userId, setUserId] = useState(undefined);
+  // Which storage key `items` was loaded from (guards against saving one
+  // account's items under another account's key while switching).
+  const [loadedKey, setLoadedKey] = useState(null);
 
+  const storageKey =
+    userId === undefined ? null : `${STORAGE_PREFIX}:${userId || 'guest'}`;
+  const hydrated = storageKey !== null && loadedKey === storageKey;
+
+  // Track who is signed in.
   useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (active) setUserId(data?.session?.user?.id || null);
+      })
+      .catch(() => {
+        if (active) setUserId(null);
+      });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (active) setUserId(session?.user?.id || null);
+      }
+    );
+
+    return () => {
+      active = false;
+      listener?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Load that account's own cart whenever the signed-in account changes.
+  useEffect(() => {
+    if (!storageKey) return;
+
+    let loaded = [];
     try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setItems(JSON.parse(saved));
+      window.localStorage.removeItem(LEGACY_KEY);
+      const saved = window.localStorage.getItem(storageKey);
+      const parsed = saved ? JSON.parse(saved) : [];
+      if (Array.isArray(parsed)) loaded = parsed;
     } catch (e) {
       // ignore corrupt storage
     }
-    setHydrated(true);
-  }, []);
 
+    setItems(loaded);
+    setLoadedKey(storageKey);
+  }, [storageKey]);
+
+  // Save changes to that account's own cart.
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items, hydrated]);
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(items));
+    } catch (e) {
+      // storage full / blocked - cart still works for this visit
+    }
+  }, [items, hydrated, storageKey]);
 
   function addItem(product, options = {}) {
     const qty = options.qty || 1;
