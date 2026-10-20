@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { captureOrder, extractCaptureId } from '@/lib/paypal';
+import { captureOrder, extractCaptureId, getOrder } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
 import { verifyCartItems, deductStock } from '@/lib/cartVerify';
+import { getDeliveryQuote, DELIVERY_QUOTE_ERROR } from '@/lib/deliveryFee';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -46,6 +47,34 @@ export async function POST(request) {
     // create-order and now, the customer isn't charged for nothing.
     const { items: verifiedItems, total: verifiedTotal, stockDeductions } = await verifyCartItems(items);
 
+    // Delivery fee for the address being submitted now. Checked BEFORE
+    // the money is taken, so nobody can start the PayPal payment with one
+    // address and finish it with a farther one to dodge the fee.
+    const quote = await getDeliveryQuote({ address, itemsTotal: Number(verifiedTotal) });
+    if (quote.status !== 'ok') {
+      return NextResponse.json({ error: DELIVERY_QUOTE_ERROR }, { status: 400 });
+    }
+
+    const expectedTotal = Number(verifiedTotal) + quote.fee;
+    let chargedTotal = expectedTotal;
+    try {
+      const paypalOrder = await getOrder(orderID);
+      const authorized = Number(paypalOrder?.purchase_units?.[0]?.amount?.value);
+      if (Number.isFinite(authorized)) {
+        if (authorized + 0.005 < expectedTotal) {
+          return NextResponse.json(
+            { error: 'The delivery fee changed after you started paying — please refresh this page and pay again.' },
+            { status: 400 }
+          );
+        }
+        // What the customer is really being charged is the source of truth.
+        chargedTotal = authorized;
+      }
+    } catch (lookupError) {
+      console.error('PayPal order lookup failed:', lookupError);
+    }
+    const deliveryFee = Math.max(0, Math.round((chargedTotal - Number(verifiedTotal)) * 100) / 100);
+
     const capture = await captureOrder(orderID);
     const status = capture.status;
 
@@ -59,7 +88,8 @@ export async function POST(request) {
         user_id: user.id,
         customer_email: user.email,
         items: verifiedItems,
-        total: verifiedTotal,
+        total: chargedTotal.toFixed(2),
+        delivery_fee: deliveryFee,
         currency: 'USD',
         payment_method: 'paypal',
         payment_status: 'paid',

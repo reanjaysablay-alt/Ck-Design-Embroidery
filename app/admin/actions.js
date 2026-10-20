@@ -7,7 +7,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isAdminEmail, canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage, uploadDesignFile } from '@/lib/upload';
-import { saveSiteSettings } from '@/lib/settings';
+import { saveSiteSettings, DEFAULT_SETTINGS } from '@/lib/settings';
 import { logActivity } from '@/lib/activityLog';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
 import { getAccessContext } from '@/lib/cashier';
@@ -209,8 +209,23 @@ export async function updateSiteSettings(formData) {
   const logoRaw = formData.get('site_logo')?.toString().trim() || '';
   const siteLogo = /^https:\/\//.test(logoRaw) ? logoRaw : '';
 
+  // Delivery-fee rates: a non-negative number, otherwise the default.
+  const rate = (name) => {
+    const raw = formData.get(name)?.toString().trim();
+    const n = Number(raw);
+    return raw && Number.isFinite(n) && n >= 0 ? String(n) : DEFAULT_SETTINGS[name];
+  };
+
   const settings = {
     site_logo: siteLogo,
+    delivery_auto_enabled: formData.get('delivery_auto_enabled') === 'false' ? 'false' : 'true',
+    delivery_origin:
+      formData.get('delivery_origin')?.toString().trim() || DEFAULT_SETTINGS.delivery_origin,
+    delivery_base_fee: rate('delivery_base_fee'),
+    delivery_per_km: rate('delivery_per_km'),
+    delivery_min_fee: rate('delivery_min_fee'),
+    delivery_max_fee: rate('delivery_max_fee'),
+    delivery_free_over: rate('delivery_free_over'),
     site_title: formData.get('site_title')?.toString().trim() || 'CK Design Embroidery',
     site_tagline: formData.get('site_tagline')?.toString().trim() || '',
     hero_heading: formData.get('hero_heading')?.toString().trim() || '',

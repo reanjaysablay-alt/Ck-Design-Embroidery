@@ -155,6 +155,9 @@ export default function CheckoutClient({ user }) {
   const [codSubmitting, setCodSubmitting] = useState(false);
   const [walkinSubmitting, setWalkinSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Live delivery fee from the server (Google Maps driving distance).
+  // status: idle | loading | ok | unavailable
+  const [quote, setQuote] = useState({ status: 'idle' });
 
   const paypalRef = useRef(null);
   const paypalButtonsRef = useRef(null);
@@ -218,6 +221,61 @@ export default function CheckoutClient({ user }) {
     setAddressValid(valid);
   }, [address, method]);
 
+  // Ask the server for the delivery fee whenever a complete UAE address is
+  // entered (waits a moment after typing stops). The server recomputes the
+  // real fee again when the order is placed — this is the customer preview.
+  const quoteKey = [
+    address.countryCode,
+    address.line1,
+    address.line2,
+    address.city,
+    address.emirate,
+    address.postalCode,
+    Math.round(Number(subtotal || 0) * 100),
+  ].join('|');
+
+  useEffect(() => {
+    if (method === 'walkin' || !addressValid || !isUAE) {
+      setQuote({ status: 'idle' });
+      return undefined;
+    }
+
+    let cancelled = false;
+    setQuote({ status: 'loading' });
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/delivery/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: latest.current.items,
+            address: latest.current.address,
+          }),
+        });
+        const data = await parseResponse(response);
+        if (cancelled) return;
+        setQuote(response.ok && data.status === 'ok' ? data : { status: 'unavailable' });
+      } catch {
+        if (!cancelled) setQuote({ status: 'unavailable' });
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteKey, method, addressValid, isUAE]);
+
+  const quoteLoading = quote.status === 'loading';
+  const quoteUnavailable = quote.status === 'unavailable';
+  const deliveryFee = quote.status === 'ok' ? Number(quote.fee || 0) : 0;
+  const orderTotal = Number(subtotal || 0) + (method === 'walkin' ? 0 : deliveryFee);
+  // PayPal charges the exact total, so wait until the fee is known — and
+  // don't offer it if the fee couldn't be calculated for this address.
+  const paypalReady = addressValid && !quoteLoading && !quoteUnavailable;
+
   function cleanupPayPalButtons() {
     try {
       if (
@@ -239,7 +297,7 @@ export default function CheckoutClient({ user }) {
   }
 
   useEffect(() => {
-    if (method !== 'paypal' || !addressValid || items.length === 0) {
+    if (method !== 'paypal' || !paypalReady || items.length === 0) {
       cleanupPayPalButtons();
       return;
     }
@@ -305,6 +363,7 @@ export default function CheckoutClient({ user }) {
               body: JSON.stringify({
                 items: currentItems,
                 currency: CURRENCY,
+                address: currentAddress,
                 delivery: deliveryPayload(currentAddress),
               }),
             });
@@ -463,7 +522,7 @@ export default function CheckoutClient({ user }) {
       script?.removeEventListener('load', renderButtons);
       cleanupPayPalButtons();
     };
-  }, [method, addressValid, items.length, router]);
+  }, [method, paypalReady, items.length, router]);
 
   function selectMethod(nextMethod) {
     setError('');
@@ -751,7 +810,25 @@ export default function CheckoutClient({ user }) {
           </p>
         )}
 
-        {addressValid && method === 'paypal' && (
+        {addressValid && method !== 'walkin' && quoteLoading && (
+          <p className="text-thread/50 text-sm mb-4">Calculating your delivery fee…</p>
+        )}
+
+        {addressValid && method === 'paypal' && quoteUnavailable && (
+          <p className="text-stitchRed text-sm mb-4 leading-relaxed">
+            We couldn&apos;t calculate the delivery fee for this address. Please check the address
+            (street, city and emirate), or choose Cash on Delivery.
+          </p>
+        )}
+
+        {addressValid && method === 'cod' && quoteUnavailable && (
+          <p className="text-thread/50 text-sm mb-4 leading-relaxed">
+            We couldn&apos;t calculate the delivery fee automatically. Our team will confirm it and
+            add it to your order before it ships.
+          </p>
+        )}
+
+        {paypalReady && method === 'paypal' && (
           <div ref={paypalRef} className="min-h-[45px] w-full" />
         )}
 
@@ -759,7 +836,7 @@ export default function CheckoutClient({ user }) {
           <button
             type="button"
             onClick={handleCodSubmit}
-            disabled={codSubmitting}
+            disabled={codSubmitting || quoteLoading}
             className="w-full bg-gold text-ink font-body uppercase tracking-widest text-sm px-8 py-3.5 rounded-sm hover:bg-thread transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {codSubmitting ? 'Placing order...' : 'Place Order — Pay on Delivery'}
@@ -847,12 +924,38 @@ export default function CheckoutClient({ user }) {
           })}
         </div>
 
-        <div className="flex justify-between pt-4 mt-2 border-t border-white/10">
-          <span className="font-display text-lg text-thread">Total</span>
+        <div className="pt-4 mt-2 border-t border-white/10 space-y-2">
+          {(deliveryFee > 0 || quote.free || quoteLoading || quoteUnavailable) && method !== 'walkin' && (
+            <>
+              <div className="flex justify-between text-sm text-thread/70">
+                <span>Items</span>
+                <span className="font-mono">&#x20C3;&nbsp;{Number(subtotal || 0).toFixed(2)}</span>
+              </div>
 
-          <span className="font-mono text-lg text-thread">
-            &#x20C3;&nbsp;{Number(subtotal || 0).toFixed(2)}
-          </span>
+              <div className="flex justify-between text-sm text-thread/70">
+                <span>
+                  Delivery
+                  {quote.status === 'ok' && quote.km ? ` (≈ ${quote.km} km)` : ''}
+                </span>
+                <span className="font-mono">
+                  {quoteLoading && 'Calculating…'}
+                  {quoteUnavailable && 'To be confirmed'}
+                  {quote.status === 'ok' && (quote.free || deliveryFee === 0) && 'Free'}
+                  {quote.status === 'ok' && !quote.free && deliveryFee > 0 && (
+                    <>&#x20C3;&nbsp;{deliveryFee.toFixed(2)}</>
+                  )}
+                </span>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-between pt-2">
+            <span className="font-display text-lg text-thread">Total</span>
+
+            <span className="font-mono text-lg text-thread">
+              &#x20C3;&nbsp;{orderTotal.toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FONT_OPTIONS } from '@/lib/fonts';
 import defaultLogo from '@/logo/ck-logo-transparent.png';
+import { priceForKm, parseRates } from '@/lib/deliveryPricing';
 
 // Color fields in the settings form — the swatch preview updates live so
 // the admin can see the new color as they pick it. These map straight to
@@ -49,6 +50,12 @@ export default function SiteSettingsForm({ settings, action }) {
           defaultSrc={defaultLogo.src}
           onBusyChange={setLogoBusy}
         />
+      </div>
+
+      {/* Delivery fee */}
+      <div>
+        <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Delivery fee (automatic)</h2>
+        <DeliveryFeeFields settings={settings} />
       </div>
 
       {/* Text settings */}
@@ -234,6 +241,104 @@ function LogoField({ initial, background, defaultSrc, onBusyChange }) {
       <p className="text-slate-400 text-xs mt-3">
         Click <strong>Save Settings</strong> below to apply the new logo on the site.
       </p>
+    </div>
+  );
+}
+
+// Automatic delivery fee. The fee is worked out from the real driving
+// distance (Google Maps) between the shop address below and the
+// customer's address:  base + (per-km x km), never below the minimum,
+// never above the maximum (if set), rounded up to a whole dirham.
+function DeliveryFeeFields({ settings }) {
+  const [enabled, setEnabled] = useState(settings?.delivery_auto_enabled !== 'false');
+  const [origin, setOrigin] = useState(settings?.delivery_origin || '');
+  const [vals, setVals] = useState({
+    delivery_base_fee: settings?.delivery_base_fee ?? '10',
+    delivery_per_km: settings?.delivery_per_km ?? '0.3',
+    delivery_min_fee: settings?.delivery_min_fee ?? '10',
+    delivery_max_fee: settings?.delivery_max_fee ?? '0',
+    delivery_free_over: settings?.delivery_free_over ?? '0',
+  });
+  const set = (key) => (e) => setVals((v) => ({ ...v, [key]: e.target.value }));
+  const rates = parseRates(vals);
+
+  const inputClass =
+    'w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-indigo-500';
+  const labelClass = 'block text-xs uppercase tracking-widest text-slate-500 mb-2';
+
+  return (
+    <div className="space-y-4">
+      <p className="text-slate-500 text-sm">
+        At checkout, the fee is calculated from the real driving distance (Google Maps) between your
+        shop and the customer&apos;s address in the UAE, and added to the order total. It applies to
+        PayPal and Cash on Delivery orders (not Walk-in pickup).
+      </p>
+
+      <div>
+        <label className={labelClass}>Automatic delivery fee</label>
+        <select
+          name="delivery_auto_enabled"
+          value={enabled ? 'true' : 'false'}
+          onChange={(e) => setEnabled(e.target.value === 'true')}
+          className={inputClass}
+        >
+          <option value="true">On — calculate from distance</option>
+          <option value="false">Off — staff add the fee by hand</option>
+        </select>
+      </div>
+
+      <div>
+        <label className={labelClass}>Delivery starts from (shop address)</label>
+        <input
+          name="delivery_origin"
+          value={origin}
+          onChange={(e) => setOrigin(e.target.value)}
+          className={inputClass}
+        />
+        <p className="text-slate-400 text-xs mt-1.5">
+          For the most exact result you can paste map coordinates instead, like 24.3489, 54.4957.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <RateField label="Base fee (flat start)" name="delivery_base_fee" value={vals.delivery_base_fee} onChange={set('delivery_base_fee')} />
+        <RateField label="Price per km" name="delivery_per_km" value={vals.delivery_per_km} onChange={set('delivery_per_km')} step="0.05" />
+        <RateField label="Minimum fee" name="delivery_min_fee" value={vals.delivery_min_fee} onChange={set('delivery_min_fee')} />
+        <RateField label="Maximum fee (0 = no limit)" name="delivery_max_fee" value={vals.delivery_max_fee} onChange={set('delivery_max_fee')} />
+        <RateField label="Free delivery when items total is at least (0 = never)" name="delivery_free_over" value={vals.delivery_free_over} onChange={set('delivery_free_over')} />
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+        <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">Preview with these rates</p>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-sm text-slate-700">
+          {[10, 50, 100, 150, 200, 250].map((km) => (
+            <div key={km} className="bg-white border border-slate-200 rounded-lg px-2 py-2 text-center">
+              <div className="text-slate-400 text-xs">{km} km</div>
+              <div className="font-mono">&#x20C3;&nbsp;{priceForKm(km, rates)}</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-slate-400 text-xs mt-2">
+          Examples only — the real distance for each customer comes from Google Maps.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function RateField({ label, name, value, onChange, step = '0.5' }) {
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">{label}</label>
+      <input
+        type="number"
+        min="0"
+        step={step}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-indigo-500"
+      />
     </div>
   );
 }

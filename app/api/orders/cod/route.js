@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
 import { verifyCartItems, deductStock } from '@/lib/cartVerify';
+import { getDeliveryQuote } from '@/lib/deliveryFee';
 
 export async function POST(request) {
   const supabase = await createClient();
@@ -26,13 +27,21 @@ export async function POST(request) {
     // total, or stock status as sent from the browser.
     const { items: verifiedItems, total, stockDeductions } = await verifyCartItems(items);
 
+    // Automatic delivery fee (Google Maps driving distance). If Google
+    // can't find the address, the order still goes through with no fee and
+    // staff add it by hand, exactly like before.
+    const quote = await getDeliveryQuote({ address, itemsTotal: Number(total) });
+    const deliveryFee = quote.status === 'ok' ? quote.fee : 0;
+    const orderTotal = (Number(total) + deliveryFee).toFixed(2);
+
     const { data: order, error: dbError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
         customer_email: user.email,
         items: verifiedItems,
-        total,
+        total: orderTotal,
+        delivery_fee: deliveryFee,
         currency: 'USD',
         payment_method: 'cod',
         payment_status: 'pending_cod',

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createOrder } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { verifyCartItems } from '@/lib/cartVerify';
+import { getDeliveryQuote, DELIVERY_QUOTE_ERROR } from '@/lib/deliveryFee';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -31,7 +32,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
   }
 
-  const { items, currency } = await request.json();
+  const { items, currency, address } = await request.json();
   if (!items?.length) {
     return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
   }
@@ -40,8 +41,20 @@ export async function POST(request) {
     // Re-price against the real products table — this is the amount
     // that actually gets charged, so it's the critical point to verify
     // at. Anything the browser sent for `price` is discarded here.
-    const { items: verifiedItems } = await verifyCartItems(items);
-    const order = await createOrder({ items: verifiedItems, currency: currency || 'USD' });
+    const { items: verifiedItems, total: itemsTotal } = await verifyCartItems(items);
+
+    // Delivery fee: real driving distance from the shop (Google Maps),
+    // worked out here on the server so it can't be tampered with.
+    const quote = await getDeliveryQuote({ address, itemsTotal: Number(itemsTotal) });
+    if (quote.status !== 'ok') {
+      return NextResponse.json({ error: DELIVERY_QUOTE_ERROR }, { status: 400 });
+    }
+
+    const order = await createOrder({
+      items: verifiedItems,
+      currency: currency || 'USD',
+      deliveryFee: quote.fee,
+    });
     return NextResponse.json({ id: order.id });
   } catch (err) {
     console.error(err);
