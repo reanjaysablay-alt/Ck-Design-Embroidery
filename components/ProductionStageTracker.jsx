@@ -121,13 +121,26 @@ export const TRACKER_STAGES = [
 // Which tab an order sits under from the customer's point of view.
 // A COD order that is out for delivery is waiting on PAYMENT; once the
 // shop records the cash it moves on to COMPLETED (awaiting final close).
+// Once a rider has collected the parcel, the cash is due on arrival.
+const RIDER_HAS_PARCEL = ['picked_up', 'out_for_delivery', 'arrived'];
+
 export function effectiveStage(order) {
   const base = order.production_stage || 'order_received';
-  const paysOnHandover = order.payment_method === 'cod' || order.payment_method === 'walkin';
-  if (paysOnHandover && base === 'ready_for_fulfillment') {
-    return order.payment_status === 'paid' ? 'completed' : 'payment';
-  }
-  return base;
+  if (base !== 'ready_for_fulfillment') return base;
+
+  const isCod = order.payment_method === 'cod';
+  const isWalkin = order.payment_method === 'walkin';
+  if (!isCod && !isWalkin) return base;
+
+  // Cash already recorded by the cashier.
+  if (order.payment_status === 'paid') return 'completed';
+
+  // Walk-in: the customer pays at the counter when they collect it.
+  if (isWalkin) return 'payment';
+
+  // COD: stay on "Ready for Fulfillment" while it is just packed. Only move
+  // to "Payment" once a rider has actually picked it up for delivery.
+  return RIDER_HAS_PARCEL.includes(order.delivery_stage) ? 'payment' : base;
 }
 
 export function stageLabel(key) {
@@ -170,6 +183,12 @@ export default function OrderStageDetail({ order, proofUrl }) {
             We&apos;re preparing your embroidery design proof — you&apos;ll be notified when it&apos;s ready to approve.
           </p>
         ))}
+
+      {stage === 'ready_for_fulfillment' && isCod && eff === 'ready_for_fulfillment' && (
+        <p className="text-gold text-sm mt-2">
+          Packed and ready — we&apos;re arranging a rider. You&apos;ll pay in cash to our delivery team when your order arrives.
+        </p>
+      )}
 
       {stage === 'ready_for_fulfillment' && !paysOnHandover && (
         <p className="text-gold text-sm mt-2">
