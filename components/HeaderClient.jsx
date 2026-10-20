@@ -19,7 +19,7 @@ const NAV = [
   { href: '/contact', label: 'Contact' },
 ];
 
-export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
+export default function HeaderClient({ user, siteTitle = 'Stitchhouse', logoUrl = '' }) {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -49,14 +49,25 @@ export default function HeaderClient({ user, siteTitle = 'Stitchhouse' }) {
     <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur border-b border-white/10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            src={logo}
-            alt="CK Design Embroidery logo"
-            width={32}
-            height={32}
-            className="h-7 w-auto object-contain"
-            priority
-          />
+          {logoUrl ? (
+            // Logo uploaded by the admin (Admin → Settings). A plain <img>
+            // keeps any shape/size crisp — wide logos included.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={`${siteTitle} logo`}
+              className="h-7 w-auto max-w-[140px] object-contain"
+            />
+          ) : (
+            <Image
+              src={logo}
+              alt="CK Design Embroidery logo"
+              width={32}
+              height={32}
+              className="h-7 w-auto object-contain"
+              priority
+            />
+          )}
           <span className="font-title italic text-lg md:text-2xl tracking-tight text-thread">
             {siteTitle}
           </span>

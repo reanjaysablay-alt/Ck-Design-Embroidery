@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FONT_OPTIONS } from '@/lib/fonts';
+import defaultLogo from '@/logo/ck-logo-transparent.png';
 
 // Color fields in the settings form — the swatch preview updates live so
 // the admin can see the new color as they pick it. These map straight to
@@ -30,12 +31,24 @@ export default function SiteSettingsForm({ settings, action }) {
   function setColor(key, value) {
     setColorValues((prev) => ({ ...prev, [key]: value }));
   }
+  const [logoBusy, setLogoBusy] = useState(false);
 
   return (
     <form action={action} className="space-y-10 max-w-2xl">
       <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl px-4 py-3 text-sm">
         These settings only change how the customer-facing storefront looks —
         the admin dashboard you're using right now stays exactly as it is.
+      </div>
+
+      {/* Logo */}
+      <div>
+        <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-4">Logo</h2>
+        <LogoField
+          initial={settings?.site_logo}
+          background={colorValues.color_canvas}
+          defaultSrc={defaultLogo.src}
+          onBusyChange={setLogoBusy}
+        />
       </div>
 
       {/* Text settings */}
@@ -120,12 +133,108 @@ export default function SiteSettingsForm({ settings, action }) {
       <div>
         <button
           type="submit"
-          className="bg-indigo-600 text-white font-medium text-sm px-8 py-3.5 rounded-full hover:bg-indigo-700 transition-colors"
+          disabled={logoBusy}
+          className="bg-indigo-600 text-white font-medium text-sm px-8 py-3.5 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-60"
         >
-          Save Settings
+          {logoBusy ? 'Uploading logo…' : 'Save Settings'}
         </button>
       </div>
     </form>
+  );
+}
+
+// Logo picker. The file is uploaded the moment it is chosen (a big file
+// inside the form submit could exceed Vercel's request limit); only the
+// resulting URL is saved with the rest of the settings. An empty value
+// means "use the default logo".
+function LogoField({ initial, background, defaultSrc, onBusyChange }) {
+  const [url, setUrl] = useState(initial || '');
+  const [status, setStatus] = useState('idle'); // idle | uploading | error
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    onBusyChange?.(status === 'uploading');
+  }, [status, onBusyChange]);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      setStatus('error');
+      setError('Logo is too large — please use a file under 4MB.');
+      return;
+    }
+
+    setStatus('uploading');
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/admin/product-image', { method: 'POST', body });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || 'Upload failed');
+      setUrl(result.url);
+      setStatus('idle');
+    } catch (err) {
+      setStatus('error');
+      setError(err.message || 'Upload failed — please try again.');
+    }
+  }
+
+  return (
+    <div>
+      <input type="hidden" name="site_logo" value={url} />
+
+      <p className="text-slate-500 text-sm mb-3">
+        Shown in the storefront header next to the site title. A PNG with a transparent background
+        works best (also JPG, WebP or SVG, under 4MB).
+      </p>
+
+      <div
+        className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-5 mb-3"
+        style={{ background }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url || defaultSrc}
+          alt="Current logo"
+          className="h-14 w-auto max-w-[240px] object-contain"
+        />
+      </div>
+      <p className="text-slate-400 text-xs mb-4">
+        {url ? 'Custom logo' : 'Default logo'} — previewed on your storefront background color.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          onChange={handleFile}
+          className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white file:text-xs file:uppercase file:tracking-widest focus-visible:outline-indigo-500"
+        />
+        {url && (
+          <button
+            type="button"
+            onClick={() => {
+              setUrl('');
+              setStatus('idle');
+              setError('');
+            }}
+            className="h-10 px-4 rounded-full border border-slate-200 text-slate-600 text-sm hover:bg-slate-50"
+          >
+            Use default logo
+          </button>
+        )}
+      </div>
+
+      {status === 'uploading' && <p className="text-indigo-600 text-sm mt-3">Uploading…</p>}
+      {status === 'error' && <p className="text-red-600 text-sm mt-3">{error}</p>}
+      <p className="text-slate-400 text-xs mt-3">
+        Click <strong>Save Settings</strong> below to apply the new logo on the site.
+      </p>
+    </div>
   );
 }
 

@@ -204,7 +204,13 @@ export async function deleteProduct(formData) {
 export async function updateSiteSettings(formData) {
   await requireAdmin();
 
+  // '' = use the bundled default logo. Anything else must be an https
+  // URL (the logo is uploaded first via /api/admin/product-image).
+  const logoRaw = formData.get('site_logo')?.toString().trim() || '';
+  const siteLogo = /^https:\/\//.test(logoRaw) ? logoRaw : '';
+
   const settings = {
+    site_logo: siteLogo,
     site_title: formData.get('site_title')?.toString().trim() || 'CK Design Embroidery',
     site_tagline: formData.get('site_tagline')?.toString().trim() || '',
     hero_heading: formData.get('hero_heading')?.toString().trim() || '',

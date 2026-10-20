@@ -18,5 +18,5 @@ export default async function Header() {
   }
 
   const settings = await getSiteSettings();
-  return <HeaderClient user={user} siteTitle={settings.site_title} />;
+  return <HeaderClient user={user} siteTitle={settings.site_title} logoUrl={settings.site_logo} />;
 }
