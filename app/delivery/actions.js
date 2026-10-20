@@ -119,21 +119,39 @@ export async function acceptDelivery(formData) {
 
   const admin = createAdminClient();
 
-  // delivery_user_id IS NULL guards against two riders claiming the same order.
-  const { data, error } = await admin
+  const patch = {
+    delivery_user_id: user.id,
+    order_status: 'to_receive',
+    delivery_stage: 'accepted',
+    delivery_accepted_at: new Date().toISOString(),
+  };
+
+  // 1) Order the rider claims from the open pool.
+  //    delivery_user_id IS NULL guards against two riders claiming the same order.
+  let { data, error } = await admin
     .from('orders')
-    .update({
-      delivery_user_id: user.id,
-      order_status: 'to_receive',
-      delivery_stage: 'accepted',
-      delivery_accepted_at: new Date().toISOString(),
-    })
+    .update(patch)
     .eq('id', orderId)
     .eq('production_stage', READY_STAGE)
     .is('delivery_user_id', null)
     .neq('payment_method', 'walkin')
     .select('id')
     .maybeSingle();
+
+  // 2) Order staff assigned to THIS rider: it sits with no stage until the
+  //    rider explicitly accepts it here.
+  if (!error && !data) {
+    ({ data, error } = await admin
+      .from('orders')
+      .update(patch)
+      .eq('id', orderId)
+      .eq('production_stage', READY_STAGE)
+      .eq('delivery_user_id', user.id)
+      .is('delivery_stage', null)
+      .neq('payment_method', 'walkin')
+      .select('id')
+      .maybeSingle());
+  }
 
   if (error) {
     console.error('acceptDelivery:', error);
@@ -210,17 +228,14 @@ export async function advanceDelivery(formData) {
 
   if (to === 'out_for_delivery') patch.delivery_failed_reason = null;
 
-  let query = admin
+  // An order with no stage is an unaccepted assignment. The rider must accept
+  // it first, so it can never be advanced from NULL.
+  const query = admin
     .from('orders')
     .update(patch)
     .eq('id', orderId)
-    .eq('delivery_user_id', user.id);
-
-  // An order an admin assigned has no stage yet (NULL) but the rider
-  // dashboard shows it as "Accepted", so treat NULL the same as 'accepted'.
-  query = allowedFrom.includes('accepted')
-    ? query.or(`delivery_stage.in.(${allowedFrom.join(',')}),delivery_stage.is.null`)
-    : query.in('delivery_stage', allowedFrom);
+    .eq('delivery_user_id', user.id)
+    .in('delivery_stage', allowedFrom);
 
   const { data, error } = await query.select('id').maybeSingle();
 
