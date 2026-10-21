@@ -83,6 +83,19 @@ export default function OrderCard({ order, designUrls, actions, feeAction, deliv
           {order.shipping_address.fullName} · {order.shipping_address.phone}
           <br />
           {order.shipping_address.line1}, {order.shipping_address.city}, {order.shipping_address.emirate}
+          {order.shipping_address.lat != null && order.shipping_address.lng != null && (
+            <>
+              {' '}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${order.shipping_address.lat},${order.shipping_address.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-slate-600"
+              >
+                📍 Open pin in Maps
+              </a>
+            </>
+          )}
         </div>
       )}
 

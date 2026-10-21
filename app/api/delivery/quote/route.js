@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyCartItems } from '@/lib/cartVerify';
 import { getDeliveryQuote } from '@/lib/deliveryFee';
-import { isUaeAddress, UAE_ONLY_ERROR } from '@/lib/uaeOnly';
+import { isUaeAddress, isPinInsideUae, UAE_ONLY_ERROR, PIN_OUTSIDE_UAE_ERROR } from '@/lib/uaeOnly';
 
 // Live delivery-fee preview for the checkout page. Signed-in customers
 // only (every Google lookup costs money). The real fee is recomputed on
@@ -24,6 +24,9 @@ export async function POST(request) {
   }
   if (!isUaeAddress(address)) {
     return NextResponse.json({ error: UAE_ONLY_ERROR }, { status: 400 });
+  }
+  if (!isPinInsideUae(address)) {
+    return NextResponse.json({ error: PIN_OUTSIDE_UAE_ERROR }, { status: 400 });
   }
 
   // Items total (re-priced from the database) is only needed for the

@@ -3,7 +3,7 @@ import { createOrder } from '@/lib/paypal';
 import { createClient } from '@/lib/supabase/server';
 import { verifyCartItems } from '@/lib/cartVerify';
 import { getDeliveryQuote, DELIVERY_QUOTE_ERROR } from '@/lib/deliveryFee';
-import { isUaeAddress, UAE_ONLY_ERROR } from '@/lib/uaeOnly';
+import { isUaeAddress, isPinInsideUae, UAE_ONLY_ERROR, PIN_OUTSIDE_UAE_ERROR } from '@/lib/uaeOnly';
 
 export async function POST(request) {
   // Auth: prefer the user's access token sent as a Bearer token (the
@@ -40,6 +40,9 @@ export async function POST(request) {
 
   if (!isUaeAddress(address)) {
     return NextResponse.json({ error: UAE_ONLY_ERROR }, { status: 400 });
+  }
+  if (!isPinInsideUae(address)) {
+    return NextResponse.json({ error: PIN_OUTSIDE_UAE_ERROR }, { status: 400 });
   }
 
   try {

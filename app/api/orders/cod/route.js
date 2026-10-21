@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendMail, newOrderAdminEmail } from '@/lib/email';
 import { verifyCartItems, deductStock } from '@/lib/cartVerify';
 import { getDeliveryQuote } from '@/lib/deliveryFee';
-import { isUaeAddress, UAE_ONLY_ERROR } from '@/lib/uaeOnly';
+import { isUaeAddress, isPinInsideUae, UAE_ONLY_ERROR, PIN_OUTSIDE_UAE_ERROR } from '@/lib/uaeOnly';
 
 export async function POST(request) {
   const supabase = await createClient();
@@ -25,6 +25,9 @@ export async function POST(request) {
 
   if (!isUaeAddress(address)) {
     return NextResponse.json({ error: UAE_ONLY_ERROR }, { status: 400 });
+  }
+  if (!isPinInsideUae(address)) {
+    return NextResponse.json({ error: PIN_OUTSIDE_UAE_ERROR }, { status: 400 });
   }
 
   try {

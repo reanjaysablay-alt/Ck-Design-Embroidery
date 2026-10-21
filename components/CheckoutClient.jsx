@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/CartContext';
 import { createClient } from '@/lib/supabase/client';
+import DeliveryPinMap from '@/components/DeliveryPinMap';
 
 // Currency PayPal charges in. UAE PayPal Business accounts settle in USD
 // (there is no AED balance), so this must stay a PayPal-supported ISO code.
@@ -91,6 +92,17 @@ async function parseResponse(response) {
   };
 }
 
+// Straight-line distance in metres between two { lat, lng } points.
+function metersBetween(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
 function isNonEmpty(value) {
   return String(value || '').trim().length > 0;
 }
@@ -131,9 +143,20 @@ export default function CheckoutClient({ user }) {
     emirate: savedAddress.emirate || '',
     postalCode: savedAddress.postalCode || '',
     notes: '',
+    // Exact spot dropped on the map (UAE only). null = no pin.
+    lat: null,
+    lng: null,
   });
 
   const [addressValid, setAddressValid] = useState(false);
+  // idle | loading | done | failed  (filling the address from the map pin)
+  const [pinLookup, setPinLookup] = useState('idle');
+  const pinLookupId = useRef(0);
+  // Address fields the customer typed by hand since the pin last filled
+  // them in. Those are kept when the pin is nudged.
+  const editedFields = useRef({});
+  const lastFilledPin = useRef(null);
+  const pinTimer = useRef(null);
   const [codSubmitting, setCodSubmitting] = useState(false);
   const [walkinSubmitting, setWalkinSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -162,12 +185,90 @@ export default function CheckoutClient({ user }) {
   const isUAE = address.countryCode === 'AE';
 
   function setField(key, value) {
+    if (key === 'line1' || key === 'line2' || key === 'city') {
+      editedFields.current[key] = true;
+    }
+
     setAddress((current) => ({
       ...current,
       [key]: value,
     }));
 
     setError('');
+  }
+
+  // Called by the map: { lat, lng } when a pin is dropped/moved, null when removed.
+  // Also fills in the address fields from the pin.
+  function handlePinChange(pin) {
+    setAddress((current) => ({
+      ...current,
+      lat: pin ? pin.lat : null,
+      lng: pin ? pin.lng : null,
+    }));
+
+    setError('');
+
+    const requestId = ++pinLookupId.current;
+    clearTimeout(pinTimer.current);
+
+    if (!pin) {
+      setPinLookup('idle');
+      return;
+    }
+
+    setPinLookup('loading');
+
+    // Wait a moment so quick drags only look up the final spot.
+    pinTimer.current = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/geo/reverse?lat=${pin.lat}&lng=${pin.lng}`
+        );
+        const data = await parseResponse(response);
+
+        // A newer pin was dropped while this one was loading: ignore.
+        if (requestId !== pinLookupId.current) return;
+
+        if (!response.ok || data.status !== 'ok') {
+          setPinLookup('failed');
+          return;
+        }
+
+        // Pin moved to a clearly different place: forget earlier manual
+        // edits, they belonged to the old spot.
+        const last = lastFilledPin.current;
+        if (!last || metersBetween(last, pin) > 300) editedFields.current = {};
+        lastFilledPin.current = pin;
+
+        const edited = { ...editedFields.current };
+
+        setAddress((current) => {
+          const next = { ...current };
+
+          // Street and landmark follow the pin (even when blank, so an old
+          // landmark doesn't stay behind) unless the customer typed them.
+          if (!edited.line1 && data.line1) next.line1 = data.line1;
+          if (!edited.line2) next.line2 = data.line2 || '';
+
+          // City and emirate follow the pin so they can't contradict it.
+          if (!edited.city && data.city) next.city = data.city;
+          if (data.emirate) next.emirate = data.emirate;
+
+          return next;
+        });
+
+        // These fields now hold what the pin filled in.
+        editedFields.current = {
+          line1: !!edited.line1,
+          line2: !!edited.line2,
+          city: !!edited.city,
+        };
+
+        setPinLookup('done');
+      } catch {
+        if (requestId === pinLookupId.current) setPinLookup('failed');
+      }
+    }, 350);
   }
 
   function handleCountryChange(code) {
@@ -178,6 +279,8 @@ export default function CheckoutClient({ user }) {
       countryCode: code,
       country: selectedCountry?.name || code,
       emirate: '',
+      lat: null,
+      lng: null,
     }));
 
     setError('');
@@ -213,6 +316,8 @@ export default function CheckoutClient({ user }) {
     address.city,
     address.emirate,
     address.postalCode,
+    address.lat,
+    address.lng,
     Math.round(Number(subtotal || 0) * 100),
   ].join('|');
 
@@ -722,6 +827,16 @@ export default function CheckoutClient({ user }) {
                 )}
               </div>
 
+              {isUAE && (
+                <DeliveryPinMap
+                  lat={address.lat}
+                  lng={address.lng}
+                  emirate={address.emirate}
+                  status={pinLookup}
+                  onChange={handlePinChange}
+                />
+              )}
+
               {!isUAE && (
                 <Field
                   label="Postal code"
@@ -917,7 +1032,7 @@ export default function CheckoutClient({ user }) {
               <div className="flex justify-between text-sm text-thread/70">
                 <span>
                   Delivery
-                  {quote.status === 'ok' && quote.km ? ` (≈ ${quote.km} km)` : ''}
+                  {quote.status === 'ok' && quote.km ? ` (≈ ${quote.km} km${quote.pinned ? ' from your pin' : ''})` : ''}
                 </span>
                 <span className="font-mono">
                   {quoteLoading && 'Calculating…'}
