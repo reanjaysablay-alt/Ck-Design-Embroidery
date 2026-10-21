@@ -1056,15 +1056,27 @@ export async function assignDeliveryUser(formData) {
     return { error: 'This order is not currently in the delivery pipeline.' };
   }
 
-  // A freshly assigned order starts at 'accepted' so the rider can move
-  // it through picked up -> out for delivery -> delivered. A
-  // reassignment must not reset an order that is already further along.
-  const stageUpdate = existing.delivery_stage
-    ? {}
-    : {
-        delivery_stage: 'accepted',
-        delivery_accepted_at: new Date().toISOString(),
-      };
+  // Assigning must NOT accept the delivery for the rider. The order lands in
+  // their account as a "New assignment" (no stage yet) and only becomes
+  // 'accepted' when the rider taps Accept.
+  //  - No stage yet, or 'accepted' by a previous rider: reset to unaccepted
+  //    when the rider changes, so the new rider has to accept it themselves.
+  //  - Further along (picked up, on the way...): reassigning is refused so
+  //    the goods and the cash never change hands mid-delivery.
+  const STARTED_STAGES = ['picked_up', 'out_for_delivery', 'arrived', 'delivered'];
+  if (STARTED_STAGES.includes(existing.delivery_stage)) {
+    return { error: 'The rider already started this delivery, so it cannot be reassigned.' };
+  }
+
+  const riderChanged = existing.delivery_user_id !== deliveryUserId;
+  const stageUpdate =
+    riderChanged || !existing.delivery_stage
+      ? {
+          delivery_stage: null,
+          delivery_accepted_at: null,
+          delivery_failed_reason: null,
+        }
+      : {};
 
   const { data: order, error } = await admin
     .from('orders')

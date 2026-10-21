@@ -139,13 +139,13 @@ export async function acceptDelivery(formData) {
     .maybeSingle();
 
   // 2) Order staff assigned to THIS rider: it sits with no stage until the
-  //    rider explicitly accepts it here.
+  //    rider explicitly accepts it here. (Staff may assign before the
+  //    production stage is final, so it is not checked on this path.)
   if (!error && !data) {
     ({ data, error } = await admin
       .from('orders')
       .update(patch)
       .eq('id', orderId)
-      .eq('production_stage', READY_STAGE)
       .eq('delivery_user_id', user.id)
       .is('delivery_stage', null)
       .neq('payment_method', 'walkin')
@@ -260,8 +260,11 @@ export async function advanceDelivery(formData) {
     if (!current || current.delivery_user_id !== user.id) {
       return fail('This order is not assigned to your account.');
     }
+    if (!current.delivery_stage) {
+      return fail('Accept this delivery first. Refresh the page, then tap "Accept delivery".');
+    }
     return fail(
-      `This order is at "${(current.delivery_stage || 'new').replace(/_/g, ' ')}", so it cannot move to "${to.replace(/_/g, ' ')}".`
+      `This order is at "${current.delivery_stage.replace(/_/g, ' ')}", so it cannot move to "${to.replace(/_/g, ' ')}".`
     );
   }
 

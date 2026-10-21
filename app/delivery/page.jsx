@@ -274,7 +274,8 @@ function getOrderState(order) {
     return 'delivered';
   }
 
-  if (order.delivery_user_id) return 'accepted';
+  // Assigned to a rider but the rider has not tapped Accept yet.
+  if (order.delivery_user_id) return 'assigned';
 
   return 'available';
 }
@@ -298,6 +299,7 @@ function isCodAlreadyRemitted(order) {
 function StatusBadge({ state }) {
   const styles = {
     available: 'border-amber-200 bg-amber-50 text-amber-700',
+    assigned: 'border-amber-200 bg-amber-50 text-amber-700',
     accepted: 'border-blue-200 bg-blue-50 text-blue-700',
     picked_up: 'border-indigo-200 bg-indigo-50 text-indigo-700',
     out_for_delivery: 'border-violet-200 bg-violet-50 text-violet-700',
@@ -308,6 +310,7 @@ function StatusBadge({ state }) {
 
   const labels = {
     available: 'Available',
+    assigned: 'New assignment',
     accepted: 'Accepted',
     picked_up: 'Picked up',
     out_for_delivery: 'On the way',
@@ -602,6 +605,11 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
     run(releaseDelivery, baseForm(), onReleased);
   }
 
+  // The rider must explicitly accept an order staff assigned to them.
+  function handleAcceptAssignment() {
+    run(acceptDelivery, baseForm(), onChanged);
+  }
+
   function handleComplete(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -623,6 +631,8 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
     'inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   const stepText = {
+    assigned:
+      'Staff assigned this order to you. Accept it to start the delivery, or decline to send it back.',
     accepted: 'Pick up the packed order from production, then tap "Picked up".',
     picked_up: 'You have the order. Tap "Start delivery" when you leave.',
     out_for_delivery:
@@ -650,7 +660,9 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
             </div>
 
             <p className="mt-1 text-xs text-slate-400">
-              Accepted {shortDate(order.delivery_accepted_at || order.created_at)}
+              {state === 'assigned'
+                ? 'Waiting for you to accept'
+                : `Accepted ${shortDate(order.delivery_accepted_at || order.created_at)}`}
             </p>
           </div>
 
@@ -738,6 +750,28 @@ function ActiveDeliveryCard({ order, onChanged, onReleased }) {
           <p className="text-sm leading-6 text-slate-600">{stepText[state]}</p>
 
           <div className="mt-4 space-y-3">
+            {state === 'assigned' && (
+              <>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleAcceptAssignment}
+                  className={primaryBtn}
+                >
+                  {isPending ? 'Accepting...' : 'Accept delivery'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleRelease}
+                  className={`${secondaryBtn} w-full`}
+                >
+                  Decline assignment
+                </button>
+              </>
+            )}
+
             {state === 'accepted' && (
               <>
                 <button
@@ -1405,7 +1439,8 @@ function ScanResult({ code, order, userId, onClose, onAccepted, onOpenMine }) {
   const state = getOrderState(order);
   const mine = Boolean(userId) && order.delivery_user_id === userId;
   const takenByOther = Boolean(order.delivery_user_id) && !mine;
-  const canAccept = !order.delivery_user_id;
+  // Open order, or one assigned to THIS rider that they have not accepted yet.
+  const canAccept = !order.delivery_user_id || (mine && state === 'assigned');
   const cod = isCod(order);
   const codAmount = getCodAmount(order);
   const navigationUrl = getNavigationUrl(order.shipping_address);
@@ -1550,7 +1585,7 @@ function ScanResult({ code, order, userId, onClose, onAccepted, onOpenMine }) {
             </button>
           )}
 
-          {mine && (
+          {mine && state !== 'assigned' && (
             <button
               type="button"
               onClick={onOpenMine}
