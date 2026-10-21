@@ -765,7 +765,7 @@ create table if not exists public.payment_records (
   id bigint generated always as identity primary key,
   order_id bigint not null unique references public.orders(id) on delete restrict,
   method text not null check (method in ('cod', 'walkin')),
-  payment_mode text not null default 'cash' check (payment_mode in ('cash', 'gcash', 'card', 'other')),
+  payment_mode text not null default 'cash' check (payment_mode in ('cash', 'bank', 'gcash', 'card', 'other')),
   amount_expected numeric(10, 2) not null,
   amount_received numeric(10, 2) not null,
   collected_by text,

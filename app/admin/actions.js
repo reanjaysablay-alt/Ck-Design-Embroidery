@@ -801,7 +801,7 @@ export async function recordPayment(formData) {
   const amountRaw = Number(formData.get('amount'));
 
   if (!Number.isInteger(orderId)) return { error: 'Invalid order.' };
-  if (!['cash', 'gcash', 'card', 'other'].includes(mode)) return { error: 'Choose how it was paid.' };
+  if (!['cash', 'bank'].includes(mode)) return { error: 'Choose how it was paid.' };
   if (!Number.isFinite(amountRaw) || amountRaw <= 0) return { error: 'Enter the amount received.' };
   const amount = Math.round(amountRaw * 100) / 100;
 
