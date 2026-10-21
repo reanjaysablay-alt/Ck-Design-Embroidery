@@ -111,16 +111,54 @@ export default function DeliveryPinMap({ lat, lng, emirate, status = 'idle', onC
         worldCopyJump: false,
       });
 
-      // Esri "World Street Map" tiles: English street and place names, and
-      // no API key needed.
-      L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-        {
-          maxZoom: 19,
-          attribution:
-            'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, and the GIS User Community',
-        }
-      ).addTo(map);
+      // Three map styles the customer can switch between (top-right button).
+      // maxNativeZoom keeps the picture sharp instead of blank when zooming
+      // in further than a provider has detail for.
+      const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services';
+      const esriCredit = 'Tiles &copy; Esri';
+
+      // 1. Streets: English street and place names.
+      const streets = L.tileLayer(`${esri}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`, {
+        maxZoom: 20,
+        maxNativeZoom: 18,
+        attribution: `${esriCredit} &mdash; Esri, DeLorme, NAVTEQ, USGS`,
+      });
+
+      // 2. Satellite: real photos, so houses and buildings can be found.
+      // English place and road names are drawn on top.
+      const satellite = L.layerGroup([
+        L.tileLayer(`${esri}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, {
+          maxZoom: 20,
+          maxNativeZoom: 18,
+          attribution: `${esriCredit} &mdash; Esri, Maxar, Earthstar Geographics`,
+        }),
+        L.tileLayer(`${esri}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`, {
+          maxZoom: 20,
+          maxNativeZoom: 18,
+        }),
+        L.tileLayer(`${esri}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`, {
+          maxZoom: 20,
+          maxNativeZoom: 18,
+        }),
+      ]);
+
+      // 3. OpenStreetMap: the most street-by-street detail (labels may be
+      // in Arabic where a street has no English name).
+      const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      });
+
+      streets.addTo(map);
+      L.control
+        .layers(
+          { Streets: streets, Satellite: satellite, 'Street detail (OSM)': osm },
+          null,
+          { position: 'topright', collapsed: true }
+        )
+        .addTo(map);
 
       map.on('click', (event) => {
         const { lat: clickLat, lng: clickLng } = event.latlng;
