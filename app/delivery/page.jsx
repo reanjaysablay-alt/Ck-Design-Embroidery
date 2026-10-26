@@ -1745,7 +1745,7 @@ export default function DeliveryDashboard() {
   const [availableOrders, setAvailableOrders] = useState([]);
   const [myOrders, setMyOrders] = useState([]);
   const [initialError, setInitialError] = useState('');
-  const [tab, setTab] = useState('available');
+  const [tab, setTab] = useState('active');
   const [signingOut, setSigningOut] = useState(false);
   const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1931,11 +1931,6 @@ export default function DeliveryDashboard() {
     selectTab('active');
   }
 
-  function goToAvailable() {
-    load();
-    selectTab('available');
-  }
-
   // Opening Completed always starts on today.
   function goToCompleted() {
     setHistoryDate(toDateKey(new Date()));
@@ -2018,13 +2013,6 @@ export default function DeliveryDashboard() {
   }
 
   const navItems = [
-    {
-      key: 'available',
-      label: 'Available',
-      Icon: PackageIcon,
-      badgeText: String(availableOrders.length),
-      badgeCount: availableOrders.length,
-    },
     {
       key: 'active',
       label: 'My Deliveries',
@@ -2143,9 +2131,7 @@ export default function DeliveryDashboard() {
               type="button"
               title={item.label}
               onClick={() =>
-                item.key === 'available'
-                  ? goToAvailable()
-                  : item.key === 'active'
+                item.key === 'active'
                   ? goToActive()
                   : item.key === 'completed'
                   ? goToCompleted()
@@ -2246,13 +2232,7 @@ export default function DeliveryDashboard() {
             )}
 
             {/* Summary: 2 cols phone, 3 cols tablet, 5 cols wide desktop */}
-            <section className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-              <SummaryCard
-                label="Available"
-                value={availableOrders.length}
-                detail="Ready for rider acceptance"
-              />
-
+            <section className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
               <SummaryCard
                 label="Active"
                 value={activeOrders.length}
@@ -2279,35 +2259,6 @@ export default function DeliveryDashboard() {
               </div>
             </section>
 
-            {/* Available */}
-            {tab === 'available' && (
-              <section>
-                <SectionHeader
-                  eyebrow="Fulfillment queue"
-                  title="Available deliveries"
-                  description="Orders that production has completed and released for delivery acceptance."
-                  count={availableOrders.length}
-                />
-
-                {availableOrders.length === 0 ? (
-                  <EmptyState
-                    title="No deliveries available"
-                    description="There are currently no fulfillment-ready orders waiting for a rider."
-                  />
-                ) : (
-                  <div className="space-y-4 sm:space-y-5">
-                    {availableOrders.map((order) => (
-                      <AvailableCard
-                        key={order.id}
-                        order={order}
-                        onAccepted={goToActive}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
             {/* Active */}
             {tab === 'active' && (
               <section>
@@ -2321,7 +2272,7 @@ export default function DeliveryDashboard() {
                 {activeOrders.length === 0 ? (
                   <EmptyState
                     title="No active deliveries"
-                    description="Accept a fulfillment-ready order to see it here."
+                    description="Orders assigned to you or accepted by scanning their QR code will appear here."
                   />
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
@@ -2330,7 +2281,7 @@ export default function DeliveryDashboard() {
                         key={order.id}
                         order={order}
                         onChanged={load}
-                        onReleased={goToAvailable}
+                        onReleased={goToActive}
                       />
                     ))}
                   </div>

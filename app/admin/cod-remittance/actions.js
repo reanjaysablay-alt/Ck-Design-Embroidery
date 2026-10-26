@@ -76,6 +76,75 @@ function buildRemittances(orders, names = {}) {
     .sort((a, b) => b.amount - a.amount);
 }
 
+// Records one COD payment. Uses the cashier_remit_cod database function when
+// it is installed (atomic). If that function is missing from the database,
+// falls back to writing the same rows directly so confirming still works.
+async function recordCodPayment(db, order, amount, note, user) {
+  const { error } = await db.rpc('cashier_remit_cod', {
+    p_order_id: Number(order.id),
+    p_amount_received: amount,
+    p_note: note,
+    p_recorded_by: 'Admin',
+    p_recorded_by_email: user.email,
+    p_remitted_by: user.id,
+  });
+
+  if (!error) return { ok: true };
+
+  const message = String(error.message || '');
+  const functionMissing =
+    error.code === 'PGRST202' ||
+    error.code === '42883' ||
+    /could not find the function|function .* does not exist/i.test(message);
+
+  if (!functionMissing) return { ok: false, error: message };
+
+  if (String(order.order_status || '').toLowerCase() === 'canceled') {
+    return { ok: false, error: 'This order was canceled.' };
+  }
+
+  const { data: existing, error: lookupError } = await db
+    .from('payment_records')
+    .select('id')
+    .eq('order_id', order.id)
+    .maybeSingle();
+
+  if (lookupError) return { ok: false, error: lookupError.message };
+
+  if (!existing) {
+    const { error: insertError } = await db.from('payment_records').insert({
+      order_id: order.id,
+      method: 'cod',
+      payment_mode: 'cash',
+      amount_expected: Number(order.total || 0),
+      amount_received: amount,
+      collected_by: order.cod_collected_by || null,
+      recorded_by: 'Admin',
+      recorded_by_email: user.email,
+      note,
+    });
+
+    if (insertError) return { ok: false, error: insertError.message };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  const { error: updateError } = await db
+    .from('orders')
+    .update({
+      payment_status: 'paid',
+      cod_collected_at: order.cod_collected_at || nowIso,
+      cod_remitted_at: nowIso,
+      cod_remitted_by: user.id,
+    })
+    .eq('id', order.id)
+    .is('cod_remitted_at', null);
+
+  if (updateError) return { ok: false, error: updateError.message };
+
+  return { ok: true };
+}
+
 async function requireAdmin() {
   const supabase = await createClient();
 
@@ -194,7 +263,7 @@ export async function verifyCodRemittance({ riderId, orderIds }) {
     const { data: orders, error: fetchError } = await db
       .from('orders')
       .select(
-        'id, total, cod_amount, payment_method, delivery_user_id, delivery_stage, delivered_at, order_status, cod_remitted_at'
+        'id, total, cod_amount, payment_method, delivery_user_id, delivery_stage, delivered_at, order_status, cod_remitted_at, cod_collected_at, cod_collected_by'
       )
       .in('id', cleanOrderIds)
       .eq('delivery_user_id', cleanRiderId)
@@ -227,19 +296,18 @@ export async function verifyCodRemittance({ riderId, orderIds }) {
       const orderTotal = Number(order.total || 0);
       const differs = Math.abs(amount - orderTotal) > 0.009;
 
-      const { error: rpcError } = await db.rpc('cashier_remit_cod', {
-        p_order_id: Number(order.id),
-        p_amount_received: amount,
-        p_note: differs
+      const result = await recordCodPayment(
+        db,
+        order,
+        amount,
+        differs
           ? 'Received via admin COD remittance (amount differs from order total)'
           : 'Received via admin COD remittance',
-        p_recorded_by: 'Admin',
-        p_recorded_by_email: auth.user.email,
-        p_remitted_by: auth.user.id,
-      });
+        auth.user
+      );
 
-      if (rpcError) {
-        failed.push({ id: order.id, error: rpcError.message });
+      if (!result.ok) {
+        failed.push({ id: order.id, error: result.error });
       } else {
         succeeded.push({ id: order.id, amount });
       }
