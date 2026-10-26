@@ -198,6 +198,14 @@ export default function CodRemittancePage() {
       setSelectedRider(null);
       setSuccess(`${amount} received and recorded.`);
 
+      if (result.failed?.length) {
+        setError(
+          `${result.failed.length} order(s) could not be recorded: ${result.failed
+            .map((f) => `#${f.id} (${f.error})`)
+            .join('; ')}`
+        );
+      }
+
       await loadData(true);
     } catch (err) {
       setError(err?.message || 'Unable to confirm the COD remittance.');

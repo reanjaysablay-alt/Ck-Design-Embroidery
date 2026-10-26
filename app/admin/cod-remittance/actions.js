@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { canAccessAdmin } from '@/lib/admin';
+import { getAccessContext } from '@/lib/cashier';
+import { logActivity } from '@/lib/activityLog';
 
 function isDelivered(order) {
   const deliveryStage = String(order?.delivery_stage || '').toLowerCase();
@@ -163,6 +165,12 @@ export async function loadCodRemittances() {
   }
 }
 
+// Confirms the cash a rider handed over. Each order is recorded through the
+// same atomic database function the cashier uses (cashier_remit_cod), so the
+// payment_records row (which the Revenue report reads), the receipt number,
+// payment_status = 'paid' and cod_remitted_at are all written together.
+// Previously this only stamped cod_remitted_at, so the money never reached
+// the revenue report.
 export async function verifyCodRemittance({ riderId, orderIds }) {
   try {
     const auth = await requireAdmin();
@@ -194,7 +202,7 @@ export async function verifyCodRemittance({ riderId, orderIds }) {
     const { data: orders, error: fetchError } = await db
       .from('orders')
       .select(
-        'id, total, cod_amount, payment_method, delivery_user_id, delivery_stage, delivered_at, order_status, cod_remitted_at'
+        'id, total, cod_amount, payment_method, payment_status, delivery_user_id, delivery_stage, delivered_at, order_status, cod_remitted_at'
       )
       .in('id', cleanOrderIds)
       .eq('delivery_user_id', cleanRiderId)
@@ -214,48 +222,112 @@ export async function verifyCodRemittance({ riderId, orderIds }) {
       };
     }
 
-    const eligibleIds = eligibleOrders.map((order) => order.id);
+    const ctx = await getAccessContext();
+    const recordedBy = ctx.isAdmin
+      ? 'Admin'
+      : ctx.staffName || auth.user.email;
+
     const remittedAt = new Date().toISOString();
+    const done = [];
+    const failed = [];
+    let total = 0;
 
-    const { data: updatedOrders, error: updateError } = await db
-      .from('orders')
-      .update({
-        cod_remitted_at: remittedAt,
-        cod_remitted_by: auth.user.id,
-      })
-      .in('id', eligibleIds)
-      .eq('delivery_user_id', cleanRiderId)
-      .eq('payment_method', 'cod')
-      .is('cod_remitted_at', null)
-      .select('id');
+    // One order at a time so receipt numbers stay in order and one bad
+    // order never blocks the rest of the rider's cash.
+    for (const order of eligibleOrders) {
+      const amount = Number(getCodAmount(order).toFixed(2));
 
-    if (updateError) {
-      return { ok: false, error: updateError.message };
+      if (order.payment_status === 'paid') {
+        // The payment is already on the books (e.g. recorded earlier from the
+        // cashier page). Only mark the cash as handed over; do not create a
+        // second record or the revenue would be counted twice.
+        const { data: stamped, error: stampError } = await db
+          .from('orders')
+          .update({
+            cod_remitted_at: remittedAt,
+            cod_remitted_by: auth.user.id,
+          })
+          .eq('id', order.id)
+          .is('cod_remitted_at', null)
+          .select('id');
+
+        if (stampError) {
+          failed.push({ id: order.id, error: stampError.message });
+        } else if (stamped && stamped.length > 0) {
+          done.push(order.id);
+          total += amount;
+        }
+        continue;
+      }
+
+      // The database function requires a note when the amount differs from
+      // the order total.
+      const differs = Math.abs(amount - Number(order.total || 0)) > 0.009;
+
+      const { error: rpcError } = await db.rpc('cashier_remit_cod', {
+        p_order_id: order.id,
+        p_amount_received: amount,
+        p_note: differs
+          ? `Rider remittance: COD amount ${amount.toFixed(2)} differs from order total ${Number(order.total || 0).toFixed(2)}`
+          : '',
+        p_recorded_by: recordedBy,
+        p_recorded_by_email: auth.user.email,
+        p_remitted_by: auth.user.id,
+      });
+
+      if (rpcError) {
+        const missing =
+          rpcError.code === 'PGRST202' ||
+          /could not find the function/i.test(rpcError.message || '');
+        failed.push({
+          id: order.id,
+          error: missing
+            ? 'Database function cashier_remit_cod is missing. Run db/cod-remittance-migration.sql in Supabase.'
+            : rpcError.message,
+        });
+        continue;
+      }
+
+      done.push(order.id);
+      total += amount;
     }
 
-    if (!updatedOrders || updatedOrders.length === 0) {
+    if (done.length === 0) {
       return {
         ok: false,
         error:
-          'No orders were updated. The remittance may already have been received.',
+          failed.length > 0
+            ? `Could not record the remittance. ${failed
+                .map((f) => `#${f.id}: ${f.error}`)
+                .join('; ')}`
+            : 'No orders were updated. The remittance may already have been received.',
       };
     }
 
-    const updatedIds = new Set(updatedOrders.map((order) => String(order.id)));
-
-    const total = eligibleOrders
-      .filter((order) => updatedIds.has(String(order.id)))
-      .reduce((sum, order) => sum + getCodAmount(order), 0);
+    await logActivity({
+      actorEmail: auth.user.email,
+      actorRole: ctx.role,
+      action: 'cod_remitted',
+      targetType: 'rider',
+      targetId: cleanRiderId,
+      details: `Received \u20C3\u00A0${total.toFixed(2)} from rider for ${done.length} order(s): ${done
+        .map((id) => `#${id}`)
+        .join(', ')}`,
+    });
 
     revalidatePath('/admin/cod-remittance');
+    revalidatePath('/admin/cashier');
+    revalidatePath('/admin/revenue');
+    revalidatePath('/admin/orders');
     revalidatePath('/delivery');
     revalidatePath('/admin');
 
     return {
       ok: true,
-      count: updatedOrders.length,
+      count: done.length,
       total: Number(total.toFixed(2)),
       remittedAt,
+      failed,
     };
   } catch (err) {
     return {
