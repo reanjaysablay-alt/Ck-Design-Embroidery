@@ -97,7 +97,13 @@ async function recordCodPayment(db, order, amount, note, user) {
     error.code === '42883' ||
     /could not find the function|function .* does not exist/i.test(message);
 
-  if (!functionMissing) return { ok: false, error: message };
+  // The order already has a payment record / paid status but was never
+  // stamped as remitted (so it still shows in this list). Reconcile it below
+  // instead of failing: make sure the payment record exists, then mark it
+  // remitted. Nothing is counted twice.
+  const alreadyRecorded = /already recorded/i.test(message);
+
+  if (!functionMissing && !alreadyRecorded) return { ok: false, error: message };
 
   if (String(order.order_status || '').toLowerCase() === 'canceled') {
     return { ok: false, error: 'This order was canceled.' };
