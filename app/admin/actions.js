@@ -8,6 +8,14 @@ import { isAdminEmail, canAccessAdmin, getAdminRole } from '@/lib/admin';
 import { refundCapture } from '@/lib/paypal';
 import { uploadProductImage, uploadDesignFile } from '@/lib/upload';
 import { saveSiteSettings, DEFAULT_SETTINGS } from '@/lib/settings';
+import {
+  ADMIN_THEME_ROLES,
+  ADMIN_THEME_FIELD_DEFAULTS,
+  adminThemeKey,
+  cleanHex,
+  cleanSize,
+  cleanFontKey,
+} from '@/lib/adminTheme';
 import { logActivity } from '@/lib/activityLog';
 import { getStaffIdentityName } from '@/lib/staffIdentity';
 import { getAccessContext } from '@/lib/cashier';
@@ -250,6 +258,34 @@ export async function updateSiteSettings(formData) {
   revalidatePath('/admin/settings');
   revalidatePath('/shop');
   revalidatePath('/');
+}
+
+// Saves the colors / font / text size of the Admin and Staff dashboards
+// (Admin → Settings → "Admin & Staff interface"). Kept separate from
+// updateSiteSettings so saving one never overwrites the other. Every
+// value is validated here — it ends up inside a <style> tag in the admin
+// layout, so only strict #rrggbb colors, a known font key and a clamped
+// number are ever stored.
+export async function updateAdminTheme(formData) {
+  await requireAdmin();
+
+  const d = ADMIN_THEME_FIELD_DEFAULTS;
+  const settings = {};
+  for (const role of ADMIN_THEME_ROLES) {
+    const get = (field) => formData.get(adminThemeKey(role, field));
+    settings[adminThemeKey(role, 'enabled')] = get('enabled')?.toString() === 'true' ? 'true' : 'false';
+    settings[adminThemeKey(role, 'bg')] = cleanHex(get('bg'), d.bg);
+    settings[adminThemeKey(role, 'panel')] = cleanHex(get('panel'), d.panel);
+    settings[adminThemeKey(role, 'text')] = cleanHex(get('text'), d.text);
+    settings[adminThemeKey(role, 'accent')] = cleanHex(get('accent'), d.accent);
+    settings[adminThemeKey(role, 'font')] = cleanFontKey(get('font'));
+    settings[adminThemeKey(role, 'size')] = String(cleanSize(get('size')));
+  }
+
+  await saveSiteSettings(settings);
+
+  // The theme is applied by app/admin/layout.js, so refresh the whole admin tree.
+  revalidatePath('/admin', 'layout');
 }
 
 // Approves a pending staff identity (admin-only) so that name+PIN can

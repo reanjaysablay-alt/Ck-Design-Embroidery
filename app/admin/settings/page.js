@@ -4,8 +4,9 @@ import { isAdminEmail } from '@/lib/admin';
 import { getSiteSettings } from '@/lib/settings';
 import { formatDate, formatDateTime } from '@/lib/formatDate';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
+import AdminThemeForm from '@/components/admin/AdminThemeForm';
 import ResetStaffPinButton from '@/components/admin/ResetStaffPinButton';
-import { updateSiteSettings, resetStaffPin } from '@/app/admin/actions';
+import { updateSiteSettings, updateAdminTheme, resetStaffPin } from '@/app/admin/actions';
 
 export const metadata = { title: 'Site Settings — Stitchhouse Admin' };
 
@@ -30,6 +31,18 @@ export default async function AdminSettingsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-slate-900 mb-8">Site Settings</h1>
+
+      <div className="mb-14 pb-10 border-b border-slate-200">
+        <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2">
+          Admin &amp; Staff interface
+        </h2>
+        <p className="text-slate-500 text-sm mb-6 max-w-2xl">
+          Colors, font and text size of the dashboard that you and your staff use.
+        </p>
+        <AdminThemeForm settings={settings} action={updateAdminTheme} />
+      </div>
+
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-6">Storefront</h2>
       <SiteSettingsForm settings={settings} action={updateSiteSettings} />
 
       <div className="mt-14 pt-10 border-t border-slate-200 max-w-2xl">

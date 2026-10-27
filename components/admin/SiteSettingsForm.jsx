@@ -37,8 +37,8 @@ export default function SiteSettingsForm({ settings, action }) {
   return (
     <form action={action} className="space-y-10 max-w-2xl">
       <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl px-4 py-3 text-sm">
-        These settings only change how the customer-facing storefront looks —
-        the admin dashboard you're using right now stays exactly as it is.
+        These settings only change how the customer-facing storefront looks. To change the
+        Admin or Staff dashboard, use &ldquo;Admin &amp; Staff interface&rdquo; at the top of this page.
       </div>
 
       {/* Logo */}

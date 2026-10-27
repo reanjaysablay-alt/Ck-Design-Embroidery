@@ -330,7 +330,7 @@ const EMPTY_COUNTS = {
 };
 const COUNTS_POLL_MS = 8000;
 
-export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, initialCounts }) {
+export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, initialCounts, themeLock = null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -369,14 +369,20 @@ export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, in
   // variants only exist on admin components, so this has zero effect
   // on the customer-facing storefront — it's naturally scoped without
   // any extra wiring. Preference persists across admin visits.
+  //
+  // When this account has custom interface colors (Admin -> Settings),
+  // `themeLock` forces 'dark' or 'light' to match the chosen background
+  // and the Dark Mode switch is hidden — otherwise the two would fight.
   useEffect(() => {
-    const stored = localStorage.getItem('admin-dark-mode') === 'true';
+    const stored = themeLock
+      ? themeLock === 'dark'
+      : localStorage.getItem('admin-dark-mode') === 'true';
     setDark(stored);
     document.documentElement.classList.toggle('dark', stored);
     // Leaving the admin area: drop the class so the storefront / rider
     // screens are never affected by the admin preference.
     return () => document.documentElement.classList.remove('dark');
-  }, []);
+  }, [themeLock]);
 
   function toggleDark() {
     setDark((prev) => {
@@ -413,7 +419,7 @@ export default function AdminSidebar({ isAdmin, isCashier = false, userEmail, in
     </Link>
   );
 
-  const DarkModeToggle = (
+  const DarkModeToggle = themeLock ? null : (
     <button
       onClick={toggleDark}
       className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
