@@ -302,10 +302,10 @@ function Preview({ v }) {
   const c = t.colorsEnabled ? t : getAdminTheme({}, 'x');
   const mix = (a, pct, b) => `color-mix(in srgb, ${a} ${pct}%, ${b})`;
   const font = ADMIN_FONT_OPTIONS.find((f) => f.key === t.fontKey);
-  const fontFamily = font?.variable ? `var(${font.variable}), sans-serif` : undefined;
+  const fontFamily = font?.stack || (font?.variable ? `var(${font.variable}), sans-serif` : undefined);
   const px = (14 * t.size) / 100;
   const line = mix(c.text, 14, c.panel);
-  const muted = mix(c.text, 58, c.panel);
+  const muted = mix(c.text, 80, c.panel);
 
   return (
     <div
